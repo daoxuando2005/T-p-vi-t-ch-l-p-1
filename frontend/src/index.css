@@ -1,0 +1,94 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+@font-face {
+  font-family: 'HP001';
+  src: url('/fonts/HP001.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --color-brand-50: #f5f3ff;
+  --color-brand-100: #ede9fe;
+  --color-brand-200: #ddd6fe;
+  --color-brand-300: #c4b5fd;
+  --color-brand-400: #a78bfa;
+  --color-brand-500: #8b5cf6;
+  --color-brand-600: #7c3aed;
+  --color-brand-700: #6d28d9;
+  --color-brand-800: #5b21b6;
+  --color-brand-900: #4c1d95;
+  --color-brand-950: #2e1065;
+}
+
+@layer base {
+  body {
+    @apply bg-white text-slate-700 font-sans antialiased overflow-x-hidden;
+  }
+}
+
+/* Glassmorphism Styles - updated to light theme */
+.glass-panel {
+  @apply bg-white/90 backdrop-blur-md border border-sky-100 shadow-xl;
+}
+
+.glass-panel-hover {
+  @apply transition-all duration-300 hover:bg-white hover:border-sky-200 hover:shadow-sky-100/30 hover:shadow-2xl;
+}
+
+.glass-input {
+  @apply bg-white border-2 border-sky-100 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20 placeholder-slate-400 transition-all duration-200;
+}
+
+/* Notebook Writing Grid Style (Tập Vở Ô Ly Tiếng Việt Tiểu Học Chuẩn Nét) */
+.notebook-grid {
+  position: relative;
+  background-color: #fafdfa;
+  background-image: 
+    linear-gradient(rgba(56, 189, 248, 0.35) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(56, 189, 248, 0.35) 1px, transparent 1px);
+  background-size: 16px 16px; /* Ô ly nhỏ 16px */
+}
+
+.notebook-grid::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0; bottom: 0;
+  pointer-events: none;
+  background-image: 
+    linear-gradient(rgba(2, 132, 199, 0.65) 1.5px, transparent 1.5px),
+    linear-gradient(90deg, rgba(2, 132, 199, 0.65) 1.5px, transparent 1.5px);
+  background-size: 64px 64px; /* Khung ô ly vuông chuẩn 4x4 ô nhỏ = 64px */
+}
+
+/* LÀM NẮC SẮC NÉT HÌNH ẢNH CHỮ MẪU KHỬ MỜ */
+.crisp-letter-img {
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  filter: contrast(135%) brightness(94%);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-slate-950;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-700 rounded-full hover:bg-slate-600 transition-colors;
+}
+
+/* Sparkle & Success Animations */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-10px); }
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}

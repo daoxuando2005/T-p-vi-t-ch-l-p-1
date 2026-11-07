@@ -1,0 +1,85 @@
+const fs = require('fs');
+let text = fs.readFileSync('src/pages/Admin/Dashboard.tsx', 'utf-8');
+
+const bad_good = {
+    'Th\\?ªm': 'Thêm',
+    'Ch\\?»¯': 'Chữ',
+    'C\\?¡i': 'Cái',
+    'M\\?»\\?i': 'Mới',
+    'M\\?»\u203ai': 'Mới',
+    'M\\?»': 'M',
+    'Th\\?ng k\\?ª': 'Thống kê',
+    't\\?»ng quan': 'tổng quan',
+    'Qu\\?£n L\\?½': 'Quản Lý',
+    'Qu\\?£n l\\?½': 'Quản lý',
+    'ng\\?°\\?i d\\?¹ng': 'người dùng',
+    'Ph\\?¢n Quy\\?n': 'Phân Quyền',
+    'Chi Ti\\?¿t': 'Chi Tiết',
+    'H\\?c Li\\?‡u': 'Học Liệu',
+    'H\\?c li\\?‡u': 'Học liệu',
+    'H\\?C': 'HỌC',
+    'CH\\?»®': 'CHỮ',
+    'C\\? I': 'CÁI',
+    'Ch\\?»¯ C\\?¡i': 'Chữ Cái',
+    'Ch\\?»‰nh S\\?»a': 'Chỉnh Sửa',
+    'S\\?»a ch\\?»¯a': 'Sửa chữa',
+    'T\\?ªn': 'Tên',
+    'Tr\\?ng Thi': 'Trạng Thái',
+    'Tr\\?ng Th\\?¡i': 'Trạng Thái',
+    '\\(\\?n\\/Hi\\?n\\)': '(Ẩn/Hiện)',
+    '\\?ang \\?n': 'Đang Ẩn',
+    '\\?ang Hi\\?n': 'Đang Hiện',
+    'H\\?c sinh': 'Học sinh',
+    'khng th\\?y': 'không thấy',
+    'h\\?c b\\?nh th\\?ng': 'học bình thường',
+    'th\\?ng tin': 'thông tin',
+    '\\?¢m thanh': 'âm thanh',
+    'm\\?«u': 'mẫu',
+    'c\\?§a': 'của',
+    'l\\?ªn server': 'lên server',
+    'B\\?¥m v\\? o': 'Bấm vào',
+    'b\\?¥t k\\?³': 'bất kỳ',
+    '\\?‘\\?»ƒ': 'để',
+    'chi ti\\?¿t': 'chi tiết',
+    'th\\?ªm': 'thêm',
+    'QuĂ¡ÂºÂ£n LĂ‚Â½ HĂ¡Â»Â c LiĂ¡Â»â€¡u': 'Quản Lý Học Liệu',
+    'ThĂƒÂ´ng kĂƒÂª tĂ¡Â»â€¢ng quan': 'Thống kê tổng quan',
+    'QuĂ¡ÂºÂ£n lĂ‚Â½ ngĂ†Â°Ă¡Â»Â i dĂƒÂ¹ng': 'Quản lý người dùng',
+    'PhĂƒÂ¢n QuyĂ¡Â»Â n Chi TiĂ¡ÂºÂ¿t': 'Phân Quyền Chi Tiết',
+    'ThĂƒÂ¢m ChĂ¡Â»Â¯ CĂƒÂ¡i MĂ¡Â»â€ºi': 'Thêm Chữ Cái Mới',
+    'ChĂ¡Â»â€°nh SĂ¡Â»Âa': 'Chỉnh Sửa',
+    'SĂ¡Â»Âa chĂ¡Â»Â¯a': 'Sửa chữa',
+    'ChĂ¡Â»Â¯ CĂƒÂ¡i': 'Chữ Cái',
+    'TĂƒÂªn ChĂ¡Â»Â¯': 'Tên Chữ',
+    'ThĂ¡Â»â€˜ng kĂƒÂª': 'Thống kê',
+    'tĂ¡Â»â€¢ng quan': 'tổng quan',
+    'QuĂ¡ÂºÂ£n LĂ‚Â½': 'Quản Lý',
+    'QuĂ¡ÂºÂ£n lĂ‚Â½': 'Quản lý',
+    'ngĂ†Â°Ă¡Â»Â i dĂƒÂ¹ng': 'người dùng',
+    'PhĂƒÂ¢n QuyĂ¡Â»Â n': 'Phân Quyền',
+    'Chi TiĂ¡ÂºÂ¿t': 'Chi Tiết',
+    'HĂ¡Â»Â c LiĂ¡Â»â€¡u': 'Học Liệu',
+    'HĂ¡Â»Â c liĂ¡Â»â€¡u': 'Học liệu',
+    'HĂ¡Â»Å’C': 'HỌC',
+    'CHĂ¡Â»Â®': 'CHỮ',
+    'CÄ‚Â I': 'CÁI',
+    'ChĂ¡Â»Â¯ CĂƒÂ¡i': 'Chữ Cái',
+    'ChĂ¡Â»â€°nh SĂ¡Â»Âa': 'Chỉnh Sửa',
+    'SĂ¡Â»Âa chĂ¡Â»Â¯a': 'Sửa chữa',
+    'ThÄ‚Âªm': 'Thêm',
+    'MĂ¡Â»â€ºi': 'Mới',
+    'TÄ‚Âªn': 'Tên',
+    'ChĂ¡Â»Â¯': 'Chữ',
+    'CÄ‚Â¡i': 'Cái',
+    'TrĂ¡ÂºÂ¡ng ThĂƒÂ¡i': 'Trạng Thái'
+};
+
+for (const [bad, good] of Object.entries(bad_good)) {
+    try {
+        const regex = new RegExp(bad, 'g');
+        text = text.replace(regex, good);
+    } catch (e) {
+        text = text.split(bad).join(good);
+    }
+}
+fs.writeFileSync('src/pages/Admin/Dashboard.tsx', text);

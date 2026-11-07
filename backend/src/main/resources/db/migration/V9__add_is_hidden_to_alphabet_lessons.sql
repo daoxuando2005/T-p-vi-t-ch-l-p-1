@@ -1,0 +1,1 @@
+ALTER TABLE alphabet_lessons ADD COLUMN is_hidden BOOLEAN DEFAULT FALSE;

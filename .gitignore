@@ -1,0 +1,12 @@
+# Build output and installed dependencies
+**/node_modules/
+**/dist/
+**/target/
+**/.idea/
+*.class
+
+# Local environment files and logs
+.env
+.env.*
+!.env.example
+*.log
