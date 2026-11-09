@@ -9,7 +9,7 @@ import androidx.compose.ui.geometry.Offset
 import java.util.Locale
 
 /** Medium-size Vietnamese school handwriting. One body unit is TWO small squares.
- * See docs/COPYBOOK_VI.md for references, rendering rules and review boundaries.
+ * See docs/HANDWRITING.md for references, rendering rules and review boundaries.
  * The baseline is y = 0; negative y is above the writing line. */
 internal data class CopybookForm(
     val letter: String,

@@ -8,7 +8,7 @@ Hệ thống cung cấp một nền tảng học tập trực tuyến toàn di�
 
 Thư mục [`android/`](android/) chứa bản giao diện học sinh viết bằng Kotlin và Jetpack Compose, dựa trên thiết kế Stitch. Mở riêng thư mục này bằng Android Studio. Xem [hướng dẫn cấu hình và chạy Android](android/README.md).
 
-Bản Android đã kết nối đăng nhập học sinh với backend, lưu phiên mã hóa và tách tiến độ trên thiết bị theo tài khoản. Lớp học và nội dung bài học hiện vẫn là minh họa. Xem [cấu hình backend local cho Android](android/docs/AUTH_API_VI.md). Website tiếp tục hoạt động độc lập.
+Bản Android đã kết nối đăng nhập học sinh với backend, lưu phiên mã hóa và tách tiến độ trên thiết bị theo tài khoản. Lớp học và nội dung bài học hiện vẫn là minh họa. Xem [cấu hình backend local cho Android](android/docs/AUTHENTICATION.md) và [quy tắc phát triển Android](android/AGENTS.md). Website tiếp tục hoạt động độc lập.
 
 ---
 
