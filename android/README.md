@@ -4,7 +4,7 @@
 
 ## Phạm vi bản giao diện
 
-- Trang chủ: thẻ hoạt động, hành trình khám phá chữ cái.
+- Trang chủ: thẻ tự luyện và hành trình 29 chữ theo thứ tự. Mỗi chữ: đọc theo → viết 2 lượt (có thể luyện thêm) → điền 3 từ → ghép 3 câu mẫu. Tiến độ lưu trên thiết bị, hoàn thành mới mở chữ kế tiếp; bài đã học có thể ôn lại. Xem [luồng bài học và lưu tiến độ](docs/LETTER_JOURNEY_VI.md).
 - Đọc chữ: 29 chữ cái, chữ hoa/thường, từ ví dụ, đọc bằng TextToSpeech tiếng Việt trên thiết bị.
 - Tập viết: 29 mẫu chữ thường cỡ vừa từ HP001, căn theo chân chữ và tỉ lệ ô li; dấu phụ và đuôi chữ được chừa chỗ riêng. Có chấm đặt bút, hướng khởi đầu và hộp xem mẫu. Nét vẽ bằng ngón tay/bút, chọn độ đậm, hoàn tác, xác nhận xóa. Tọa độ chuẩn hóa và lưu trạng thái khi xoay máy/chuyển tab. Đổi chữ sẽ bắt đầu bảng viết mới. Chi tiết và nguồn đối chiếu: [Mẫu chữ và ô ly](docs/COPYBOOK_VI.md).
 - Lớp học: lớp minh họa, nhập mã lớp, các thẻ bài tập.
@@ -12,7 +12,7 @@
 - Ghép câu: chọn/bỏ thẻ từ, nghe câu mẫu, kiểm tra thứ tự.
 - Điện thoại dùng thanh điều hướng dưới; từ 840dp dùng navigation rail. Nội dung đọc chữ và tập viết chuyển sang hai cột khi đủ rộng.
 
-**Bản này chưa nối backend, chưa có đăng nhập, không tham gia lớp thật, không gửi/lưu bài lên máy chủ và không chấm điểm viết.** `DemoContent.kt` chứa dữ liệu minh họa. Không cộng sao, tạo chuỗi ngày học hoặc giả lập điểm viết. Tiến trình thật, nhận dạng phát âm, chụp ảnh nộp bài và đồng bộ ngoại tuyến nằm ngoài phạm vi.
+**Bản này chưa nối backend, chưa có đăng nhập, không tham gia lớp thật, không gửi/lưu bài lên máy chủ và không chấm điểm viết.** `DemoContent.kt` và `LetterCurriculum.kt` chứa nội dung minh họa. Hành trình lưu các hoạt động đã hoàn thành trên thiết bị; chưa nhận dạng phát âm hoặc đánh giá nét viết. Không cộng sao, tạo chuỗi ngày học hoặc giả lập điểm viết. Đồng bộ tài khoản, chụp ảnh nộp bài và gửi tiến độ lên máy chủ nằm ngoài phạm vi.
 
 ## Mở bằng Android Studio
 

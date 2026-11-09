@@ -42,12 +42,12 @@ private val StrokeSaver = listSaver<List<InkStroke>, ArrayList<Float>>(
 )
 
 @Composable
-fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit) {
+fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit, guided: GuidedWriting? = null) {
     var index by rememberSaveable(initial) { mutableIntStateOf(initial) }
     var strokes by rememberSaveable(index, stateSaver = StrokeSaver) { mutableStateOf(emptyList<InkStroke>()) }
     var active by remember(index) { mutableStateOf(emptyList<Offset>()) }
     var pen by rememberSaveable { mutableIntStateOf(1) }
-    var complete by remember { mutableStateOf(false) }
+    var complete by rememberSaveable { mutableStateOf(false) }
     var confirmClear by remember { mutableStateOf(false) }
     var pendingLetter by rememberSaveable { mutableStateOf<Int?>(null) }
     var showReference by rememberSaveable { mutableStateOf(false) }
@@ -56,10 +56,16 @@ fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit) {
     val form = CopybookForms.forLetter(letter)
     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)) {
-        LetterPicker(index) { next ->
+        if (guided == null) LetterPicker(index) { next ->
             if (next != index) {
                 if (strokes.isEmpty()) index = next else pendingLetter = next
             }
+        }
+        if (guided != null) Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(if (guided.completed < 2) "Lượt viết ${guided.completed + 1} / 2 · Bé viết theo mẫu nhé"
+                else "Luyện thêm · Bé có thể viết thêm", Modifier.weight(1f).padding(horizontal = 4.dp),
+                fontSize = 13.sp, color = SkyDark)
+            if (guided.completed >= 2) TextButton(onClick = guided.onContinue) { Text("Đố vui với từ") }
         }
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f).padding(start = 4.dp)) {
@@ -96,8 +102,7 @@ fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit) {
                     onUndo = { strokes = strokes.dropLast(1) },
                     onClear = { confirmClear = true },
                     onComplete = {
-                        complete = true
-                        onPraise()
+                        if (!complete) { complete = true; onPraise() }
                     }
                 )
             }
@@ -122,16 +127,19 @@ fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit) {
         dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Giữ bài viết") } })
     if (complete) WritingCompletion(
         letter = letter,
-        lastLetter = index == DemoContent.lessons.lastIndex,
+        lastLetter = guided == null && index == DemoContent.lessons.lastIndex,
+        continueLabel = guided?.let { if (it.completed == 0) "Viết lượt 2" else "Đố vui với từ" },
+        repeatLabel = if (guided != null && guided.completed >= 1) "Luyện thêm một lượt" else "Viết lại",
         onDismiss = { complete = false },
         onRepeat = {
             strokes = emptyList()
             complete = false
+            if (guided != null && guided.completed >= 1) guided.onExtra()
         },
         onContinue = {
             strokes = emptyList()
-            index = (index + 1) % DemoContent.lessons.size
             complete = false
+            if (guided == null) index = (index + 1) % DemoContent.lessons.size else guided.onContinue()
         }
     )
     if (pendingLetter != null) AlertDialog(
@@ -148,6 +156,8 @@ fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit) {
     )
     if (showReference) WritingReference(form, onDismiss = { showReference = false })
 }
+
+data class GuidedWriting(val completed: Int, val onContinue: () -> Unit, val onExtra: () -> Unit)
 
 @Composable
 private fun WritingReference(form: CopybookForm, onDismiss: () -> Unit) {
@@ -174,7 +184,9 @@ private fun WritingCompletion(
     lastLetter: Boolean,
     onDismiss: () -> Unit,
     onRepeat: () -> Unit,
-    onContinue: () -> Unit
+    onContinue: () -> Unit,
+    continueLabel: String? = null,
+    repeatLabel: String = "Viết lại"
 ) {
     androidx.compose.ui.window.Dialog(onDismissRequest = onDismiss) {
         val scale = remember { androidx.compose.animation.core.Animatable(.8f) }
@@ -193,11 +205,11 @@ private fun WritingCompletion(
                 else "Bé vừa luyện chữ $letter. Mỗi lần tập viết là một lần tiến bộ!"
             )
             PlayButton(
-                if (lastLetter) "Luyện từ chữ A" else "Tiếp tục",
+                continueLabel ?: if (lastLetter) "Luyện từ chữ A" else "Tiếp tục",
                 icon = Icons.AutoMirrored.Rounded.ArrowForward,
                 onClick = onContinue
             )
-            PlayButton("Viết lại", color = Color.White, icon = Icons.Rounded.Refresh, onClick = onRepeat)
+            PlayButton(repeatLabel, color = Color.White, icon = Icons.Rounded.Refresh, onClick = onRepeat)
         }
     }
 }

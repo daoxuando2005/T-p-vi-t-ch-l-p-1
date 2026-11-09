@@ -21,16 +21,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
+import com.hocchu.mobile.data.DemoContent
+import com.hocchu.mobile.data.LessonProgress
+import com.hocchu.mobile.data.LessonProgressStore
 
 private val destinations = listOf("Trang chủ", "Đọc chữ", "Tập viết", "Lớp học")
 private val symbols = listOf(Icons.Rounded.Home, Icons.AutoMirrored.Rounded.MenuBook, Icons.Rounded.Edit, Icons.Rounded.Groups)
 
 @Composable
-fun StudentApp() {
+fun StudentApp(progressStore: LessonProgressStore? = null) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var exercise by rememberSaveable { mutableStateOf("") }
     val contextForProgress = LocalContext.current
     val prefs = remember { contextForProgress.getSharedPreferences("learning", 0) }
+    val lessonStore = progressStore ?: remember(prefs) { LessonProgressStore(prefs) }
+    var lessonProgress by remember { mutableStateOf(lessonStore.readAll()) }
+    val journeyCurrent = LessonProgress.current(lessonProgress)
+    var journeyIndex by rememberSaveable { mutableIntStateOf(-1) }
+    var journeyEntry by rememberSaveable { mutableIntStateOf(0) }
     var reading by rememberSaveable { mutableIntStateOf(prefs.getInt("letter", 0).coerceIn(0, 28)) }
     val selectLetter: (Int) -> Unit = { reading = it; prefs.edit().putInt("letter", it).apply() }
     var initialLetter by rememberSaveable { mutableIntStateOf(0) }
@@ -51,6 +59,17 @@ fun StudentApp() {
         writingEntry++
         go(2)
     }
+    val openLesson: (Int) -> Unit = { letter ->
+        if (LessonProgress.unlocked(letter, lessonProgress)) {
+            if (journeyIndex != letter || lessonProgress[letter].complete) {
+                stateHolder.removeState("journey:$journeyIndex:$journeyEntry")
+                journeyEntry++
+            }
+            journeyIndex = letter
+            tab = 0
+            exercise = "lesson"
+        }
+    }
     BackHandler(exercise.isNotEmpty() || tab != 0) {
         if (exercise.isNotEmpty()) exercise = "" else tab = 0
     }
@@ -64,7 +83,9 @@ fun StudentApp() {
                     else Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { Mascot(Modifier.size(44.dp)) }
                     Column(Modifier.weight(1f)) {
 
-                        Text(when(exercise) { "quiz" -> "Đố vui ghép chữ"; "sentence" -> "Ghép câu"; else -> destinations[tab] },
+                        Text(when(exercise) { "quiz" -> "Đố vui ghép chữ"; "sentence" -> "Ghép câu"
+                            "lesson" -> "Cùng học chữ ${DemoContent.lessons[journeyIndex].letter}"
+                            else -> if (tab == 3) "Lớp học của bé" else destinations[tab] },
                             style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     }
                     RoundAction("Hồ sơ", Icons.Rounded.Person) { profile = true }
@@ -101,14 +122,20 @@ fun StudentApp() {
                 }
                 Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.TopCenter) {
                     Box(Modifier.widthIn(max = 1240.dp).fillMaxSize()) {
-                        val key = exercise.ifEmpty { if (tab == 2) "writing:$writingEntry" else "tab$tab" }
+                        val key = if (exercise == "lesson") "journey:$journeyIndex:$journeyEntry"
+                            else exercise.ifEmpty { if (tab == 2) "writing:$writingEntry" else "tab$tab" }
                         stateHolder.SaveableStateProvider(key) {
                             when(exercise) {
+                                "lesson" -> LetterLessonScreen(journeyIndex, lessonProgress[journeyIndex],
+                                    onSave = { lessonProgress = lessonStore.save(journeyIndex, it) },
+                                    speak = speak,
+                                    onPraise = { if(sound) speech?.speak("Bé đã rất chăm chỉ! Cùng luyện tiếp nhé!") },
+                                    onExit = { exercise = "" }, onNext = { openLesson(journeyIndex + 1) })
                                 "quiz" -> QuizScreen(speak) { exercise = "" }
                                 "sentence" -> SentenceScreen(speak) { exercise = "" }
                                 else -> when(tab) {
-                                    0 -> HomeScreen(reading, onRead = { go(1) }, onWrite = { startWriting(reading) },
-                                        onClasses = { go(3) }, onLetter = { selectLetter(it); go(1) })
+                                    0 -> HomeScreen(journeyCurrent, lessonProgress, onRead = { go(1) }, onWrite = { startWriting(reading) },
+                                        onClasses = { go(3) }, onLetter = openLesson)
                                     1 -> ReadingScreen(reading, selectLetter, speak, onWrite = { startWriting(reading) })
                                     2 -> WritingScreen(initialLetter, speak, onPraise = {
                                         if (sound) speech?.speak("Bé đã rất chăm chỉ! Mình cùng luyện tiếp nhé!")
@@ -126,7 +153,7 @@ fun StudentApp() {
     if (profile) AlertDialog(onDismissRequest = { profile = false },
         title = { Text("Cùng khám phá Vui Học!") },
         text = { Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Đây là bản xem trước giao diện học sinh. Lớp học, bài tập và tiến trình là dữ liệu mẫu; chưa kết nối tài khoản hoặc gửi bài lên hệ thống.")
+            Text("Tiến độ hành trình được lưu trên máy này. Nội dung học và lớp học là bản minh họa; chưa kết nối tài khoản hoặc gửi bài lên hệ thống.")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Âm thanh", Modifier.weight(1f)); Switch(sound, onCheckedChange = { sound = it })
             }

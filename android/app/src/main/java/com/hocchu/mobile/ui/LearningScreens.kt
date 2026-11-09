@@ -10,7 +10,6 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.stateDescription
-import kotlinx.coroutines.launch
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -37,9 +36,10 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hocchu.mobile.data.DemoContent
+import com.hocchu.mobile.data.LessonProgress
 
 @Composable
-fun HomeScreen(current: Int, onRead: () -> Unit, onWrite: () -> Unit, onClasses: () -> Unit, onLetter: (Int) -> Unit) {
+fun HomeScreen(current: Int, progress: List<LessonProgress>, onRead: () -> Unit, onWrite: () -> Unit, onClasses: () -> Unit, onLetter: (Int) -> Unit) {
     val list = rememberLazyListState()
     var lastFocusedLetter by rememberSaveable { mutableIntStateOf(0) }
     LaunchedEffect(current) {
@@ -48,18 +48,20 @@ fun HomeScreen(current: Int, onRead: () -> Unit, onWrite: () -> Unit, onClasses:
             lastFocusedLetter = current
         }
     }
-    val scope = rememberCoroutineScope()
     val pulse by rememberInfiniteTransition(label = "Chữ đang học").animateFloat(
         initialValue = .94f, targetValue = 1.06f,
         animationSpec = infiniteRepeatable(tween(750), RepeatMode.Reverse), label = "Nhịp chuyển động")
     LazyColumn(
         state = list,
-        modifier = Modifier.fillMaxSize(),
+        modifier = Modifier.fillMaxSize().testTag("journey-list"),
         contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp)
     ) {
         item {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-        SectionTitle("Hôm nay bé học gì?", "Chọn một hoạt động yêu thích nhé")
+        SectionTitle("Hôm nay bé học gì?")
+        PlayButton(if(progress.all { it.complete }) "Ôn lại chữ A" else "Tiếp tục học chữ ${DemoContent.lessons[current].letter}",
+            modifier = Modifier.testTag("journey-continue"), icon = Icons.AutoMirrored.Rounded.ArrowForward,
+            onClick = { onLetter(if(progress.all { it.complete }) 0 else current) })
         BoxWithConstraints {
             val wide = maxWidth >= 650.dp
             if (wide) Row(horizontalArrangement = Arrangement.spacedBy(14.dp)) {
@@ -76,28 +78,26 @@ fun HomeScreen(current: Int, onRead: () -> Unit, onWrite: () -> Unit, onClasses:
         }
         }
         item {
-            SectionTitle("Hành trình chữ cái", "Khám phá 29 chữ cái tiếng Việt")
-            TextButton(onClick = { scope.launch { list.animateScrollToItem(current + 2) } }) {
-                Text("Đến chữ ${DemoContent.lessons[current].letter} đang học")
-            }
+            SectionTitle("Hành trình chữ cái", "Đọc → Viết → Điền từ → Ghép câu")
+            Text("${progress.count { it.complete }} / 29 chữ đã hoàn thành", color = SuccessText)
             Spacer(Modifier.height(18.dp))
         }
         items(DemoContent.lessons.size, key = { DemoContent.lessons[it].letter }) { index ->
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
-                JourneyLetter(index, current, { pulse }) { onLetter(index) }
+                JourneyLetter(index, current, progress[index], LessonProgress.unlocked(index, progress), { pulse }) { onLetter(index) }
             }
         }
         item {
             Spacer(Modifier.height(16.dp))
-            PlayButton("Tiếp tục chữ ${DemoContent.lessons[current].letter}",
-                icon = Icons.AutoMirrored.Rounded.ArrowForward, onClick = { onLetter(current) })
+            PlayButton(if(progress.all { it.complete }) "Ôn lại chữ A" else "Tiếp tục chữ ${DemoContent.lessons[current].letter}",
+                icon = Icons.AutoMirrored.Rounded.ArrowForward, onClick = { onLetter(if(progress.all { it.complete }) 0 else current) })
         }
     }
 }
 
 @Composable
-private fun JourneyLetter(index: Int, current: Int, pulse: () -> Float, onClick: () -> Unit) {
-    val selected = index == current
+private fun JourneyLetter(index: Int, current: Int, progress: LessonProgress, unlocked: Boolean, pulse: () -> Float, onClick: () -> Unit) {
+    val selected = index == current && !progress.complete
     BoxWithConstraints(Modifier.widthIn(max = 440.dp).fillMaxWidth().height(144.dp)) {
         val position = .5f + .28f * sin(index * Math.PI.toFloat() / 3f)
         val next = .5f + .28f * sin((index + 1) * Math.PI.toFloat() / 3f)
@@ -124,16 +124,23 @@ private fun JourneyLetter(index: Int, current: Int, pulse: () -> Float, onClick:
         ) {
             Box(Modifier.height(24.dp), contentAlignment = Alignment.Center) {
                 if(selected) Text("ĐANG HỌC", color = SuccessText, fontWeight = FontWeight.ExtraBold, fontSize = 12.sp)
+                else if(progress.complete) Text("ĐÃ HOÀN THÀNH", color = SuccessText, fontWeight = FontWeight.Bold, fontSize = 10.sp)
             }
-            Surface(onClick = onClick, modifier = Modifier.semantics { this.selected = index == current; stateDescription = if (index == current) "Đang học" else "Chưa chọn" }.size(76.dp).graphicsLayer {
+            Surface(onClick = onClick, enabled = unlocked, modifier = Modifier.testTag("journey-letter-$index").semantics {
+                this.selected = selected
+                stateDescription = when { progress.complete -> "Đã hoàn thành, có thể ôn lại"; !unlocked -> "Chưa mở"; else -> "Đang học, chặng ${progress.stage.ordinal + 1} trên 4" }
+            }.size(76.dp).graphicsLayer {
                 scaleX = if(selected) pulse() else 1f
                 scaleY = scaleX
-            }, shape = CircleShape, color = if(selected) Green else PaleBlue,
+            }, shape = CircleShape, color = if(selected) Green else if(progress.complete) Color(0xFFE6F9CF) else PaleBlue,
                 shadowElevation = if(selected) 6.dp else 2.dp,
                 border = androidx.compose.foundation.BorderStroke(3.dp, if(selected) GreenDark else Outline)) {
                 Box(contentAlignment = Alignment.Center) {
                     Text(DemoContent.lessons[index].letter, fontSize = 32.sp,
-                        fontWeight = FontWeight.ExtraBold, color = if(selected) Color(0xFF1F5100) else SkyDark)
+                        fontWeight = FontWeight.ExtraBold, color = if(selected) Color(0xFF1F5100) else if(!unlocked) Muted else SkyDark)
+                    if (progress.complete || !unlocked) Icon(if(progress.complete) Icons.Rounded.CheckCircle else Icons.Rounded.Lock,
+                        null, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp).size(16.dp),
+                        tint = if(progress.complete) GreenDark else Muted)
                 }
             }
             Text("Chữ ${DemoContent.lessons[index].letter}", Modifier.padding(top = 6.dp),
@@ -227,7 +234,7 @@ fun ReadingScreen(index: Int, select: (Int) -> Unit, speak: (String) -> Unit, on
 }
 
 @Composable
-private fun LetterCard(letter: String, modifier: Modifier = Modifier, onListen: () -> Unit) {
+internal fun LetterCard(letter: String, modifier: Modifier = Modifier, onListen: () -> Unit) {
     Paper(modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
             Text("CHỮ HOA VÀ CHỮ THƯỜNG", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Muted)
@@ -239,7 +246,7 @@ private fun LetterCard(letter: String, modifier: Modifier = Modifier, onListen: 
 }
 
 @Composable
-private fun ExampleCard(picture: String, word: String, modifier: Modifier = Modifier, onListen: () -> Unit) {
+internal fun ExampleCard(picture: String, word: String, modifier: Modifier = Modifier, onListen: () -> Unit) {
     Paper(modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -257,25 +264,33 @@ fun ClassesScreen(onWriting: () -> Unit, onQuiz: () -> Unit, onSentence: () -> U
     var invite by rememberSaveable { mutableStateOf("") }
     var notice by remember { mutableStateOf(false) }
     ScreenColumn {
-        SectionTitle("Lớp học của bé", "Cùng cô và các bạn học điều mới")
         Paper {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                Icon(Icons.Rounded.School, null, Modifier.size(52.dp), tint = SkyDark)
-                Column {
+            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Column(Modifier.weight(1f)) {
                     Text("Lớp 1A", style = MaterialTheme.typography.headlineMedium)
-                    Text("Cô Mai • Lớp minh họa", color = Muted)
-                    Text("Mã lớp: A108", color = SkyDark, fontWeight = FontWeight.Bold)
+                    Text("Cô Mai • Lớp minh họa", color = Muted, fontSize = 13.sp)
+                }
+                OutlinedButton(onClick = { expanded = !expanded },
+                    modifier = Modifier.heightIn(min = 48.dp).semantics {
+                        stateDescription = if (expanded) "Đang mở ô nhập mã lớp" else "Đang thu gọn"
+                    }, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)) {
+                    Text("Tham gia lớp", style = MaterialTheme.typography.labelMedium, maxLines = 1)
+                    Icon(if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
+                        null, Modifier.size(20.dp))
+                }
+            }
+            Text("Mã lớp: A108", color = SkyDark, fontWeight = FontWeight.Bold)
+            androidx.compose.animation.AnimatedVisibility(visible = expanded) {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    OutlinedTextField(invite, onValueChange = { invite = it.take(20).uppercase() },
+                        label = { Text("Nhập mã lớp khác") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(16.dp))
+                    PlayButton("Vào lớp", enabled = invite.isNotBlank(), icon = Icons.AutoMirrored.Rounded.Login) { notice = true }
                 }
             }
         }
-        TextButton(onClick = { expanded = !expanded }) { Text(if(expanded) "Thu gọn mã lớp ▴" else "+ Tham gia bằng mã lớp") }
-        androidx.compose.animation.AnimatedVisibility(visible = expanded) { Paper {
-            OutlinedTextField(invite, onValueChange = { invite = it.take(20).uppercase() },
-                label = { Text("Nhập mã lớp") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp))
-            PlayButton("Vào lớp", enabled = invite.isNotBlank(), icon = Icons.AutoMirrored.Rounded.Login) { notice = true }
-        } }
-        SectionTitle("Bài tập của bé", "3 hoạt động để bé trải nghiệm")
+        SectionTitle("Bài tập của bé")
         ActivityCard("Tập viết chữ", "Chữ b • Viết trên bảng ô ly", Icons.Rounded.Edit, Sky, onClick = onWriting)
         ActivityCard("Đố vui ghép chữ", "3 câu hỏi • Chọn đáp án đúng", Icons.Rounded.Extension, Green, onClick = onQuiz)
         ActivityCard("Ghép câu", "Chạm các từ để tạo thành câu", Icons.Rounded.AutoAwesome, Orange, onClick = onSentence)

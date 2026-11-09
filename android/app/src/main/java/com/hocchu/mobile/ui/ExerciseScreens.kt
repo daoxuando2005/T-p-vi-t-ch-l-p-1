@@ -130,8 +130,8 @@ fun SentenceScreen(speak: (String) -> Unit, onExit: () -> Unit) {
 }
 
 @Composable
-private fun WordChip(word: String, selected: Boolean = false, enabled: Boolean = true, onClick: () -> Unit) {
-    Surface(onClick = onClick, enabled = enabled, shape = RoundedCornerShape(20.dp), shadowElevation = if(enabled) 3.dp else 0.dp,
+internal fun WordChip(word: String, modifier: Modifier = Modifier, selected: Boolean = false, enabled: Boolean = true, onClick: () -> Unit) {
+    Surface(onClick = onClick, enabled = enabled, modifier = modifier, shape = RoundedCornerShape(20.dp), shadowElevation = if(enabled) 3.dp else 0.dp,
         color = if(selected) PaleBlue else if(enabled) Color.White else Outline.copy(alpha = .5f),
         border = androidx.compose.foundation.BorderStroke(1.dp, Outline)) {
         Text(word, Modifier.padding(horizontal = 22.dp, vertical = 18.dp), fontSize = 24.sp,
