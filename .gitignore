@@ -10,3 +10,11 @@
 .env.*
 !.env.example
 *.log
+
+# Android local configuration and generated files
+android/.gradle/
+android/.kotlin/
+android/**/build/
+android/local.properties
+android/captures/
+android/*.hprof

@@ -4,12 +4,19 @@ Hệ thống cung cấp một nền tảng học tập trực tuyến toàn di�
 
 ---
 
+## 📱 Ứng dụng Android
+
+Thư mục [`android/`](android/) chứa bản giao diện học sinh viết bằng Kotlin và Jetpack Compose, dựa trên thiết kế Stitch. Mở riêng thư mục này bằng Android Studio. Xem [hướng dẫn cấu hình và chạy Android](android/README.md).
+
+Bản Android hiện dùng dữ liệu mẫu để duyệt giao diện, chưa kết nối backend. Website và backend bên dưới vẫn hoạt động độc lập.
+
+---
+
 ## 🛠️ Công nghệ sử dụng (Tech Stack)
 
 *   **Backend:** Java 17, Spring Boot 3 (Web, Security, Data JPA, Validation, WebSocket/STOMP)
 *   **Database:** MySQL (Flyway migration quản lý schema tự động)
 *   **Xác thực:** JWT (JSON Web Token) + Xác thực OTP
-*   **Thống kê/Báo cáo:** Apache POI (Excel) & OpenPDF (PDF)
 *   **Frontend:** React, TypeScript, Vite, Tailwind CSS, Axios, React Router, Recharts, SockJS/STOMP client
 *   **Build Tool:** Maven (Backend), npm (Frontend)
 
@@ -21,9 +28,9 @@ Sau khi khởi chạy ứng dụng lần đầu, cơ sở dữ liệu sẽ đư�
 
 | Vai trò | Tên đăng nhập | Email liên kết | Mô tả chức năng |
 | :--- | :--- | :--- | :--- |
-| **Quản trị viên** | `admin` | `admin@hocchu.com` | Quản lý người dùng, CRUD học liệu, tải báo cáo, duyệt phản hồi |
+| **Quản trị viên** | `admin` | `admin@hocchu.com` | Quản lý người dùng, CRUD học liệu, xem thống kê |
 | **Giáo viên** | `teacher1` | `mai.nguyen@hocchu.com` | Tạo lớp học, quản lý học sinh, giao bài tập, chấm điểm canvas |
-| **Học sinh** | `student1` | `an.nguyen@hocchu.com` | Học bảng chữ cái phát âm, chơi game, luyện viết bảng ô ly |
+| **Học sinh** | `student1` | `an.nguyen@hocchu.com` | Học bảng chữ cái phát âm, luyện viết bảng ô ly, làm bài tập |
 | **Phụ huynh** | `parent1` | `binh.nguyen@hocchu.com` | Liên kết con, theo dõi tiến độ bằng biểu đồ, chat với cô giáo |
 
 ---
@@ -102,17 +109,12 @@ Sau khi khởi chạy ứng dụng lần đầu, cơ sở dữ liệu sẽ đư�
 *   Dùng chuột hoặc vẽ bằng tay (trên iPad/điện thoại) để viết đè lên chữ mẫu.
 *   Bấm **Nộp Bài** để hệ thống tự động chấm điểm % độ chính xác nét vẽ của bé.
 
-### 3. Trò chơi nhận diện chữ cái tiếng Việt (Game ghép chữ)
-*   Học sinh vào mục **Game ghép chữ**.
-*   Màn hình hiển thị emoji (ví dụ: quả táo 🍎, con cá 🐟) cùng 3 đáp án.
-*   Khi bé chọn đáp án: hệ thống tổng hợp âm thanh (Beep đúng/sai bằng Web Audio API) kèm hiệu ứng bông hoa pháo hoa ăn mừng khi bé trả lời chính xác, cộng 10 điểm thưởng và tự chuyển câu hỏi.
-
-### 4. Liên kết Phụ huynh & Xem biểu đồ học tập của con
+### 3. Liên kết Phụ huynh & Xem biểu đồ học tập của con
 *   Đăng nhập tài khoản Học sinh (`student1`), vào mục **Lớp học & Bài tập** để lấy mã liên kết của con (Ví dụ: `F8D92A`).
 *   Đăng nhập tài khoản Phụ huynh (`parent1`), nhấn **Liên kết con mới**, nhập mã liên kết này để hoàn tất kết nối.
 *   Sau khi kết nối thành công, biểu đồ đường thể hiện lịch sử điểm số luyện viết chữ của bé và biểu đồ cột điểm số bài tập sẽ hiển thị trực quan thông qua thư viện Recharts.
 
-### 5. Chat trực tuyến thời gian thực Phụ huynh - Giáo viên
+### 4. Chat trực tuyến thời gian thực Phụ huynh - Giáo viên
 *   Mở hai trình duyệt khác nhau (hoặc một trình duyệt thường và một ẩn danh).
 *   Đăng nhập một bên là Giáo viên (`teacher1`), bên kia là Phụ huynh (`parent1` - tài khoản phụ huynh đã liên kết thành công với bé nằm trong lớp học của giáo viên đó).
 *   Vào mục **Trao đổi tin nhắn**, bạn sẽ thấy tên đối phương trong danh sách chat.
