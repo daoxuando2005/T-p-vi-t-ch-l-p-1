@@ -3,21 +3,7 @@ import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { WritingEvaluationEngine } from './writing/engine';
 import type { Stroke } from './writing/engine/types';
-import { 
-  Users, 
-  ClipboardList, 
-  CheckCircle2, 
-  AlertCircle, 
-  BookOpen, 
-  PenTool, 
-  X,
-  ChevronRight,
-  Target,
-  Sparkles,
-  RefreshCw,
-  Volume2,
-  Check
-} from 'lucide-react';
+import { AlertCircle, BookOpen, PenTool, X, Target, Sparkles, RefreshCw, Volume2 } from 'lucide-react';
 
 interface ClassItem {
   id: number;

@@ -1,29 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { 
-  ClipboardList, 
-  Plus, 
-  Clock, 
-  CheckCircle2, 
-  AlertCircle, 
-  Eye, 
-  X, 
-  Trash2, 
-  BookOpen, 
-  Sparkles, 
-  Send, 
-  FileText, 
-  Layers,
-  ChevronRight,
-  Target,
-  Edit3,
-  PenTool,
-  HelpCircle,
-  Save,
-  Volume2,
-  Calendar,
-  Upload
-} from 'lucide-react';
+import { ClipboardList, Plus, Clock, AlertCircle, Eye, X, Trash2, Send, FileText, Layers, ChevronRight, Target, Edit3, PenTool, HelpCircle, Save, Volume2, Calendar, Upload } from 'lucide-react';
 
 interface ClassItem {
   id: number;
@@ -669,21 +646,9 @@ const TeacherAssignments: React.FC = () => {
     }
   };
 
-  const updateQuestionText = (qIdx: number, text: string) => {
-    const nextQ = [...tplQuizQuestions];
-    nextQ[qIdx].question = text;
-    setTplQuizQuestions(nextQ);
-  };
-
   const updateQuestionAnimalName = (qIdx: number, text: string) => {
     const nextQ = [...tplQuizQuestions];
     nextQ[qIdx].animalName = text;
-    setTplQuizQuestions(nextQ);
-  };
-
-  const updateQuestionAnimalEmoji = (qIdx: number, emoji: string) => {
-    const nextQ = [...tplQuizQuestions];
-    nextQ[qIdx].animalEmoji = emoji;
     setTplQuizQuestions(nextQ);
   };
 

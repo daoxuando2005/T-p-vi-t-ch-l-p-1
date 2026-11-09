@@ -1,12 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
-import {
-  Users, Plus, Trash2, UserPlus, Key, ChevronRight,
-  Folder, X, BookOpen, AlertCircle, CheckCircle2, GraduationCap,
-  Copy, Check, Edit
-} from 'lucide-react';
+import { Users, Plus, Trash2, UserPlus, Key, ChevronRight, Folder, X, BookOpen, AlertCircle, GraduationCap, Copy, Check, Edit } from 'lucide-react';
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell, Legend

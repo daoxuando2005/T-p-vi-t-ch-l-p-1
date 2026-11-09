@@ -1,4 +1,4 @@
-import type { Point, Stroke } from './types';
+import type { Stroke } from './types';
 
 export function removeDuplicates(stroke: Stroke): Stroke {
   if (stroke.length === 0) return [];

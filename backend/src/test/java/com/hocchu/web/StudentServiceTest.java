@@ -64,7 +64,6 @@ public class StudentServiceTest {
 
         when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
         when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
-        when(submissionRepository.findByAssignmentIdAndStudentId(assignmentId, studentId)).thenReturn(Optional.empty());
 
         ApiResponse response = studentService.submitAssignment(studentId, assignmentId, request);
 

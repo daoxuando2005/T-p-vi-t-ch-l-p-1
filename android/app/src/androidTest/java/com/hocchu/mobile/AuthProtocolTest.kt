@@ -1,6 +1,5 @@
 package com.hocchu.mobile
 
-import android.security.keystore.KeyProperties
 import android.util.Base64
 import androidx.test.platform.app.InstrumentationRegistry
 import com.hocchu.mobile.auth.*

@@ -1,7 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { BookOpen, PenTool, ClipboardList } from 'lucide-react';
 
 const StudentDashboard: React.FC = () => {
   const { user } = useAuth();

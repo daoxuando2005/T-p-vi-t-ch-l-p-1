@@ -1,6 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import api from '../../services/api';
-import { PenTool, Check, AlertCircle } from 'lucide-react';
+import { Check } from 'lucide-react';
 import { sortVietnameseAlphabet } from '../../utils/alphabetSort';
 import type { Stroke } from './writing/engine/types';
 import { WritingEvaluationEngine } from './writing/engine';
