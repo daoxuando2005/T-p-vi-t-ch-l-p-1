@@ -29,11 +29,12 @@ private val destinations = listOf("Trang chủ", "Đọc chữ", "Tập viết",
 private val symbols = listOf(Icons.Rounded.Home, Icons.AutoMirrored.Rounded.MenuBook, Icons.Rounded.Edit, Icons.Rounded.Groups)
 
 @Composable
-fun StudentApp(progressStore: LessonProgressStore? = null) {
+fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: String = "learning",
+               studentName: String? = null, onLogout: (() -> Unit)? = null) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var exercise by rememberSaveable { mutableStateOf("") }
     val contextForProgress = LocalContext.current
-    val prefs = remember { contextForProgress.getSharedPreferences("learning", 0) }
+    val prefs = remember(preferencesName) { contextForProgress.getSharedPreferences(preferencesName, 0) }
     val lessonStore = progressStore ?: remember(prefs) { LessonProgressStore(prefs) }
     var lessonProgress by remember { mutableStateOf(lessonStore.readAll()) }
     val journeyCurrent = LessonProgress.current(lessonProgress)
@@ -151,13 +152,14 @@ fun StudentApp(progressStore: LessonProgressStore? = null) {
         }
     }
     if (profile) AlertDialog(onDismissRequest = { profile = false },
-        title = { Text("Cùng khám phá Vui Học!") },
+        title = { Text(studentName ?: "Cùng khám phá Vui Học!") },
         text = { Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Tiến độ hành trình được lưu trên máy này. Nội dung học và lớp học là bản minh họa; chưa kết nối tài khoản hoặc gửi bài lên hệ thống.")
+            Text("Tiến độ hành trình được lưu trên máy này. Nội dung học và lớp học hiện là bản minh họa; chưa gửi bài hoặc tiến độ lên máy chủ.")
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Âm thanh", Modifier.weight(1f)); Switch(sound, onCheckedChange = { sound = it })
             }
-        } }, confirmButton = { TextButton(onClick = { profile = false }) { Text("Bắt đầu khám phá") } })
+        } }, confirmButton = { TextButton(onClick = { profile = false }) { Text("Đóng") } },
+        dismissButton = { if(onLogout != null) TextButton(onClick = { profile = false; onLogout() }) { Text("Đăng xuất") } })
     if (speechNotice) AlertDialog(onDismissRequest = { speechNotice = false },
         title = { Text("Âm thanh tiếng Việt") },
         text = { Text("Máy đang khởi tạo giọng đọc hoặc chưa có giọng tiếng Việt. Nếu chưa nghe được, hãy kiểm tra phần Chuyển văn bản thành giọng nói trong cài đặt thiết bị.") },

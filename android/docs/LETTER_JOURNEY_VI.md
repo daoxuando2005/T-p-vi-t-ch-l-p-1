@@ -65,9 +65,8 @@ trước khi dùng thành chương trình giảng dạy chính thức.
   từ chối mở bài khóa hoặc ghi đè tiến độ cũ.
 - Kiểm tra cũ `copybookReferenceKeepsTheDraftAndShowsLetterSpecificGuidance` và
   `landscapeKeepsBoardAndToolsVisible` đạt.
-- `writingKeepsToolsAndDraftAfterRecreation` chưa xác nhận lại: một lượt không ghi
-  nhận nét vẽ đầu, các lượt chạy riêng sau đó chờ trên thiết bị và đã được dừng.
-  Chưa kết luận đây là lỗi sản phẩm. Cần chạy lại trường hợp này trong môi trường
-  thiết bị ổn định để xác minh đầy đủ khôi phục bản vẽ sau tạo lại Activity.
+- `writingKeepsToolsAndDraftAfterRecreation` đã xác nhận lại khi nối đăng nhập:
+  kiểm tra khôi phục SavedState bằng `StateRestorationTester` trong composition riêng.
+  Kiểm tra bố cục xoay ngang vẫn chạy trên Activity thực. Xem [kết quả xác thực](AUTH_API_VI.md).
 - Đã duyệt ảnh ghép câu, hoàn thành bài và hành trình mở khóa. Đã cập nhật APK
   lên điện thoại bằng cài đè, không gỡ app hoặc xóa tiến độ thật.
