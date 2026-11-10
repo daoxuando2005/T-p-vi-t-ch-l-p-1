@@ -144,10 +144,11 @@ public class StudentService {
         }
 
         String cleanCode = inviteCode.trim();
-        Clazz clazz = clazzRepository.findByInviteCode(cleanCode)
+        Optional<Clazz> selectedClass = clazzRepository.findByInviteCode(cleanCode)
                 .or(() -> clazzRepository.findByInviteCode(cleanCode.toUpperCase()))
-                .or(() -> clazzRepository.findByInviteCode(cleanCode.toLowerCase()))
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp học với mã mời '" + inviteCode + "'!"));
+                .or(() -> clazzRepository.findByInviteCode(cleanCode.toLowerCase()));
+        if (selectedClass.isEmpty()) return new ApiResponse(false, "Không tìm thấy lớp học. Bé kiểm tra lại mã từ cô giáo nhé.");
+        Clazz clazz = selectedClass.get();
 
         if (classMemberRepository.existsByClazzIdAndStudentId(clazz.getId(), studentId)) {
             return new ApiResponse(false, "Bé đã tham gia lớp học này rồi.");
@@ -239,6 +240,8 @@ public class StudentService {
                         .createdAt(itemCreated)
                         .isSubmitted(subOpt.isPresent())
                         .score(subOpt.map(Submission::getScore).orElse(null))
+                        .feedback(subOpt.map(Submission::getFeedback).orElse(null))
+                        .assignedBy(asm.getAssignedBy())
                         .build());
             }
         }
@@ -260,37 +263,31 @@ public class StudentService {
         Assignment assignment = assignmentRepository.findById(assignmentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài tập"));
 
-        // Không kiểm tra hạn nộp nữa theo yêu cầu:
-        // if (assignment.getDueDate() != null && assignment.getDueDate().isBefore(LocalDateTime.now())) {
-        //     return new ApiResponse(false, "Bài tập đã hết hạn nộp!");
-        // }
+        if (assignment.getClazz() == null || !classMemberRepository.existsByClazzIdAndStudentId(
+                assignment.getClazz().getId(), studentId)) {
+            throw new org.springframework.security.access.AccessDeniedException("Học sinh chưa tham gia lớp này");
+        }
+        if (request.getSubmissionData() == null || request.getSubmissionData().length() > 4_000_000) {
+            return new ApiResponse(false, "Dữ liệu bài nộp không hợp lệ hoặc quá lớn.");
+        }
 
-        // Tự động chấm điểm ban đầu
-        float score = 0.0f;
-        String feedback = "Hệ thống tự động chấm điểm";
-
+        Float score = null;
+        String feedback = "Đã nhận bài viết. Chờ giáo viên chấm và nhận xét.";
         if ("QUIZ".equalsIgnoreCase(assignment.getContentType())) {
-            // Chấm điểm tự động cho trắc nghiệm
-            score = calculateQuizScore(assignment.getContentData(), request.getSubmissionData());
+            try {
+                score = calculateQuizScore(assignment.getContentData(), request.getSubmissionData());
+            } catch (IllegalArgumentException e) {
+                return new ApiResponse(false, "Câu trả lời hoặc nội dung bài tập không hợp lệ.");
+            }
             feedback = "Đã tự động chấm điểm trắc nghiệm: " + score + "/10";
         } else if ("WRITING".equalsIgnoreCase(assignment.getContentType())) {
-            // Chấm điểm mock cho luyện viết chữ
-            String base64Data = request.getSubmissionData();
-            if (base64Data != null && base64Data.contains(",")) {
-                base64Data = base64Data.split(",")[1];
+            if (!validWritingSubmission(request.getSubmissionData())) {
+                return new ApiResponse(false, "Bài viết phải có ảnh PNG hoặc JPEG hợp lệ.");
             }
-            if (base64Data == null || base64Data.trim().length() < 500) {
-                score = 2.0f;
-                feedback = "Bé chưa hoàn thành nét viết chữ mẫu. Cần cố gắng hơn!";
-            } else {
-                // Mock điểm từ 7.0 đến 9.8 cho bài nộp viết chữ
-                Random rand = new Random(System.currentTimeMillis());
-                score = 7.0f + rand.nextFloat() * 2.8f;
-                score = Math.round(score * 10.0f) / 10.0f;
-                feedback = "Bài viết chữ đã nộp, điểm hệ thống đánh giá: " + score + "/10. Chờ cô giáo xem nhận xét thêm.";
-            }
+        } else {
+            return new ApiResponse(false, "Loại bài tập chưa được hỗ trợ.");
         }
-        final float finalScore = score;
+        final Float finalScore = score;
 
         // Xử lý ghi đè và dọn dẹp bản ghi trùng lặp (nếu có do bấm nhanh)
         List<Submission> existingSubs = submissionRepository.findAllByAssignmentIdAndStudentId(assignmentId, studentId);
@@ -326,7 +323,8 @@ public class StudentService {
                 Notification parentNotif = Notification.builder()
                         .user(link.getParent())
                         .title("Bé " + student.getFullName() + " vừa nộp bài tập")
-                        .content("Con vừa nộp bài tập '" + assignment.getTitle() + "' trong lớp '" + assignment.getClazz().getName() + "'. Điểm tự động: " + finalScore)
+                        .content("Con vừa nộp bài tập '" + assignment.getTitle() + "' trong lớp '" + assignment.getClazz().getName() + "'. "
+                                + (finalScore == null ? "Chờ giáo viên chấm bài." : "Điểm trắc nghiệm: " + finalScore))
                         .type("ASSIGNMENT")
                         .isRead(false)
                         .build();
@@ -344,43 +342,59 @@ public class StudentService {
                 .build();
         notificationRepository.save(teacherNotif);
 
-        return new ApiResponse(true, "Nộp bài tập thành công! Điểm số: " + score);
+        return new ApiResponse(true, score == null ? "Đã nộp bài viết. Chờ giáo viên chấm bài." : "Nộp bài tập thành công! Điểm số: " + score);
     }
 
-    private float calculateQuizScore(String assignmentDataJson, String submissionDataJson) {
+    private float calculateQuizScore(String assignmentJson, String submissionJson) {
         try {
-            // Cấu trúc assignmentDataJson: [{"question": "...", "options": [...], "answer": "B"}]
-            // Cấu trúc submissionDataJson: {"answers": ["A", "B", "C"]} hoặc tương tự.
-            // Để đơn giản, ta đọc list Object map
-            List<Map<String, Object>> questions = objectMapper.readValue(assignmentDataJson, List.class);
-            Map<String, Object> submission = objectMapper.readValue(submissionDataJson, Map.class);
-            List<String> studentAnswers = (List<String>) submission.get("answers");
-
-            if (questions == null || studentAnswers == null || questions.isEmpty()) {
-                return 0.0f;
-            }
-
-            int correctCount = 0;
-            int totalQuestions = questions.size();
-            for (int i = 0; i < totalQuestions; i++) {
-                if (i >= studentAnswers.size()) break;
-                Map<String, Object> question = questions.get(i);
-                String correctAnswer = (String) question.get("answer");
-                String studentAnswer = studentAnswers.get(i);
-                
-                if (correctAnswer != null && correctAnswer.trim().equalsIgnoreCase(studentAnswer.trim())) {
-                    correctCount++;
+            var questions = objectMapper.readTree(assignmentJson);
+            var answers = objectMapper.readTree(submissionJson).get("answers");
+            if (!questions.isArray() || questions.isEmpty() || answers == null || !answers.isArray()
+                    || answers.size() != questions.size()) throw new IllegalArgumentException();
+            int correct = 0;
+            for (int i = 0; i < questions.size(); i++) {
+                var q = questions.get(i);
+                var answer = answers.get(i);
+                if (!answer.isTextual() || !q.path("answer").isTextual()
+                        || !q.path("options").isArray()) throw new IllegalArgumentException();
+                boolean option = false;
+                for (var value : q.get("options")) {
+                    if (value.isTextual() && value.asText().equals(answer.asText())) option = true;
                 }
+                if (!option) throw new IllegalArgumentException();
+                if (q.get("answer").asText().trim().equalsIgnoreCase(answer.asText().trim())) correct++;
             }
-
-            float finalScore = ((float) correctCount / totalQuestions) * 10.0f;
-            return Math.round(finalScore * 10.0f) / 10.0f; // Làm tròn 1 chữ số thập phân
+            return Math.round(100f * correct / questions.size()) / 10f;
         } catch (Exception e) {
-            log.error("Lỗi phân tích cú pháp trắc nghiệm để chấm điểm", e);
-            return 0.0f;
+            throw new IllegalArgumentException("Invalid quiz submission");
         }
     }
 
+    private boolean validWritingSubmission(String data) {
+        try {
+            if (data.startsWith("data:image/")) return validWritingImage(data);
+            var images = objectMapper.readTree(data);
+            if (!images.isArray() || images.isEmpty() || images.size() > 29) return false;
+            for (var item : images) {
+                if (!item.path("letter").isTextual() || item.path("letter").asText().isBlank()
+                        || !validWritingImage(item.path("image").asText())) return false;
+            }
+            return true;
+        } catch (Exception e) { return false; }
+    }
+
+    private boolean validWritingImage(String image) {
+        boolean png = image.startsWith("data:image/png;base64,");
+        boolean jpeg = image.startsWith("data:image/jpeg;base64,");
+        if (!png && !jpeg) return false;
+        try {
+            byte[] bytes = Base64.getDecoder().decode(image.substring(image.indexOf(',') + 1));
+            if (png) return bytes.length >= 8 && bytes[0] == (byte) 137 && bytes[1] == 80
+                    && bytes[2] == 78 && bytes[3] == 71;
+            return bytes.length >= 3 && bytes[0] == (byte) 255 && bytes[1] == (byte) 216
+                    && bytes[2] == (byte) 255;
+        } catch (IllegalArgumentException e) { return false; }
+    }
 
     // Sinh mã liên kết phụ huynh
     public Map<String, String> getParentLinkCode(Long studentId) {

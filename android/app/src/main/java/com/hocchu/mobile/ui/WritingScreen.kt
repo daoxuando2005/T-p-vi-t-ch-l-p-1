@@ -35,7 +35,7 @@ import com.hocchu.mobile.data.DemoContent
 import kotlinx.coroutines.CancellationException
 
 // Store normalized positions, so resizing does not stretch the logical writing space.
-private data class InkStroke(val points: List<Offset>, val pen: Int)
+internal data class InkStroke(val points: List<Offset>, val pen: Int)
 private val StrokeSaver = listSaver<List<InkStroke>, ArrayList<Float>>(
     save = { strokes -> strokes.map { stroke -> ArrayList(listOf(stroke.pen.toFloat()) + stroke.points.flatMap { listOf(it.x, it.y) }) } },
     restore = { strokes -> strokes.map { values -> InkStroke(values.drop(1).chunked(2).map { Offset(it[0], it[1]) }, values[0].toInt()) } }
@@ -277,7 +277,7 @@ private fun WritingTools(
 }
 
 @Composable
-private fun WritingBoard(letter: String, strokes: List<InkStroke>, active: List<Offset>, pen: Int,
+internal fun WritingBoard(letter: String, strokes: List<InkStroke>, active: List<Offset>, pen: Int,
                          onStart: (Offset) -> Unit, onMove: (Offset) -> Unit, onEnd: () -> Unit, onCancel: () -> Unit) {
     // A fixed square canvas preserves the same aspect ratio on phones and tablets.
     val currentStart by rememberUpdatedState(onStart)

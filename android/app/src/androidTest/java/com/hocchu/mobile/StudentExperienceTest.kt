@@ -3,13 +3,19 @@ package com.hocchu.mobile
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
 import android.graphics.Bitmap
+import android.view.ViewGroup
+import androidx.activity.compose.setContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.junit4.StateRestorationTester
+import com.hocchu.mobile.ui.StudentApp
+import com.hocchu.mobile.ui.VuiHocTheme
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
 import org.junit.Rule
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
@@ -18,15 +24,25 @@ class StudentExperienceTest {
     @get:Rule
     val compose = createAndroidComposeRule<MainActivity>()
 
+    @Before fun showStudentFixture() {
+        compose.activityRule.scenario.onActivity { activity ->
+            activity.findViewById<ViewGroup>(android.R.id.content).removeAllViews()
+            activity.setContent { VuiHocTheme { StudentApp(preferencesName = "test.student.ui") } }
+        }
+    }
+
     @Test
     fun writingKeepsToolsAndDraftAfterRecreation() {
+        val restoration = StateRestorationTester(compose)
+        compose.runOnUiThread { compose.activity.findViewById<ViewGroup>(android.R.id.content).removeAllViews() }
+        restoration.setContent { VuiHocTheme { StudentApp(preferencesName = "test.student.ui") } }
         compose.onNodeWithTag("destination-2").performClick()
         compose.onNodeWithText("Con viết xong").assertIsDisplayed().assertIsNotEnabled()
         compose.onNodeWithContentDescription("Bảng ô ly tập viết chữ a").performTouchInput {
             swipe(Offset(width * .25f, height * .3f), Offset(width * .7f, height * .7f))
         }
         compose.onNodeWithText("Con viết xong").assertIsEnabled()
-        compose.activityRule.scenario.recreate()
+        restoration.emulateSavedInstanceStateRestore()
         compose.onNodeWithText("Con viết xong").assertIsEnabled().assertIsDisplayed()
         compose.onNodeWithText("Hoàn tác").assertIsDisplayed()
         compose.onNodeWithText("B").performClick()
@@ -45,6 +61,7 @@ class StudentExperienceTest {
             compose.waitUntil(10_000) {
                 compose.activity.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
             }
+            showStudentFixture()
             compose.onNodeWithTag("destination-2").performClick()
             compose.onNodeWithTag("destination-3").assertIsDisplayed()
             compose.onNodeWithContentDescription("Bảng ô ly tập viết chữ a").assertIsDisplayed()
@@ -57,19 +74,10 @@ class StudentExperienceTest {
     }
 
     @Test
-    fun quizShowsRetryAndContinuesOnlyAfterCorrectAnswer() {
+    fun classroomDoesNotShowDemoAssignments() {
         compose.onNodeWithTag("destination-3").performClick()
-        compose.onNodeWithText("Đố vui ghép chữ").performScrollTo().performClick()
-        compose.onNodeWithText("d").performScrollTo().performClick()
-        compose.onNodeWithText("Kiểm tra").performScrollTo().performClick()
-        compose.onNodeWithText("Bé thử chọn chữ khác nhé!").assertIsDisplayed()
-        compose.onNodeWithText("Thử lại").performClick()
-        compose.onNodeWithText("1 / 3").performScrollTo().assertIsDisplayed()
-        compose.onNodeWithText("b").performScrollTo().performClick()
-        compose.onNodeWithText("Kiểm tra").performScrollTo().performClick()
-        compose.onNodeWithText("Bé chọn đúng rồi!").assertIsDisplayed()
-        compose.onNodeWithText("Tiếp tục").performClick()
-        compose.onNodeWithText("2 / 3").performScrollTo().assertIsDisplayed()
+        compose.onNodeWithText("Lớp 1A").assertDoesNotExist()
+        compose.onNodeWithText("Bé chưa tham gia lớp nào. Nhập mã cô giáo cung cấp để nhận bài tập nhé.").assertIsDisplayed()
     }
 
     private fun capture(name: String, dialog: Boolean = false) {

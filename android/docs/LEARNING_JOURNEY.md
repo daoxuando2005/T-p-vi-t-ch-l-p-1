@@ -1,7 +1,7 @@
 # Quy tắc hành trình học chữ và tiến độ
 
 Áp dụng cho học liệu, điều hướng bài học và lưu tiến độ. Phải tuân theo
-[kiến trúc](ARCHITECTURE.md).
+[kiến trúc](ARCHITECTURE.md) và [phân vùng tài khoản](AUTHENTICATION.md).
 Không ghi kết quả thực hiện ở đây.
 
 ## Trình tự bài học
@@ -29,7 +29,7 @@ Không tăng tiến độ vì chỉ mở màn hình, chọn sai đáp án hoặc
 - Ôn bài đã hoàn thành dùng tiến độ riêng trong phiên. Không hạ hoặc ghi đè
   tiến độ đã đạt; việc ôn lại không khóa các chữ sau.
 - Hết Y phải hiển thị hoàn thành 29 chữ và quay về hành trình, không truy cập chỉ số 29.
-- Tab Đọc chữ, Tập viết tự do và bài minh họa trong Lớp học không tự mở khóa hành trình.
+- Tab Đọc chữ, Tập viết tự do và bài cô giao trong Lớp học không tự mở khóa hành trình.
 - Từ màn đọc, nút luyện viết phải mở đúng chữ đang chọn. Viết tự do cho phép viết
   lại hoặc sang chữ tiếp; đổi chữ bắt đầu bản vẽ mới, không mang nét chữ cũ sang.
 
@@ -53,7 +53,7 @@ Không tăng tiến độ vì chỉ mở màn hình, chọn sai đáp án hoặc
   Sentences → Done`. Các mốc hiện tại là `writes = 2`, `words = 3`, `sentences = 3`.
 - Codec hiện có định dạng `1;<read>;<writes>;<words>;<sentences>`; read là 0/1.
   Khi sửa định dạng phải xử lý phiên bản cũ, không tự bỏ dữ liệu học đã có.
-- `LessonProgressStore.kt` nhận SharedPreferences `learning` từ `StudentApp`;
+- `LessonProgressStore.kt` nhận SharedPreferences của tài khoản từ `StudentApp`;
   khóa từng chữ là `lesson.v1.<chữ hoa>`. Khóa `letter` chỉ lưu chữ đang chọn của tab đọc.
 - Chỉ lưu bước đã xác nhận. Đọc dữ liệu phải giới hạn giá trị theo chặng; dữ liệu
   không hợp lệ phục hồi an toàn, không mở khóa sai hoặc làm app lỗi.
@@ -61,12 +61,11 @@ Không tăng tiến độ vì chỉ mở màn hình, chọn sai đáp án hoặc
   câu cũ như một lần tăng tiến độ mới.
 - Trạng thái lựa chọn, thẻ từ và nét đang vẽ dùng saveable/state holder để giữ khi
   xoay máy và đổi màn hình trong phiên. Bản vẽ dang dở chưa có kho lưu trữ lâu dài riêng.
-- Tiến độ hiện chưa gắn tài khoản hoặc đồng bộ backend. Khi tích hợp đăng nhập,
-  phải tách dữ liệu theo tài khoản và máy chủ; không tự gộp hoặc gán dữ liệu local
-  hiện có cho người đăng nhập đầu tiên. Giữ tiến độ đã có khi nâng cấp ứng dụng.
+- Đăng xuất giữ tiến độ tài khoản trên thiết bị. Không tự đồng bộ hoặc gộp vùng dữ
+  liệu khi đổi học sinh, tên hiển thị hay backend origin.
 
 ## Tiêu chí kiểm tra
 
 Bao phủ đủ 29 bộ nội dung, bài A, bài cuối Y, mở khóa liên tiếp, trả lời sai,
-lưu giữa chặng, luyện thêm và ôn tập. Thực hiện theo
+lưu giữa chặng, luyện thêm, ôn tập và chuyển tài khoản. Thực hiện theo
 [TESTING.md](TESTING.md), dùng tiến độ riêng cho kiểm thử.

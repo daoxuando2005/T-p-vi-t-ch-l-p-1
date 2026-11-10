@@ -17,23 +17,24 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import com.hocchu.mobile.data.DemoContent
 import com.hocchu.mobile.data.LessonProgress
 import com.hocchu.mobile.data.LessonProgressStore
+import com.hocchu.mobile.classroom.ClassroomViewModel
 
 private val destinations = listOf("Trang chủ", "Đọc chữ", "Tập viết", "Lớp học")
 private val symbols = listOf(Icons.Rounded.Home, Icons.AutoMirrored.Rounded.MenuBook, Icons.Rounded.Edit, Icons.Rounded.Groups)
 
 @Composable
-fun StudentApp(progressStore: LessonProgressStore? = null) {
+fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: String = "learning",
+               studentName: String? = null, onLogout: (() -> Unit)? = null, classroom: ClassroomViewModel? = null) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var exercise by rememberSaveable { mutableStateOf("") }
     val contextForProgress = LocalContext.current
-    val prefs = remember { contextForProgress.getSharedPreferences("learning", 0) }
+    val prefs = remember(preferencesName) { contextForProgress.getSharedPreferences(preferencesName, 0) }
     val lessonStore = progressStore ?: remember(prefs) { LessonProgressStore(prefs) }
     var lessonProgress by remember { mutableStateOf(lessonStore.readAll()) }
     val journeyCurrent = LessonProgress.current(lessonProgress)
@@ -44,7 +45,7 @@ fun StudentApp(progressStore: LessonProgressStore? = null) {
     var initialLetter by rememberSaveable { mutableIntStateOf(0) }
     var writingEntry by rememberSaveable { mutableIntStateOf(0) }
     var profile by remember { mutableStateOf(false) }
-    var sound by rememberSaveable { mutableStateOf(true) }
+    var sound by rememberSaveable { mutableStateOf(prefs.getBoolean("sound", true)) }
     var speechNotice by remember { mutableStateOf(false) }
     val context = LocalContext.current
     val inspection = LocalInspectionMode.current
@@ -71,7 +72,8 @@ fun StudentApp(progressStore: LessonProgressStore? = null) {
         }
     }
     BackHandler(exercise.isNotEmpty() || tab != 0) {
-        if (exercise.isNotEmpty()) exercise = "" else tab = 0
+        if(tab == 3 && classroom?.state?.selectedId != null) classroom.close()
+        else if (exercise.isNotEmpty()) exercise = "" else tab = 0
     }
     BoxWithConstraints(Modifier.fillMaxSize().background(Background)) {
         val expanded = maxWidth >= 840.dp
@@ -83,8 +85,7 @@ fun StudentApp(progressStore: LessonProgressStore? = null) {
                     else Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { Mascot(Modifier.size(44.dp)) }
                     Column(Modifier.weight(1f)) {
 
-                        Text(when(exercise) { "quiz" -> "Đố vui ghép chữ"; "sentence" -> "Ghép câu"
-                            "lesson" -> "Cùng học chữ ${DemoContent.lessons[journeyIndex].letter}"
+                        Text(when(exercise) { "lesson" -> "Cùng học chữ ${DemoContent.lessons[journeyIndex].letter}"
                             else -> if (tab == 3) "Lớp học của bé" else destinations[tab] },
                             style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     }
@@ -131,8 +132,6 @@ fun StudentApp(progressStore: LessonProgressStore? = null) {
                                     speak = speak,
                                     onPraise = { if(sound) speech?.speak("Bé đã rất chăm chỉ! Cùng luyện tiếp nhé!") },
                                     onExit = { exercise = "" }, onNext = { openLesson(journeyIndex + 1) })
-                                "quiz" -> QuizScreen(speak) { exercise = "" }
-                                "sentence" -> SentenceScreen(speak) { exercise = "" }
                                 else -> when(tab) {
                                     0 -> HomeScreen(journeyCurrent, lessonProgress, onRead = { go(1) }, onWrite = { startWriting(reading) },
                                         onClasses = { go(3) }, onLetter = openLesson)
@@ -140,8 +139,7 @@ fun StudentApp(progressStore: LessonProgressStore? = null) {
                                     2 -> WritingScreen(initialLetter, speak, onPraise = {
                                         if (sound) speech?.speak("Bé đã rất chăm chỉ! Mình cùng luyện tiếp nhé!")
                                     })
-                                    3 -> ClassesScreen(onWriting = { startWriting(3) },
-                                        onQuiz = { exercise = "quiz" }, onSentence = { exercise = "sentence" })
+                                    3 -> ClassroomScreen(classroom, speak)
                                 }
                             }
                         }
@@ -151,13 +149,14 @@ fun StudentApp(progressStore: LessonProgressStore? = null) {
         }
     }
     if (profile) AlertDialog(onDismissRequest = { profile = false },
-        title = { Text("Cùng khám phá Vui Học!") },
+        title = { Text(studentName ?: "Cùng khám phá Vui Học!") },
         text = { Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Tiến độ hành trình được lưu trên máy này. Nội dung học và lớp học là bản minh họa; chưa kết nối tài khoản hoặc gửi bài lên hệ thống.")
+            Text("Bài cô giao được gửi đến cô khi bé nộp. Tiến độ tự học được lưu trên điện thoại này.")
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text("Âm thanh", Modifier.weight(1f)); Switch(sound, onCheckedChange = { sound = it })
+                Text("Âm thanh", Modifier.weight(1f)); Switch(sound, onCheckedChange = { sound = it; prefs.edit().putBoolean("sound", it).apply() })
             }
-        } }, confirmButton = { TextButton(onClick = { profile = false }) { Text("Bắt đầu khám phá") } })
+        } }, confirmButton = { TextButton(onClick = { profile = false }) { Text("Đóng") } },
+        dismissButton = { if(onLogout != null) TextButton(onClick = { profile = false; onLogout() }) { Text("Đăng xuất") } })
     if (speechNotice) AlertDialog(onDismissRequest = { speechNotice = false },
         title = { Text("Âm thanh tiếng Việt") },
         text = { Text("Máy đang khởi tạo giọng đọc hoặc chưa có giọng tiếng Việt. Nếu chưa nghe được, hãy kiểm tra phần Chuyển văn bản thành giọng nói trong cài đặt thiết bị.") },

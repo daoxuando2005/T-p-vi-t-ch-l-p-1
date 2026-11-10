@@ -7,6 +7,10 @@ phù hợp với chỉ dẫn cấp cao hơn và yêu cầu trực tiếp của n
 ## Tài liệu bắt buộc
 
 - Luôn đọc [kiến trúc và phạm vi](docs/ARCHITECTURE.md).
+- Sửa đăng nhập, phiên, kết nối hoặc dữ liệu tài khoản: đọc
+  [xác thực](docs/AUTHENTICATION.md).
+- Sửa lớp học, bài cô giao, bản nháp hoặc nộp bài: đọc
+  [lớp học và bài tập](docs/CLASSROOM.md).
 - Sửa hành trình, học liệu hoặc tiến độ: đọc
   [hành trình học](docs/LEARNING_JOURNEY.md).
 - Sửa mẫu chữ, bảng ô li hoặc thao tác viết: đọc
@@ -16,10 +20,8 @@ phù hợp với chỉ dẫn cấp cao hơn và yêu cầu trực tiếp của n
 
 ## Nguyên tắc bắt buộc
 
-- Giữ tiến độ hiện có trong SharedPreferences `learning` trên thiết bị. Không
-  xóa dữ liệu thật khi kiểm thử hoặc tự gán dữ liệu local cho tài khoản khi nối API.
-- Nhánh `main` hiện chưa tích hợp đăng nhập/backend. Không sao chép mô tả tính
-  năng từ nhánh khác như thể mã tương ứng đã có trên nhánh đang sửa.
+- Giữ phân vùng tiến độ theo máy chủ và ID học sinh. Không trộn tài khoản,
+  tự gán dữ liệu xem trước cũ hoặc xóa tiến độ thật khi kiểm thử.
 - Không trình bày học liệu/lớp minh họa thành dữ liệu thật; không tạo điểm viết,
   kết quả nhận dạng phát âm hoặc trạng thái đồng bộ khi chưa có triển khai.
 - Không đưa mật khẩu, JWT, khóa máy chủ, cấu hình máy cá nhân hoặc log vào Git.

@@ -13,10 +13,10 @@ Không ghi kết quả thực hiện, số test đã đạt, ngày chạy hay th
 | Tiến độ/học liệu | `LessonProgressTest`; `LetterJourneyTest` khi sửa điều phối hoặc tương tác |
 | Hình học mẫu chữ | `CopybookFormTest`; duyệt hình đủ 29 chữ và các chữ đại diện |
 | Bảng viết/trạng thái/bố cục | `StudentExperienceTest` và kiểm tra thao tác viết theo thay đổi |
-| Cấu hình release | Build và Lint release, kiểm tra cấu hình và tài nguyên trong APK release |
-
-Nhánh `main` chưa có luồng đăng nhập/backend và các lớp kiểm thử xác thực. Khi
-tích hợp tính năng này, bổ sung kiểm tra tương ứng trước khi cập nhật danh mục.
+| Xác thực/phiên/kết nối | `AuthModelsTest`, `AuthProtocolTest`, `LoginScreenTest` theo lớp bị ảnh hưởng |
+| Lớp học, bản nháp, nộp bài | `ClassroomProtocolTest`, `ClassroomScreenTest`; chạy live có chủ đích bằng `ClassroomLiveBackendTest` |
+| Luồng đăng nhập thật | Kiểm thử live có chủ đích, chỉ bật khi backend và tài khoản mẫu sẵn sàng |
+| Mạng/cấu hình release | Build và Lint release, kiểm tra HTTPS và tài nguyên mạng trong APK release |
 
 Không tạo bài kiểm thử chỉ lặp lại chi tiết triển khai hoặc chạy toàn bộ kiểm thử
 thiết bị cho một thay đổi Markdown. Lỗi hoặc thay đổi mới phải được kiểm tra lại
@@ -31,12 +31,13 @@ Chạy từ thư mục `android`, với JDK 21 đã được chọn:
 .\gradlew.bat :app:assembleDebugAndroidTest
 ```
 
-Khi thay đổi cấu hình release:
+Khi thay đổi release, cung cấp URL HTTPS của môi trường cần kiểm tra:
 
 ```powershell
-.\gradlew.bat :app:assembleRelease :app:lintRelease
+.\gradlew.bat :app:assembleRelease :app:lintRelease '-PreleaseApiBaseUrl=https://<host>/'
 ```
 
+`<host>` là chỗ thay bằng hostname thật; không dùng URL ví dụ làm cấu hình phát hành.
 Để chạy instrumentation, cài đè APK app và androidTest cùng bản build; không gỡ
 app để cài lại. Chọn đúng serial bằng `adb devices -l`.
 
@@ -46,17 +47,20 @@ adb -s <serial> shell am instrument -w -r -e disableAnalytics true `
   com.hocchu.mobile.test/androidx.test.runner.AndroidJUnitRunner
 ```
 
-Thay tên lớp theo mục tiêu: `CopybookFormTest`, `StudentExperienceTest` hoặc
-`LetterJourneyTest`. Kiểm tra tiến độ thuần Kotlin dùng `LessonProgressTest`.
+Thay tên lớp theo mục tiêu. `AuthLiveBackendTest` và `AuthLiveLoginTest` cần thêm
+`-e liveBackend true`; `ClassroomLiveBackendTest` cũng yêu cầu cờ này. Có thể truyền
+`-e backendUrl http://10.0.2.2:8080/` cho bài kiểm tra lớp học trên máy ảo.
+Không bật mặc định. Kiểm tra live không được ghi đè phiên
+có sẵn và chỉ dùng tài khoản mẫu phục vụ kiểm thử.
 
 ## Bảo vệ dữ liệu
 
-- Store và SharedPreferences kiểm thử phải tách khỏi dữ liệu đang sử dụng.
-  Dọn đúng dữ liệu do test tạo sau khi chạy.
+- Store, SharedPreferences, khóa Keystore hoặc tài khoản thử nghiệm phải được
+  tách khỏi dữ liệu đang sử dụng. Dọn đúng dữ liệu do test tạo sau khi chạy.
 - Không gọi `pm clear`, gỡ app, xóa `learning*`, xóa phiên thật hoặc đặt lại MySQL
   để làm test chạy qua. Giữ `leaveApksInstalledAfterRun` trong cấu hình hiện tại.
-- Fixture phục vụ kiểm thử phải nằm trong mã kiểm thử. Khi thêm xác thực, không
-  tạo Activity/đường điều hướng sản phẩm bỏ qua đăng nhập cho tiện chạy test.
+- Fixture học sinh chỉ nằm trong mã kiểm thử. Không tạo Activity/đường điều hướng
+  sản phẩm bỏ qua đăng nhập cho tiện kiểm thử.
 - Phân biệt `StateRestorationTester` mô phỏng SavedState với xoay Activity thật.
   Chỉ mô tả đúng loại kiểm tra đã thực hiện.
 - Nếu điện thoại chuyển app hoặc mất kết nối, xác định trạng thái trước khi chạy
@@ -66,14 +70,16 @@ Thay tên lớp theo mục tiêu: `CopybookFormTest`, `StudentExperienceTest` ho
 
 - Xem điện thoại và tablet/ngang, cỡ chữ hệ thống lớn, status/navigation bar và
   bàn phím. Nút chính/công cụ viết phải dùng được, không bị che hoặc buộc cuộn bất tiện.
-- Mở lại app phải giữ tiến độ đã xác nhận. Khi bổ sung đăng nhập, phải kiểm tra
-  đăng xuất/đổi tài khoản không làm lẫn tiến độ và phiên của học sinh.
+- Đăng nhập/khôi phục/đăng xuất/đổi tài khoản phải giữ đúng phiên và tiến độ riêng.
+- Lớp học phải hiển thị dữ liệu thật, giữ bản nháp khi gửi thất bại, chỉ báo đã nộp
+  sau xác nhận của backend và trả được điểm/nhận xét của cô. Kiểm tra đủ chữ được
+  giao trước khi gửi ảnh; không tạo điểm viết ngẫu nhiên.
 - Hành trình phải đi hết bài A, xử lý sai/đúng, lưu giữa chặng, ôn tập, mở Ă và
   kết thúc Y. Không nhảy bước hoặc đếm lại đáp án cũ.
 - Viết phải giữ công cụ và nét khi đổi bố cục, mở mẫu; kiểm tra hoàn tác, hủy/xác
   nhận xóa, đổi độ đậm, viết lại/tiếp tục và liên kết từ màn đọc.
-- Nếu tích hợp mạng, phải kiểm tra chính sách HTTPS và sự tách biệt cấu hình
-  debug/release. Không suy luận release an toàn chỉ từ kết quả chạy bản debug.
+- Release phải chặn HTTP, không hiện cài đặt kết nối debug và không dùng URL local
+  mặc định. Không suy luận release an toàn chỉ từ kết quả chạy bản debug.
 
 ## Báo kết quả
 

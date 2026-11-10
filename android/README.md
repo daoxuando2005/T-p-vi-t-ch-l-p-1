@@ -7,6 +7,8 @@
 Trước khi sửa Android, đọc [AGENTS.md](AGENTS.md) và các tài liệu liên quan:
 
 - [Kiến trúc và phạm vi](docs/ARCHITECTURE.md)
+- [Xác thực và kết nối](docs/AUTHENTICATION.md)
+- [Lớp học và bài cô giao](docs/CLASSROOM.md)
 - [Hành trình học và tiến độ](docs/LEARNING_JOURNEY.md)
 - [Mẫu chữ và tập viết](docs/HANDWRITING.md)
 - [Quy định kiểm thử](docs/TESTING.md)
@@ -16,15 +18,16 @@ thực hiện ở đây; chỉ cập nhật khi quy tắc hoặc chức năng t�
 
 ## Phạm vi ứng dụng
 
+- Đăng nhập học sinh bằng backend Spring Boot, xác minh/khôi phục phiên, đăng xuất và lưu tiến độ riêng theo tài khoản. Xem [cấu hình backend local và API xác thực](docs/AUTHENTICATION.md).
 - Trang chủ: thẻ tự luyện và hành trình 29 chữ theo thứ tự. Mỗi chữ: đọc theo → viết 2 lượt (có thể luyện thêm) → điền 3 từ → ghép 3 câu mẫu. Tiến độ lưu trên thiết bị, hoàn thành mới mở chữ kế tiếp; bài đã học có thể ôn lại. Xem [luồng bài học và lưu tiến độ](docs/LEARNING_JOURNEY.md).
 - Đọc chữ: 29 chữ cái, chữ hoa/thường, từ ví dụ, đọc bằng TextToSpeech tiếng Việt trên thiết bị.
 - Tập viết: 29 mẫu chữ thường cỡ vừa từ HP001, căn theo chân chữ và tỉ lệ ô li; dấu phụ và đuôi chữ được chừa chỗ riêng. Có chấm đặt bút, hướng khởi đầu và hộp xem mẫu. Nét vẽ bằng ngón tay/bút, chọn độ đậm, hoàn tác, xác nhận xóa. Tọa độ chuẩn hóa và lưu trạng thái khi xoay máy/chuyển tab. Đổi chữ sẽ bắt đầu bảng viết mới. Chi tiết và nguồn đối chiếu: [Mẫu chữ và ô ly](docs/HANDWRITING.md).
-- Lớp học: lớp minh họa, nhập mã lớp, các thẻ bài tập.
-- Trắc nghiệm: chọn đáp án, kiểm tra, thử lại, tiếp tục và làm lại.
+- Lớp học: nhập mã để tham gia lớp thật, chọn lớp, tải bài cô giao, làm trắc nghiệm hoặc viết các chữ được giao và nộp bài. Bản nháp lưu riêng theo tài khoản; gửi lỗi giữ bài để thử lại. Điểm/nhận xét được tải từ server. Xem [quy tắc lớp học](docs/CLASSROOM.md).
+- Trắc nghiệm trong hành trình: chọn đáp án, kiểm tra, thử lại và tiếp tục. Bài cô giao được backend chấm sau khi nộp.
 - Ghép câu: chọn/bỏ thẻ từ, nghe câu mẫu, kiểm tra thứ tự.
 - Điện thoại dùng thanh điều hướng dưới; từ 840dp dùng navigation rail. Nội dung đọc chữ và tập viết chuyển sang hai cột khi đủ rộng.
 
-**Nhánh `main` chưa kết nối backend hoặc đăng nhập; lớp học, học liệu và bài tập là nội dung minh họa.** Chưa tham gia lớp thật, chưa gửi bài/tiến độ lên máy chủ, chưa nhận dạng phát âm hoặc chấm nét viết. `DemoContent.kt` và `LetterCurriculum.kt` chứa nội dung mẫu; hành trình lưu trong vùng `learning` trên thiết bị, chưa tách theo tài khoản. Không cộng sao, tạo chuỗi ngày học hoặc giả lập điểm viết.
+**Đăng nhập, lớp học và bài cô giao đã dùng backend.** Học liệu hành trình trong `DemoContent.kt` và `LetterCurriculum.kt` vẫn là nội dung mẫu. Tiến độ hành trình và bản nháp lưu trên thiết bị theo từng tài khoản; bài nộp được gửi lên server. Chưa đồng bộ hành trình giữa thiết bị, chưa nhận dạng phát âm hoặc chấm nét viết tự động. Không tạo điểm viết ngẫu nhiên; bài viết chờ cô chấm. Dữ liệu bản xem trước cũ được giữ riêng.
 
 ## Mở bằng Android Studio
 
@@ -61,10 +64,14 @@ Preview điện thoại và tablet có sẵn ở cuối `StudentApp.kt`; mở fi
 ```text
 app/src/main/java/com/hocchu/mobile/
   MainActivity.kt
+  auth/                   API xác thực, phiên mã hóa, repository và ViewModel
+  classroom/              Lớp/bài thật, ViewModel, bản nháp và xuất ảnh bài viết
+  ui/ClassroomScreen.kt    Tham gia lớp, làm/nộp bài, xem kết quả
   data/DemoContent.kt      Danh sách 29 chữ và bài minh họa
   data/LetterCurriculum.kt Học liệu theo chữ
   data/LessonProgress.kt   Quy tắc tiến độ và codec
-  data/LessonProgressStore.kt Lưu tiến độ trên thiết bị
+  data/LessonProgressStore.kt Lưu tiến độ trong vùng tài khoản
+  ui/LoginScreen.kt       Cổng đăng nhập và biểu mẫu
   ui/DesignSystem.kt       Màu, font, nút, thẻ, nhân vật vẽ bằng code
   ui/StudentApp.kt         Khung giao diện, điều hướng, trạng thái màn hình
   ui/LearningScreens.kt    Trang chủ, đọc chữ, lớp học

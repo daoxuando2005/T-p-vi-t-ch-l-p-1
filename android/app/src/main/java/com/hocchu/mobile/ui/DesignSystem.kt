@@ -7,8 +7,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -88,10 +86,11 @@ fun PlayButton(text: String, modifier: Modifier = Modifier, color: Color = Green
                icon: ImageVector? = null, enabled: Boolean = true, onClick: () -> Unit) {
     val shade = when (color) { Green -> GreenDark; Sky -> SkyDark; Orange -> Color(0xFFE58400); else -> Outline }
     Box(modifier.heightIn(min = 60.dp).clip(RoundedCornerShape(22.dp))
-        .background(if (enabled) shade else Outline).padding(bottom = 5.dp)) {
+        .background(if (enabled) shade else Outline)
+        .clickable(enabled = enabled, role = androidx.compose.ui.semantics.Role.Button, onClick = onClick).padding(bottom = 5.dp)) {
         Row(Modifier.fillMaxWidth().heightIn(min = 55.dp)
             .clip(RoundedCornerShape(22.dp)).background(if (enabled) color else Color(0xFFEDF2F5))
-            .clickable(enabled = enabled, role = androidx.compose.ui.semantics.Role.Button, onClick = onClick).padding(horizontal = 16.dp, vertical = 14.dp),
+            .padding(horizontal = 16.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) {
             val foreground = if (!enabled) Muted else when(color) {
                 Green -> Color(0xFF1F5100)

@@ -34,10 +34,4 @@ object DemoContent {
         LetterLesson("X", "xờ", "Xe buýt", "🚌"),
         LetterLesson("Y", "i dài", "Y tá", "🧑‍⚕️")
     )
-    data class Question(val prompt: String, val word: String, val picture: String, val options: List<String>, val answer: String)
-    val questions = listOf(
-        Question("Điền chữ vào ô trống", "_ò", "🐮", listOf("b", "d", "c", "m"), "b"),
-        Question("Điền chữ vào ô trống", "_á", "🐟", listOf("n", "c", "b", "g"), "c"),
-        Question("Điền chữ vào ô trống", "_èo", "🐱", listOf("b", "h", "m", "l"), "m")
-    )
 }

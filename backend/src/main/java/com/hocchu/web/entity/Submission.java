@@ -26,7 +26,7 @@ public class Submission {
     private User student;
 
     @Lob
-    @Column(name = "submission_data", columnDefinition = "TEXT")
+    @Column(name = "submission_data", columnDefinition = "LONGTEXT")
     private String submissionData; // Lưu chuỗi JSON câu trả lời trắc nghiệm hoặc ảnh vẽ base64
 
     private Float score;

@@ -13,10 +13,7 @@ import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -256,46 +253,4 @@ internal fun ExampleCard(picture: String, word: String, modifier: Modifier = Mod
             PlayButton("Nghe từ ví dụ", color = Orange, icon = Icons.AutoMirrored.Rounded.VolumeUp, onClick = onListen)
         }
     }
-}
-
-@Composable
-fun ClassesScreen(onWriting: () -> Unit, onQuiz: () -> Unit, onSentence: () -> Unit) {
-    var expanded by rememberSaveable { mutableStateOf(false) }
-    var invite by rememberSaveable { mutableStateOf("") }
-    var notice by remember { mutableStateOf(false) }
-    ScreenColumn {
-        Paper {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                Column(Modifier.weight(1f)) {
-                    Text("Lớp 1A", style = MaterialTheme.typography.headlineMedium)
-                    Text("Cô Mai • Lớp minh họa", color = Muted, fontSize = 13.sp)
-                }
-                OutlinedButton(onClick = { expanded = !expanded },
-                    modifier = Modifier.heightIn(min = 48.dp).semantics {
-                        stateDescription = if (expanded) "Đang mở ô nhập mã lớp" else "Đang thu gọn"
-                    }, contentPadding = PaddingValues(horizontal = 12.dp, vertical = 10.dp)) {
-                    Text("Tham gia lớp", style = MaterialTheme.typography.labelMedium, maxLines = 1)
-                    Icon(if (expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,
-                        null, Modifier.size(20.dp))
-                }
-            }
-            Text("Mã lớp: A108", color = SkyDark, fontWeight = FontWeight.Bold)
-            androidx.compose.animation.AnimatedVisibility(visible = expanded) {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(invite, onValueChange = { invite = it.take(20).uppercase() },
-                        label = { Text("Nhập mã lớp khác") }, singleLine = true, modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp))
-                    PlayButton("Vào lớp", enabled = invite.isNotBlank(), icon = Icons.AutoMirrored.Rounded.Login) { notice = true }
-                }
-            }
-        }
-        SectionTitle("Bài tập của bé")
-        ActivityCard("Tập viết chữ", "Chữ b • Viết trên bảng ô ly", Icons.Rounded.Edit, Sky, onClick = onWriting)
-        ActivityCard("Đố vui ghép chữ", "3 câu hỏi • Chọn đáp án đúng", Icons.Rounded.Extension, Green, onClick = onQuiz)
-        ActivityCard("Ghép câu", "Chạm các từ để tạo thành câu", Icons.Rounded.AutoAwesome, Orange, onClick = onSentence)
-    }
-    if (notice) AlertDialog(onDismissRequest = { notice = false }, title = { Text("Mã lớp đã nhập") },
-        text = { Text("Bản giao diện đã nhận mã $invite. Tham gia lớp thật sẽ được kết nối với hệ thống ở bước tiếp theo.") },
-        confirmButton = { TextButton(onClick = { notice = false }) { Text("Đã hiểu") } })
 }
