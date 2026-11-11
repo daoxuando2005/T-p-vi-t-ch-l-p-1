@@ -26,8 +26,6 @@ import ParentAssignmentManagement from './pages/Parent/AssignmentManagement';
 // Admin Pages
 import AdminDashboard from './pages/Admin/Dashboard';
 
-// Chat Realtime Page
-import Chat from './pages/Chat';
 
 const App: React.FC = () => {
   return (
@@ -141,15 +139,6 @@ const App: React.FC = () => {
             <ProtectedRoute allowedRole="ADMIN">
               <Layout>
                 <AdminDashboard />
-              </Layout>
-            </ProtectedRoute>
-          } />
-
-          {/* Realtime Chat Route (accessible by both Parents & Teachers) */}
-          <Route path="/chat" element={
-            <ProtectedRoute>
-              <Layout>
-                <Chat />
               </Layout>
             </ProtectedRoute>
           } />

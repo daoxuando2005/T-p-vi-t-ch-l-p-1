@@ -143,7 +143,7 @@ const ParentDashboard: React.FC = () => {
     if (!linkCode) return;
 
     try {
-      const res = await api.post(`/parent/link?linkCode=${linkCode}`);
+      const res = await api.post(`/parent/link?linkCode=${encodeURIComponent(linkCode.trim())}`);
       setModalAlert({
         isOpen: true,
         title: 'Liên Kết Thành Công! 🎉',
@@ -232,7 +232,7 @@ const ParentDashboard: React.FC = () => {
           className="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-white text-sky-600 font-black text-[11px] sm:text-xs shadow-md hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
         >
           <Plus className="w-4 h-4 shrink-0" />
-          <span className="truncate">Liên kết con mới (bằng username/Mã)</span>
+          <span className="truncate">Liên kết con mới</span>
         </button>
       </div>
 
@@ -240,11 +240,16 @@ const ParentDashboard: React.FC = () => {
       {showLinkForm && (
         <form onSubmit={handleLinkChild} className="max-w-md bg-white border-2 border-sky-100 p-6 rounded-3xl shadow-lg space-y-4">
           <h3 className="font-black text-sm text-sky-800">Liên kết tài khoản của con</h3>
-          <p className="text-xs text-slate-500 font-bold">Phụ huynh có thể nhập trực tiếp <strong>Tên đăng nhập của bé (Ví dụ: student1)</strong> hoặc <strong>Mã liên kết</strong> của con để kết nối.</p>
+          <p className="text-xs text-slate-500 font-bold">Mở hồ sơ trong app của con, chọn <strong>Liên kết phụ huynh</strong> và nhập mã được tạo tại đó. Mã có hiệu lực 30 phút.</p>
           <div className="flex flex-col sm:flex-row gap-3">
             <input
               type="text"
-              placeholder="Nhập tên đăng nhập (student1) hoặc mã liên kết..."
+              aria-label="Mã liên kết từ hồ sơ của con"
+              placeholder="Nhập mã liên kết của con"
+              minLength={22}
+              maxLength={22}
+              autoCapitalize="none"
+              autoCorrect="off"
               value={linkCode}
               onChange={(e) => setLinkCode(e.target.value)}
               className="flex-1 py-3 px-4 bg-white border-2 border-sky-200 focus:border-sky-400 focus:outline-none rounded-2xl text-slate-700 font-bold text-xs"

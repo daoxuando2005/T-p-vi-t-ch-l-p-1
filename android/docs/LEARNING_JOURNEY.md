@@ -63,6 +63,9 @@ Không tăng tiến độ vì chỉ mở màn hình, chọn sai đáp án hoặc
   xoay máy và đổi màn hình trong phiên. Bản vẽ dang dở chưa có kho lưu trữ lâu dài riêng.
 - Đăng xuất giữ tiến độ tài khoản trên thiết bị. Không tự đồng bộ hoặc gộp vùng dữ
   liệu khi đổi học sinh, tên hiển thị hay backend origin.
+- Gửi hoạt động và snapshot để phụ huynh theo dõi theo [PARENT.md](PARENT.md).
+  Chỉ ghi sau thao tác thực; lưu UUID để gửi lại không bị đếm trùng. Snapshot
+  có sẵn không được biến thành các lượt học mới trong ngày đăng nhập.
 
 ## Tiêu chí kiểm tra
 

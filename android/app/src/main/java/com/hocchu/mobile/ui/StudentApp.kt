@@ -24,13 +24,15 @@ import com.hocchu.mobile.data.DemoContent
 import com.hocchu.mobile.data.LessonProgress
 import com.hocchu.mobile.data.LessonProgressStore
 import com.hocchu.mobile.classroom.ClassroomViewModel
+import com.hocchu.mobile.family.StudentActivityModel
 
 private val destinations = listOf("Trang chủ", "Đọc chữ", "Tập viết", "Lớp học")
 private val symbols = listOf(Icons.Rounded.Home, Icons.AutoMirrored.Rounded.MenuBook, Icons.Rounded.Edit, Icons.Rounded.Groups)
 
 @Composable
 fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: String = "learning",
-               studentName: String? = null, onLogout: (() -> Unit)? = null, classroom: ClassroomViewModel? = null) {
+               studentName: String? = null, onLogout: (() -> Unit)? = null, classroom: ClassroomViewModel? = null,
+               activities: StudentActivityModel? = null) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var exercise by rememberSaveable { mutableStateOf("") }
     val contextForProgress = LocalContext.current
@@ -131,14 +133,16 @@ fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: Stri
                                     onSave = { lessonProgress = lessonStore.save(journeyIndex, it) },
                                     speak = speak,
                                     onPraise = { if(sound) speech?.speak("Bé đã rất chăm chỉ! Cùng luyện tiếp nhé!") },
-                                    onExit = { exercise = "" }, onNext = { openLesson(journeyIndex + 1) })
+                                    onExit = { exercise = "" }, onNext = { openLesson(journeyIndex + 1) },
+                                    onActivity={old,next,review->activities?.lesson(journeyIndex,old,next,review)},
+                                    onWriting={review->activities?.record("WRITING",journeyIndex,"JOURNEY",review)})
                                 else -> when(tab) {
                                     0 -> HomeScreen(journeyCurrent, lessonProgress, onRead = { go(1) }, onWrite = { startWriting(reading) },
                                         onClasses = { go(3) }, onLetter = openLesson)
-                                    1 -> ReadingScreen(reading, selectLetter, speak, onWrite = { startWriting(reading) })
+                                    1 -> ReadingScreen(reading, selectLetter, speak, onWrite = { startWriting(reading) },onRead={activities?.record("READING",reading)})
                                     2 -> WritingScreen(initialLetter, speak, onPraise = {
                                         if (sound) speech?.speak("Bé đã rất chăm chỉ! Mình cùng luyện tiếp nhé!")
-                                    })
+                                    },onPracticed={activities?.record("WRITING",it)})
                                     3 -> ClassroomScreen(classroom, speak)
                                 }
                             }
@@ -151,7 +155,12 @@ fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: Stri
     if (profile) AlertDialog(onDismissRequest = { profile = false },
         title = { Text(studentName ?: "Cùng khám phá Vui Học!") },
         text = { Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-            Text("Bài cô giao được gửi đến cô khi bé nộp. Tiến độ tự học được lưu trên điện thoại này.")
+            Text("Bài cô giao được gửi đến cô khi bé nộp. Hoạt động tự học được gửi để phụ huynh theo dõi khi có kết nối.")
+            if(activities!=null) {
+                TextButton(onClick=activities::showLinkCode,enabled=!activities.codeLoading) {Text(if(activities.codeLoading) "Đang lấy mã…" else "Liên kết phụ huynh")}
+                if(activities.pending>0) Text("Còn ${activities.pending} hoạt động chờ gửi",color=Muted)
+                activities.error?.let {Text(it,color=MaterialTheme.colorScheme.error);TextButton(onClick=activities::retry) {Text("Thử gửi lại")}}
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Âm thanh", Modifier.weight(1f)); Switch(sound, onCheckedChange = { sound = it; prefs.edit().putBoolean("sound", it).apply() })
             }
@@ -161,6 +170,17 @@ fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: Stri
         title = { Text("Âm thanh tiếng Việt") },
         text = { Text("Máy đang khởi tạo giọng đọc hoặc chưa có giọng tiếng Việt. Nếu chưa nghe được, hãy kiểm tra phần Chuyển văn bản thành giọng nói trong cài đặt thiết bị.") },
         confirmButton = { TextButton(onClick = { speechNotice = false }) { Text("Đã hiểu") } })
+    activities?.code?.let {link ->
+        val clipboard=androidx.compose.ui.platform.LocalClipboardManager.current
+        AlertDialog(onDismissRequest=activities::hideCode,title={Text(if(link.linked) "Phụ huynh đã liên kết" else "Mã liên kết với phụ huynh")},
+            text={Column(verticalArrangement=Arrangement.spacedBy(12.dp)) {
+                if(link.linked) Text(link.parentName) else {
+                    Text("Đưa mã này cho phụ huynh. Mã có hiệu lực 30 phút, không chia sẻ công khai.")
+                    Text(link.code,style=MaterialTheme.typography.titleLarge)
+                    TextButton(onClick={clipboard.setText(androidx.compose.ui.text.AnnotatedString(link.code))}) {Text("Sao chép mã")}
+                }
+            }},confirmButton={TextButton(onClick=activities::hideCode) {Text("Đóng")}})
+    }
 }
 
 @Composable

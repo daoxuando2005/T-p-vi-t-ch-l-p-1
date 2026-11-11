@@ -22,7 +22,7 @@ class ClassroomScreenTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
     @Test fun writingRequiresAllLettersAndKeepsInkWhenChangingLetter() {
         val user = AuthSession("https://writing-ui-${UUID.randomUUID()}.test/", "fixture.token.value",
-            StudentAccount(7002,"fixture","Bé thử",setOf("ROLE_STUDENT")),System.currentTimeMillis()+600000)
+            UserAccount(7002,"fixture","Bé thử",setOf("ROLE_STUDENT")),System.currentTimeMillis()+600000)
         val api = ClassroomApi(AuthTransport { url, _, _, _ -> when {
             url.endsWith("class/joined") -> HttpReply(200,"[{\"id\":12,\"name\":\"Lớp thử\",\"teacherName\":\"Cô thử\"}]")
             url.endsWith("assignments") -> HttpReply(200, JSONArray().put(JSONObject().put("id",16).put("classId",12)
@@ -67,7 +67,7 @@ class ClassroomScreenTest {
         var failSubmit = true
         var posted = false
         val user = AuthSession("https://classroom-ui-${UUID.randomUUID()}.test/", "fixture.token.value",
-            StudentAccount(7001,"fixture","Bé thử",setOf("ROLE_STUDENT")),System.currentTimeMillis()+600000)
+            UserAccount(7001,"fixture","Bé thử",setOf("ROLE_STUDENT")),System.currentTimeMillis()+600000)
         val api = ClassroomApi(AuthTransport { url, _, _, body -> when {
             url.contains("class/join?") -> { joined = true; HttpReply(200,"{\"success\":true}") }
             url.endsWith("class/joined") -> HttpReply(200, if(joined) "[{\"id\":12,\"name\":\"Lớp Sao Nhỏ\",\"teacherName\":\"Cô Lan\"}]" else "[]")

@@ -193,7 +193,7 @@ fun LetterPicker(selected: Int, onSelect: (Int) -> Unit) {
 }
 
 @Composable
-fun ReadingScreen(index: Int, select: (Int) -> Unit, speak: (String) -> Unit, onWrite: () -> Unit) {
+fun ReadingScreen(index: Int, select: (Int) -> Unit, speak: (String) -> Unit, onWrite: () -> Unit, onRead: ()->Unit = {}) {
     val lesson = DemoContent.lessons[index]
     ScreenColumn {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -207,10 +207,10 @@ fun ReadingScreen(index: Int, select: (Int) -> Unit, speak: (String) -> Unit, on
         BoxWithConstraints {
             val wide = maxWidth >= 650.dp
             if (wide) Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                LetterCard(lesson.letter, Modifier.weight(1f)) { speak(lesson.sound) }
+                LetterCard(lesson.letter, Modifier.weight(1f)) { speak(lesson.sound);onRead() }
                 ExampleCard(lesson.picture, lesson.word, Modifier.weight(1f)) { speak(lesson.word) }
             } else Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                LetterCard(lesson.letter) { speak(lesson.sound) }
+                LetterCard(lesson.letter) { speak(lesson.sound);onRead() }
                 ExampleCard(lesson.picture, lesson.word) { speak(lesson.word) }
             }
         }

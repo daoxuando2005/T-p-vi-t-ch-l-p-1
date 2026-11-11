@@ -24,6 +24,16 @@ thiết bị cho một thay đổi Markdown. Lỗi hoặc thay đổi mới ph�
 
 ## Lệnh cục bộ
 
+Khu vực phụ huynh cần `FamilyProtocolTest`, `ParentScreenTest`, `StudentActivityTest`
+và kiểm tra vai trò trong `AuthProtocolTest`. Kiểm tra outbox khi offline, mở lại,
+đổi tài khoản, mã hết hạn và phân quyền theo [PARENT.md](PARENT.md).
+
+Backend có `LearningTrackingServiceTest` cho validation/quyền xem và
+`ParentTrackingLiveTest` cho API/MySQL thật. Bài live chỉ chạy có chủ đích từ
+thư mục backend bằng `mvn test -Dtest=ParentTrackingLiveTest -DliveBackend=true`
+khi server local đang chạy. Dùng tài khoản tạm do test tạo, dọn đúng ID của test;
+không thay tiến độ hoặc quan hệ phụ huynh của tài khoản đang sử dụng.
+
 Chạy từ thư mục `android`, với JDK 21 đã được chọn:
 
 ```powershell
@@ -61,6 +71,8 @@ có sẵn và chỉ dùng tài khoản mẫu phục vụ kiểm thử.
   để làm test chạy qua. Giữ `leaveApksInstalledAfterRun` trong cấu hình hiện tại.
 - Fixture học sinh chỉ nằm trong mã kiểm thử. Không tạo Activity/đường điều hướng
   sản phẩm bỏ qua đăng nhập cho tiện kiểm thử.
+- Fixture xem trước phụ huynh chỉ nằm trong source set `debug`. Preview không
+  chứng minh thao tác chạm, offline hoặc vòng đời trên thiết bị đã được kiểm thử.
 - Phân biệt `StateRestorationTester` mô phỏng SavedState với xoay Activity thật.
   Chỉ mô tả đúng loại kiểm tra đã thực hiện.
 - Nếu điện thoại chuyển app hoặc mất kết nối, xác định trạng thái trước khi chạy

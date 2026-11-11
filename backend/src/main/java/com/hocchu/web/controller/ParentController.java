@@ -20,6 +20,7 @@ public class ParentController {
     private ParentService parentService;
 
     @PostMapping("/link")
+    @PreAuthorize("hasRole('PARENT')")
     public ResponseEntity<ApiResponse> linkStudent(
             @CurrentUser UserPrincipal currentUser,
             @RequestParam String linkCode) {

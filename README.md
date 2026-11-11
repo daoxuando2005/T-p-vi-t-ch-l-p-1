@@ -6,18 +6,18 @@ Hệ thống cung cấp một nền tảng học tập trực tuyến toàn di�
 
 ## 📱 Ứng dụng Android
 
-Thư mục [`android/`](android/) chứa bản giao diện học sinh viết bằng Kotlin và Jetpack Compose, dựa trên thiết kế Stitch. Mở riêng thư mục này bằng Android Studio. Xem [hướng dẫn cấu hình và chạy Android](android/README.md).
+Thư mục [`android/`](android/) chứa ứng dụng học sinh và phụ huynh viết bằng Kotlin và Jetpack Compose, dùng chung phong cách thiết kế Stitch. Mở riêng thư mục này bằng Android Studio. Xem [hướng dẫn cấu hình và chạy Android](android/README.md).
 
-Bản Android đã kết nối đăng nhập học sinh với backend, lưu phiên mã hóa và tách tiến độ trên thiết bị theo tài khoản. Lớp học và bài cô giao dùng API thật; học liệu hành trình vẫn là nội dung mẫu, tiến độ hành trình lưu trên máy. Xem [luồng lớp học Android](android/docs/CLASSROOM.md). Xem [cấu hình backend local cho Android](android/docs/AUTHENTICATION.md) và [quy tắc phát triển Android](android/AGENTS.md). Website tiếp tục hoạt động độc lập.
+Android đăng nhập theo vai trò học sinh/phụ huynh, lưu phiên mã hóa và tách tiến độ theo tài khoản. Lớp học và bài cô giao dùng API thật. Hành trình vẫn dùng học liệu minh họa; hoạt động cùng snapshot 29 chữ được gửi lên backend để phụ huynh xem theo ngày và theo tuần. Chưa có khôi phục hành trình từ cloud trên thiết bị mới. Xem [luồng theo dõi phụ huynh](android/docs/PARENT.md). Xem [luồng lớp học Android](android/docs/CLASSROOM.md). Xem [cấu hình backend local cho Android](android/docs/AUTHENTICATION.md) và [quy tắc phát triển Android](android/AGENTS.md). Website tiếp tục hoạt động độc lập.
 
 ---
 
 ## 🛠️ Công nghệ sử dụng (Tech Stack)
 
-*   **Backend:** Java 17, Spring Boot 3 (Web, Security, Data JPA, Validation, WebSocket/STOMP)
+*   **Backend:** Java 17, Spring Boot 3 (Web, Security, Data JPA, Validation)
 *   **Database:** MySQL (Flyway migration quản lý schema tự động)
 *   **Xác thực:** JWT (JSON Web Token) + Xác thực OTP
-*   **Frontend:** React, TypeScript, Vite, Tailwind CSS, Axios, React Router, Recharts, SockJS/STOMP client
+*   **Frontend:** React, TypeScript, Vite, Tailwind CSS, Axios, React Router, Recharts
 *   **Build Tool:** Maven (Backend), npm (Frontend)
 
 ---
@@ -31,7 +31,7 @@ Sau khi khởi chạy ứng dụng lần đầu, cơ sở dữ liệu sẽ đư�
 | **Quản trị viên** | `admin` | `admin@hocchu.com` | Quản lý người dùng, CRUD học liệu, xem thống kê |
 | **Giáo viên** | `teacher1` | `mai.nguyen@hocchu.com` | Tạo lớp học, quản lý học sinh, giao bài tập, chấm điểm canvas |
 | **Học sinh** | `student1` | `an.nguyen@hocchu.com` | Học bảng chữ cái phát âm, luyện viết bảng ô ly, làm bài tập |
-| **Phụ huynh** | `parent1` | `binh.nguyen@hocchu.com` | Liên kết con, theo dõi tiến độ bằng biểu đồ, chat với cô giáo |
+| **Phụ huynh** | `parent1` | `binh.nguyen@hocchu.com` | Liên kết con, xem hoạt động hằng ngày và theo dõi tiến độ |
 
 ---
 
@@ -54,13 +54,13 @@ Sau khi khởi chạy ứng dụng lần đầu, cơ sở dữ liệu sẽ đư�
 3.  Cấu hình thông tin kết nối bằng biến môi trường trước khi chạy backend:
     *   `DB_USERNAME` (mặc định là `root`)
     *   `DB_PASSWORD` (mặc định để trống)
-    *   `APP_JWT_SECRET` (bắt buộc; dùng chuỗi bí mật ngẫu nhiên dài ít nhất 32 ký tự)
+    *   `APP_JWT_SECRET` (bắt buộc; dùng chuỗi bí mật ngẫu nhiên dài ít nhất 64 byte UTF-8)
 
    Ví dụ trên PowerShell:
    ```powershell
    $env:DB_USERNAME = "root"
    $env:DB_PASSWORD = "mat-khau-mysql-cua-ban"
-   $env:APP_JWT_SECRET = "tao-mot-chuoi-bi-mat-ngau-nhien-dai-it-nhat-32-ky-tu"
+   $env:APP_JWT_SECRET = "thay-bang-khoa-ngau-nhien-it-nhat-64-byte"
    ```
 
 ---
@@ -75,7 +75,6 @@ Sau khi khởi chạy ứng dụng lần đầu, cơ sở dữ liệu sẽ đư�
 3.  Khi server khởi chạy thành công:
     *   Flyway sẽ tự động chạy các file migration để tạo bảng và nạp dữ liệu mẫu vào DB.
     *   Ứng dụng lắng nghe ở cổng: `http://localhost:8080`.
-    *   Cổng WebSocket STOMP kết nối qua: `ws://localhost:8080/ws`.
 
 ---
 
@@ -107,15 +106,11 @@ Sau khi khởi chạy ứng dụng lần đầu, cơ sở dữ liệu sẽ đư�
 *   Học sinh vào mục **Luyện viết chữ**, chọn một chữ cái.
 *   Bảng ô ly chuẩn tập viết sẽ hiện ra cùng chữ cái mẫu mờ nhạt nằm phía sau.
 *   Dùng chuột hoặc vẽ bằng tay (trên iPad/điện thoại) để viết đè lên chữ mẫu.
-*   Bấm **Nộp Bài** để hệ thống tự động chấm điểm % độ chính xác nét vẽ của bé.
+*   Lượt tập viết trên Android ghi nhận việc luyện tập, chưa nhận dạng hoặc chấm độ chính xác nét chữ. Bài viết được giao chờ giáo viên chấm; không sử dụng điểm minh họa của website như kết quả đánh giá năng lực.
 
 ### 3. Liên kết Phụ huynh & Xem biểu đồ học tập của con
-*   Đăng nhập tài khoản Học sinh (`student1`), vào mục **Lớp học & Bài tập** để lấy mã liên kết của con (Ví dụ: `F8D92A`).
+*   Đăng nhập tài khoản học sinh trong app, mở **Hồ sơ → Liên kết phụ huynh** để lấy mã dùng một lần có hiệu lực 30 phút.
 *   Đăng nhập tài khoản Phụ huynh (`parent1`), nhấn **Liên kết con mới**, nhập mã liên kết này để hoàn tất kết nối.
-*   Sau khi kết nối thành công, biểu đồ đường thể hiện lịch sử điểm số luyện viết chữ của bé và biểu đồ cột điểm số bài tập sẽ hiển thị trực quan thông qua thư viện Recharts.
+*   Trong app phụ huynh, chọn con và ngày ở **Hôm nay** để xem lượt đọc, viết, câu luyện tập, bài đã nộp và dòng hoạt động. **Tiến độ** hiển thị 29 chữ và hoạt động bảy ngày. Trên website, phụ huynh tiếp tục xem các báo cáo hiện có.
 
-### 4. Chat trực tuyến thời gian thực Phụ huynh - Giáo viên
-*   Mở hai trình duyệt khác nhau (hoặc một trình duyệt thường và một ẩn danh).
-*   Đăng nhập một bên là Giáo viên (`teacher1`), bên kia là Phụ huynh (`parent1` - tài khoản phụ huynh đã liên kết thành công với bé nằm trong lớp học của giáo viên đó).
-*   Vào mục **Trao đổi tin nhắn**, bạn sẽ thấy tên đối phương trong danh sách chat.
-*   Tiến hành gửi tin nhắn qua lại. Tin nhắn sẽ xuất hiện thời gian thực (Real-time) trên màn hình đối phương thông qua kết nối WebSocket/STOMP.
+Chat đã được gỡ khỏi Android, website và backend. Hệ thống không mở endpoint WebSocket; các migration cũ và lịch sử dữ liệu được giữ nguyên.

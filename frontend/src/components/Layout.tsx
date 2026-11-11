@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import StudentLayout from './StudentLayout';
 import { 
   BookOpen, 
-  MessageSquare, 
   LogOut, 
   Home, 
   ClipboardList, 
@@ -44,9 +43,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       if (hasPerm('PERM_ASSIGN_HOMEWORK')) {
         items.push({ label: 'Giao bài & Chấm điểm', path: '/teacher/assignments', icon: ClipboardList });
       }
-      if (hasPerm('PERM_CHAT_ACCESS')) {
-        items.push({ label: 'Trao đổi tin nhắn', path: '/chat', icon: MessageSquare });
-      }
       if (hasPerm('PERM_VIEW_ALPHABET')) {
         items.push({ label: 'Quản lý học liệu', path: '/teacher/alphabet', icon: BookOpen });
       }
@@ -56,9 +52,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       const items = [];
       if (hasPerm('PERM_PARENT_TRACKING')) {
         items.push({ label: 'Theo dõi tiến độ con', path: '/parent', icon: Home });
-      }
-      if (hasPerm('PERM_CHAT_ACCESS')) {
-        items.push({ label: 'Trao đổi tin nhắn', path: '/chat', icon: MessageSquare });
       }
       if (hasPerm('PERM_ASSIGN_HOMEWORK')) {
         items.push({ label: 'Giao bài tập', path: '/parent/assignments', icon: ClipboardList });

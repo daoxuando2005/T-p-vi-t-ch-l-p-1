@@ -27,7 +27,6 @@ public class VietLettersApplication {
                 jdbcTemplate.update("INSERT IGNORE INTO roles (id, name) VALUES (5, 'PERM_ASSIGN_HOMEWORK')");
                 jdbcTemplate.update("INSERT IGNORE INTO roles (id, name) VALUES (6, 'PERM_VIEW_ALPHABET')");
                 jdbcTemplate.update("INSERT IGNORE INTO roles (id, name) VALUES (7, 'PERM_MANAGE_CLASSES')");
-                jdbcTemplate.update("INSERT IGNORE INTO roles (id, name) VALUES (8, 'PERM_CHAT_ACCESS')");
                 jdbcTemplate.update("INSERT IGNORE INTO roles (id, name) VALUES (9, 'PERM_PARENT_TRACKING')");
                 jdbcTemplate.update("INSERT IGNORE INTO roles (id, name) VALUES (10, 'PERM_EDIT_ALPHABET')");
                 jdbcTemplate.update("INSERT IGNORE INTO roles (id, name) VALUES (11, 'PERM_ADD_ALPHABET')");
@@ -62,7 +61,6 @@ public class VietLettersApplication {
                 jdbcTemplate.update("INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, 3)", teacherId); // ROLE_TEACHER
                 jdbcTemplate.update("INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, 5)", teacherId); // PERM_ASSIGN_HOMEWORK
                 jdbcTemplate.update("INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, 7)", teacherId); // PERM_MANAGE_CLASSES
-                jdbcTemplate.update("INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, 8)", teacherId); // PERM_CHAT_ACCESS
                 jdbcTemplate.update("UPDATE users SET password=?, enabled=TRUE WHERE username='teacher1'", pw);
                 System.out.println(">> [ĐỒNG BỘ QUYỀN] teacher1");
 
@@ -89,7 +87,6 @@ public class VietLettersApplication {
                 }
                 Long parentId = jdbcTemplate.queryForObject("SELECT id FROM users WHERE username='parent1'", Long.class);
                 jdbcTemplate.update("INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, 2)", parentId); // ROLE_PARENT
-                jdbcTemplate.update("INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, 8)", parentId); // PERM_CHAT_ACCESS
                 jdbcTemplate.update("INSERT IGNORE INTO user_roles (user_id, role_id) VALUES (?, 9)", parentId); // PERM_PARENT_TRACKING
                 jdbcTemplate.update("UPDATE users SET password=?, enabled=TRUE WHERE username='parent1'", pw);
                 System.out.println(">> [ĐỒNG BỘ QUYỀN] parent1");

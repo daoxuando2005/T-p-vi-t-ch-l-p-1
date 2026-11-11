@@ -31,7 +31,7 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
                 if (session == null) state = AuthState.Login() else signedIn(session)
             } catch(e: CancellationException) { throw e }
             catch(e: AuthFailure) {
-                if (e is AuthFailure.Expired || e is AuthFailure.StudentOnly || e is AuthFailure.Configuration) {
+                if (e is AuthFailure.Expired || e is AuthFailure.MobileOnly || e is AuthFailure.Configuration) {
                     try { repository.clear(); state = AuthState.Login(e.publicMessage) }
                     catch(cancelled: CancellationException) { throw cancelled }
                     catch (_: Exception) { state = AuthState.Retry(AuthFailure.Storage().publicMessage) }

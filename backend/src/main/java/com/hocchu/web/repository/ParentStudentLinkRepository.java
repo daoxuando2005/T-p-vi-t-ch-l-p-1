@@ -11,6 +11,7 @@ public interface ParentStudentLinkRepository extends JpaRepository<ParentStudent
     List<ParentStudentLink> findByParentId(Long parentId);
     List<ParentStudentLink> findByParentIdAndStatus(Long parentId, String status);
     Optional<ParentStudentLink> findByStudentId(Long studentId);
+    List<ParentStudentLink> findAllByStudentId(Long studentId);
     Optional<ParentStudentLink> findByLinkCode(String linkCode);
     boolean existsByParentIdAndStudentId(Long parentId, Long studentId);
     Optional<ParentStudentLink> findByParentIdAndStudentId(Long parentId, Long studentId);

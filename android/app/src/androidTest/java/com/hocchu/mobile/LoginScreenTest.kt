@@ -7,7 +7,7 @@ import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import com.hocchu.mobile.auth.AuthState
 import com.hocchu.mobile.auth.AuthSession
-import com.hocchu.mobile.auth.StudentAccount
+import com.hocchu.mobile.auth.UserAccount
 import com.hocchu.mobile.auth.accountPreferences
 import com.hocchu.mobile.data.LessonProgress
 import com.hocchu.mobile.data.LessonProgressStore
@@ -53,7 +53,7 @@ class LoginScreenTest {
         val storeA = LessonProgressStore(compose.activity.getSharedPreferences(nameA, 0))
         val storeB = LessonProgressStore(compose.activity.getSharedPreferences(nameB, 0))
         storeA.save(0, LessonProgress(true, 2, 1))
-        fun session(id: Long) = AuthSession(server, "not-used-by-ui", StudentAccount(id, "student-$id", "Học sinh $id", setOf("ROLE_STUDENT")), Long.MAX_VALUE)
+        fun session(id: Long) = AuthSession(server, "not-used-by-ui", UserAccount(id, "student-$id", "Học sinh $id", setOf("ROLE_STUDENT")), Long.MAX_VALUE)
         val state = mutableStateOf<AuthState>(AuthState.SignedIn(session(1)))
         try {
             compose.runOnUiThread {

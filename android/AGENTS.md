@@ -11,6 +11,8 @@ phù hợp với chỉ dẫn cấp cao hơn và yêu cầu trực tiếp của n
   [xác thực](docs/AUTHENTICATION.md).
 - Sửa lớp học, bài cô giao, bản nháp hoặc nộp bài: đọc
   [lớp học và bài tập](docs/CLASSROOM.md).
+- Sửa phụ huynh, liên kết con hoặc đồng bộ hoạt động: đọc
+  [theo dõi của phụ huynh](docs/PARENT.md).
 - Sửa hành trình, học liệu hoặc tiến độ: đọc
   [hành trình học](docs/LEARNING_JOURNEY.md).
 - Sửa mẫu chữ, bảng ô li hoặc thao tác viết: đọc

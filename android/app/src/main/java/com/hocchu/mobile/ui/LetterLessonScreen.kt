@@ -20,7 +20,9 @@ import com.hocchu.mobile.data.*
 
 @Composable
 fun LetterLessonScreen(index: Int, saved: LessonProgress, onSave: (LessonProgress) -> Unit,
-                      speak: (String) -> Unit, onPraise: () -> Unit, onExit: () -> Unit, onNext: () -> Unit) {
+                      speak: (String) -> Unit, onPraise: () -> Unit, onExit: () -> Unit, onNext: () -> Unit,
+                      onActivity: (LessonProgress,LessonProgress,Boolean)->Unit = {_,_,_->},
+                      onWriting: (Boolean)->Unit = {}) {
     // A review has its own session and never changes or erases earned progress.
     val review = rememberSaveable(index) { saved.complete }
     var reviewValue by rememberSaveable(index) { mutableStateOf(LessonProgress().encode()) }
@@ -29,6 +31,7 @@ fun LetterLessonScreen(index: Int, saved: LessonProgress, onSave: (LessonProgres
     val stage = LessonStage.entries[step]
     fun save(next: LessonProgress, advance: Boolean = true) {
         if (review) reviewValue = next.encode() else onSave(next)
+        if(next!=progress) onActivity(progress,next,review)
         if (advance) step = next.stage.ordinal
     }
     val letter = DemoContent.lessons[index]
@@ -64,7 +67,8 @@ fun LetterLessonScreen(index: Int, saved: LessonProgress, onSave: (LessonProgres
                 LessonStage.Write -> WritingScreen(index, speak, onPraise,
                     guided = GuidedWriting(progress.writes,
                         onContinue = { save(progress.finishWriting()) },
-                        onExtra = { save(progress.finishWriting(), advance = false) }))
+                        onExtra = { save(progress.finishWriting(), advance = false) }),
+                    onPracticed = {onWriting(review)})
                 LessonStage.Words -> key(index, progress.words) {
                     LessonWordQuestion(index, progress.words, speak) { correct ->
                         save(progress.answerWord(progress.words, correct))

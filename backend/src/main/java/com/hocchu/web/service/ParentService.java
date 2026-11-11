@@ -38,91 +38,12 @@ public class ParentService {
     @Autowired
     private NotificationRepository notificationRepository;
 
+    @Autowired
+    private LearningTrackingService tracking;
+
     @Transactional
-    public ApiResponse linkStudent(Long parentId, String input) {
-        if (input == null || input.trim().isEmpty()) {
-            return new ApiResponse(false, "Vui lÄ‚Â²ng nhĂ¡ÂºÂ­p tÄ‚Âªn Ă„â€˜Ă„Æ’ng nhĂ¡ÂºÂ­p cĂ¡Â»Â§a bÄ‚Â© (vd: student1) hoĂ¡ÂºÂ·c mÄ‚Â£ liÄ‚Âªn kĂ¡ÂºÂ¿t!");
-        }
-
-        String searchKey = input.trim();
-        User parent = userRepository.findById(parentId)
-                .orElseThrow(() -> new RuntimeException("KhÄ‚Â´ng tÄ‚Â¬m thĂ¡ÂºÂ¥y tÄ‚Â i khoĂ¡ÂºÂ£n phĂ¡Â»Â¥ huynh"));
-
-        // 1. ThĂ¡Â»Â­ tÄ‚Â¬m hĂ¡Â»Âc sinh theo tÄ‚Âªn Ă„â€˜Ă„Æ’ng nhĂ¡ÂºÂ­p (Username)
-        Optional<User> studentOpt = userRepository.findByUsername(searchKey);
-        if (studentOpt.isPresent()) {
-            User student = studentOpt.get();
-            boolean isStudentRole = student.getRoles().stream().anyMatch(r -> "ROLE_STUDENT".equals(r.getName()));
-            if (!isStudentRole) {
-                return new ApiResponse(false, "TÄ‚Âªn Ă„â€˜Ă„Æ’ng nhĂ¡ÂºÂ­p '" + searchKey + "' khÄ‚Â´ng phĂ¡ÂºÂ£i lÄ‚Â  tÄ‚Â i khoĂ¡ÂºÂ£n hĂ¡Â»Âc sinh.");
-            }
-
-            Optional<ParentStudentLink> existingLinkOpt = parentStudentLinkRepository.findByStudentId(student.getId());
-            if (existingLinkOpt.isPresent()) {
-                ParentStudentLink link = existingLinkOpt.get();
-                if ("APPROVED".equals(link.getStatus()) && link.getParent() != null && parent.getId().equals(link.getParent().getId())) {
-                    return new ApiResponse(false, "BĂ¡ÂºÂ¡n Ă„â€˜Ä‚Â£ liÄ‚Âªn kĂ¡ÂºÂ¿t thÄ‚Â nh cÄ‚Â´ng vĂ¡Â»â€ºi tÄ‚Â i khoĂ¡ÂºÂ£n bÄ‚Â© '" + (student.getFullName() != null ? student.getFullName() : student.getUsername()) + "' tĂ¡Â»Â« trĂ†Â°Ă¡Â»â€ºc rĂ¡Â»â€œi!");
-                }
-                link.setParent(parent);
-                link.setStatus("APPROVED");
-                link.setLinkedAt(LocalDateTime.now());
-                parentStudentLinkRepository.save(link);
-            } else {
-                ParentStudentLink newLink = ParentStudentLink.builder()
-                        .parent(parent)
-                        .student(student)
-                        .linkCode("LINK-" + UUID.randomUUID().toString().substring(0, 6).toUpperCase())
-                        .status("APPROVED")
-                        .linkedAt(LocalDateTime.now())
-                        .build();
-                parentStudentLinkRepository.save(newLink);
-            }
-
-            createLinkNotifications(parent, student);
-            return new ApiResponse(true, "LiÄ‚Âªn kĂ¡ÂºÂ¿t vĂ¡Â»â€ºi tÄ‚Â i khoĂ¡ÂºÂ£n bÄ‚Â© '" + (student.getFullName() != null ? student.getFullName() : student.getUsername()) + "' thÄ‚Â nh cÄ‚Â´ng!");
-        }
-
-        // 2. ThĂ¡Â»Â­ tÄ‚Â¬m theo MÄ‚Â£ liÄ‚Âªn kĂ¡ÂºÂ¿t (Link code)
-        Optional<ParentStudentLink> linkOpt = parentStudentLinkRepository.findByLinkCode(searchKey);
-        if (linkOpt.isPresent()) {
-            ParentStudentLink link = linkOpt.get();
-            if ("APPROVED".equals(link.getStatus()) && link.getParent() != null && parent.getId().equals(link.getParent().getId())) {
-                return new ApiResponse(false, "MÄ‚Â£ liÄ‚Âªn kĂ¡ÂºÂ¿t nÄ‚Â y Ă„â€˜Ä‚Â£ Ă„â€˜Ă†Â°Ă¡Â»Â£c bĂ¡ÂºÂ¡n sĂ¡Â»Â­ dĂ¡Â»Â¥ng trĂ†Â°Ă¡Â»â€ºc Ă„â€˜Ä‚Â³.");
-            }
-
-            link.setParent(parent);
-            link.setStatus("APPROVED");
-            link.setLinkedAt(LocalDateTime.now());
-            parentStudentLinkRepository.save(link);
-
-            createLinkNotifications(parent, link.getStudent());
-            return new ApiResponse(true, "LiÄ‚Âªn kĂ¡ÂºÂ¿t vĂ¡Â»â€ºi bÄ‚Â© '" + (link.getStudent().getFullName() != null ? link.getStudent().getFullName() : link.getStudent().getUsername()) + "' thÄ‚Â nh cÄ‚Â´ng!");
-        }
-
-        return new ApiResponse(false, "KhÄ‚Â´ng tÄ‚Â¬m thĂ¡ÂºÂ¥y hĂ¡Â»Âc sinh vĂ¡Â»â€ºi tÄ‚Âªn Ă„â€˜Ă„Æ’ng nhĂ¡ÂºÂ­p hoĂ¡ÂºÂ·c mÄ‚Â£ liÄ‚Âªn kĂ¡ÂºÂ¿t: " + searchKey);
-    }
-
-    private void createLinkNotifications(User parent, User student) {
-        String studentDisplayName = student.getFullName() != null ? student.getFullName() : student.getUsername();
-        String parentDisplayName = parent.getFullName() != null ? parent.getFullName() : parent.getUsername();
-
-        Notification parentNotif = Notification.builder()
-                .user(parent)
-                .title("LiÄ‚Âªn kĂ¡ÂºÂ¿t tÄ‚Â i khoĂ¡ÂºÂ£n con thÄ‚Â nh cÄ‚Â´ng")
-                .content("BĂ¡ÂºÂ¡n Ă„â€˜Ä‚Â£ liÄ‚Âªn kĂ¡ÂºÂ¿t thÄ‚Â nh cÄ‚Â´ng vĂ¡Â»â€ºi tÄ‚Â i khoĂ¡ÂºÂ£n bÄ‚Â© '" + studentDisplayName + "'!")
-                .type("SYSTEM")
-                .isRead(false)
-                .build();
-        notificationRepository.save(parentNotif);
-
-        Notification studentNotif = Notification.builder()
-                .user(student)
-                .title("TÄ‚Â i khoĂ¡ÂºÂ£n Ă„â€˜Ä‚Â£ liÄ‚Âªn kĂ¡ÂºÂ¿t vĂ¡Â»â€ºi phĂ¡Â»Â¥ huynh")
-                .content("TÄ‚Â i khoĂ¡ÂºÂ£n cĂ¡Â»Â§a con Ă„â€˜Ä‚Â£ liÄ‚Âªn kĂ¡ÂºÂ¿t thÄ‚Â nh cÄ‚Â´ng vĂ¡Â»â€ºi phĂ¡Â»Â¥ huynh '" + parentDisplayName + "'!")
-                .type("SYSTEM")
-                .isRead(false)
-                .build();
-        notificationRepository.save(studentNotif);
+    public ApiResponse linkStudent(Long parentId, String code) {
+        return tracking.linkParent(parentId, code);
     }
 
     @Transactional(readOnly = true)
@@ -144,7 +65,7 @@ public class ParentService {
 
     @Transactional(readOnly = true)
     public StudentProgressResponse getStudentProgress(Long parentId, Long studentId) {
-        boolean isLinked = parentStudentLinkRepository.existsByParentIdAndStudentId(parentId, studentId);
+        boolean isLinked = parentStudentLinkRepository.findByParentIdAndStudentId(parentId, studentId).filter(link -> "APPROVED".equals(link.getStatus())).isPresent();
         if (!isLinked) {
             throw new RuntimeException("BĂ¡ÂºÂ¡n khÄ‚Â´ng cÄ‚Â³ quyĂ¡Â»Ân xem thÄ‚Â´ng tin cĂ¡Â»Â§a hĂ¡Â»Âc sinh nÄ‚Â y");
         }
@@ -165,8 +86,9 @@ public class ParentService {
         int totalSubmissions = submissions.size();
         float avgSubmissionScore = 0.0f;
         if (totalSubmissions > 0) {
-            double sum = submissions.stream().mapToDouble(Submission::getScore).sum();
-            avgSubmissionScore = (float) (sum / totalSubmissions);
+            var gradedScores = submissions.stream().map(Submission::getScore).filter(Objects::nonNull).toList();
+            double sum = gradedScores.stream().mapToDouble(Float::doubleValue).sum();
+            avgSubmissionScore = gradedScores.isEmpty() ? 0 : (float) (sum / gradedScores.size());
             avgSubmissionScore = Math.round(avgSubmissionScore * 10.0f) / 10.0f;
         }
 
@@ -205,7 +127,7 @@ public class ParentService {
 
     @Transactional(readOnly = true)
     public List<com.hocchu.web.dto.ClassmateScoreResponse> getClassmatesScores(Long parentId, Long studentId) {
-        boolean isLinked = parentStudentLinkRepository.existsByParentIdAndStudentId(parentId, studentId);
+        boolean isLinked = parentStudentLinkRepository.findByParentIdAndStudentId(parentId, studentId).filter(link -> "APPROVED".equals(link.getStatus())).isPresent();
         if (!isLinked) {
             throw new RuntimeException("Bạn không có quyền xem thông tin của học sinh này");
         }
@@ -248,7 +170,7 @@ public class ParentService {
 
     @Transactional(readOnly = true)
     public List<AssignmentResponse> getStudentAssignments(Long parentId, Long studentId) {
-        boolean isLinked = parentStudentLinkRepository.existsByParentIdAndStudentId(parentId, studentId);
+        boolean isLinked = parentStudentLinkRepository.findByParentIdAndStudentId(parentId, studentId).filter(link -> "APPROVED".equals(link.getStatus())).isPresent();
         if (!isLinked) {
             throw new RuntimeException("Bạn không có quyền xem bài tập của học sinh này");
         }
@@ -286,7 +208,7 @@ public class ParentService {
 
     @Transactional
     public ApiResponse remindStudentAssignment(Long parentId, Long studentId, Long assignmentId) {
-        boolean isLinked = parentStudentLinkRepository.existsByParentIdAndStudentId(parentId, studentId);
+        boolean isLinked = parentStudentLinkRepository.findByParentIdAndStudentId(parentId, studentId).filter(link -> "APPROVED".equals(link.getStatus())).isPresent();
         if (!isLinked) {
             throw new RuntimeException("Bạn không có quyền nhắc nhở học sinh này");
         }

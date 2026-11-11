@@ -99,12 +99,6 @@ const PERMISSION_DEFINITIONS = [
     defaultRoles: ['ROLE_TEACHER', 'ROLE_ADMIN']
   },
   {
-    token: 'PERM_CHAT_ACCESS',
-    title: 'Quyền trao đổi tin nhắn',
-    description: 'Cho phép gửi tin nhắn trao đổi giữa Giáo viên và Phụ huynh.',
-    defaultRoles: ['ROLE_TEACHER', 'ROLE_PARENT']
-  },
-  {
     token: 'PERM_PARENT_TRACKING',
     title: 'Quyền theo dõi tiến độ & nhắc bài bé',
     description: 'Cho phép xem lịch giao bài tập của cô giáo và gửi thông báo nhắc bé làm bài tập.',
@@ -184,8 +178,8 @@ const AdminDashboard: React.FC = () => {
   const [savingEditUser, setSavingEditUser] = useState(false);
 
   useEffect(() => {
-    if (newRole === 'TEACHER') setNewPermissions(['PERM_ASSIGN_HOMEWORK', 'PERM_MANAGE_CLASSES', 'PERM_VIEW_ALPHABET', 'PERM_CHAT_ACCESS']);
-    else if (newRole === 'PARENT') setNewPermissions(['PERM_PARENT_TRACKING', 'PERM_CHAT_ACCESS']);
+    if (newRole === 'TEACHER') setNewPermissions(['PERM_ASSIGN_HOMEWORK', 'PERM_MANAGE_CLASSES', 'PERM_VIEW_ALPHABET']);
+    else if (newRole === 'PARENT') setNewPermissions(['PERM_PARENT_TRACKING']);
     else setNewPermissions([]);
   }, [newRole]);
 
@@ -596,7 +590,6 @@ const AdminDashboard: React.FC = () => {
                   const permBadges = [
                     { token: 'PERM_ASSIGN_HOMEWORK', label: 'Giao bài tập', color: 'bg-amber-100 text-amber-900 border-amber-300' },
                     { token: 'PERM_MANAGE_CLASSES', label: 'Quản Lý Lớp', color: 'bg-blue-100 text-blue-900 border-blue-300' },
-                    { token: 'PERM_CHAT_ACCESS', label: 'Chat Realtime', color: 'bg-purple-100 text-purple-900 border-purple-300' },
                     { token: 'PERM_PARENT_TRACKING', label: 'Theo dõi tiến độ', color: 'bg-pink-100 text-pink-900 border-pink-300' },
                   ].filter(p => activePerms.includes(p.token));
                   return (
@@ -753,7 +746,6 @@ const AdminDashboard: React.FC = () => {
                     {[
                       { token: 'PERM_ASSIGN_HOMEWORK', label: 'Quyền giao bài tập cho học sinh' },
                       { token: 'PERM_MANAGE_CLASSES', label: 'Quyền quản lý lớp học' },
-                      { token: 'PERM_CHAT_ACCESS', label: 'Quyền trao đổi tin nhắn' },
                     ].map(perm => (
                       <div key={perm.token} onClick={() => togglePermissionToken(perm.token)}
                         className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${userPermissions.includes(perm.token) ? 'bg-amber-50 border-amber-300 shadow-sm' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}>
@@ -795,7 +787,6 @@ const AdminDashboard: React.FC = () => {
                     {[
                       { token: 'PERM_ASSIGN_HOMEWORK', label: 'Quyền giao bài tập cho con' },
                       { token: 'PERM_PARENT_TRACKING', label: 'Quyền theo dõi tiến độ & nhắc bài bé' },
-                      { token: 'PERM_CHAT_ACCESS', label: 'Quyền trao đổi tin nhắn' },
                     ].map(perm => (
                       <div key={perm.token} onClick={() => togglePermissionToken(perm.token)}
                         className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex items-center justify-between ${userPermissions.includes(perm.token) ? 'bg-amber-50 border-amber-300 shadow-sm' : 'bg-slate-50 border-slate-200 hover:border-slate-300'}`}>
@@ -870,8 +861,8 @@ const AdminDashboard: React.FC = () => {
                   <span className="text-xs font-black text-slate-700 block">Cấu Hình Quyền Chi Tiết Ngay Khi Tạo</span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                     {PERMISSION_DEFINITIONS.filter(perm => {
-                      if (newRole === 'TEACHER') return ['PERM_ASSIGN_HOMEWORK', 'PERM_MANAGE_CLASSES', 'PERM_VIEW_ALPHABET', 'PERM_CHAT_ACCESS'].includes(perm.token);
-                      if (newRole === 'PARENT') return ['PERM_PARENT_TRACKING', 'PERM_CHAT_ACCESS'].includes(perm.token);
+                      if (newRole === 'TEACHER') return ['PERM_ASSIGN_HOMEWORK', 'PERM_MANAGE_CLASSES', 'PERM_VIEW_ALPHABET'].includes(perm.token);
+                      if (newRole === 'PARENT') return ['PERM_PARENT_TRACKING'].includes(perm.token);
                       return false;
                     }).map((perm) => {
                       const isChecked = newPermissions.includes(perm.token);

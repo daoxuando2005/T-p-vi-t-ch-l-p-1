@@ -24,27 +24,38 @@ import com.hocchu.mobile.BuildConfig
 import com.hocchu.mobile.auth.*
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hocchu.mobile.classroom.ClassroomViewModel
+import com.hocchu.mobile.family.ParentViewModel
+import com.hocchu.mobile.family.StudentActivityModel
 
 @Composable
 fun AuthGate(model: AuthViewModel) {
     val classroom: ClassroomViewModel = viewModel()
+    val parent: ParentViewModel = viewModel()
+    val activities: StudentActivityModel = viewModel()
     LaunchedEffect(model.state) {
-        classroom.connect((model.state as? AuthState.SignedIn)?.session) { model.logout(AuthFailure.Expired().publicMessage) }
+        val session=(model.state as? AuthState.SignedIn)?.session
+        val isParent=session?.account?.roles?.contains("ROLE_PARENT")==true
+        classroom.connect(session?.takeUnless {isParent}) { model.logout(AuthFailure.Expired().publicMessage) }
+        activities.connect(session?.takeUnless {isParent}) {model.logout(AuthFailure.Expired().publicMessage)}
+        parent.connect(session?.takeIf {isParent}) {model.logout(AuthFailure.Expired().publicMessage)}
     }
-    AuthContent(model.state, model.server, model::signIn, model::restore, { model.logout() }, model::changeServer, classroom)
+    AuthContent(if(activities.finishing) AuthState.Loading("Đang lưu hoạt động của con…") else model.state,
+        model.server, model::signIn, model::restore, {activities.finishSession {model.logout()}}, model::changeServer, classroom,parent,activities)
 }
 
 @Composable
 internal fun AuthContent(state: AuthState, server: String, signIn: (String, String) -> Unit,
                          retry: () -> Unit, logout: () -> Unit, changeServer: (String) -> Unit,
-                         classroom: ClassroomViewModel? = null) {
+                         classroom: ClassroomViewModel? = null, parent: ParentViewModel? = null,
+                         activities: StudentActivityModel? = null) {
     var settings by remember { mutableStateOf(false) }
     when(state) {
         is AuthState.SignedIn -> {
             val session = state.session
             val scope = accountPreferences(session.server, session.account.id)
             key(scope) {
-                StudentApp(preferencesName = scope, studentName = session.account.fullName, onLogout = logout, classroom = classroom)
+                if("ROLE_PARENT" in session.account.roles) ParentApp(session.account.fullName,parent,logout)
+                else StudentApp(preferencesName = scope, studentName = session.account.fullName, onLogout = logout, classroom = classroom,activities=activities)
             }
         }
         is AuthState.Login -> key(server) {
@@ -94,7 +105,7 @@ fun LoginScreen(state: AuthState.Login, onSignIn: (String, String) -> Unit, onSe
         Text("Cùng bé khám phá chữ cái", color = Muted)
         Paper {
             Text("Đăng nhập", style = MaterialTheme.typography.headlineMedium)
-            Text("Dùng tài khoản học sinh để bắt đầu", color = Muted)
+            Text("Dùng tài khoản học sinh hoặc phụ huynh", color = Muted)
             OutlinedTextField(username, onValueChange = { username = it },
                 label = { Text("Tên đăng nhập hoặc email") }, singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag("login-username"), enabled = !state.submitting,

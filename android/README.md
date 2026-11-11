@@ -1,6 +1,6 @@
 # Vui Học Lớp 1 — Android
 
-Ứng dụng **native Kotlin + Jetpack Compose**, dựng lại khu vực học sinh từ bộ thiết kế Stitch do người dùng cung cấp. Website và backend hiện có tiếp tục nằm ở `../frontend` và `../backend`.
+Ứng dụng **native Kotlin + Jetpack Compose** cho học sinh và phụ huynh, dùng chung phong cách từ bộ thiết kế Stitch. Website và backend nằm ở `../frontend` và `../backend`.
 
 ## Quy tắc phát triển
 
@@ -10,6 +10,7 @@ Trước khi sửa Android, đọc [AGENTS.md](AGENTS.md) và các tài liệu l
 - [Xác thực và kết nối](docs/AUTHENTICATION.md)
 - [Lớp học và bài cô giao](docs/CLASSROOM.md)
 - [Hành trình học và tiến độ](docs/LEARNING_JOURNEY.md)
+- [Phụ huynh và đồng bộ hoạt động](docs/PARENT.md)
 - [Mẫu chữ và tập viết](docs/HANDWRITING.md)
 - [Quy định kiểm thử](docs/TESTING.md)
 
@@ -18,7 +19,8 @@ thực hiện ở đây; chỉ cập nhật khi quy tắc hoặc chức năng t�
 
 ## Phạm vi ứng dụng
 
-- Đăng nhập học sinh bằng backend Spring Boot, xác minh/khôi phục phiên, đăng xuất và lưu tiến độ riêng theo tài khoản. Xem [cấu hình backend local và API xác thực](docs/AUTHENTICATION.md).
+- Đăng nhập học sinh/phụ huynh bằng backend Spring Boot, xác minh/khôi phục phiên, đăng xuất và lưu tiến độ riêng theo tài khoản. Xem [cấu hình backend local và API xác thực](docs/AUTHENTICATION.md).
+- Phụ huynh: liên kết con bằng mã, xem hoạt động theo ngày, chặng học 29 chữ và thống kê bảy ngày. Xem [quy tắc theo dõi](docs/PARENT.md).
 - Trang chủ: thẻ tự luyện và hành trình 29 chữ theo thứ tự. Mỗi chữ: đọc theo → viết 2 lượt (có thể luyện thêm) → điền 3 từ → ghép 3 câu mẫu. Tiến độ lưu trên thiết bị, hoàn thành mới mở chữ kế tiếp; bài đã học có thể ôn lại. Xem [luồng bài học và lưu tiến độ](docs/LEARNING_JOURNEY.md).
 - Đọc chữ: 29 chữ cái, chữ hoa/thường, từ ví dụ, đọc bằng TextToSpeech tiếng Việt trên thiết bị.
 - Tập viết: 29 mẫu chữ thường cỡ vừa từ HP001, căn theo chân chữ và tỉ lệ ô li; dấu phụ và đuôi chữ được chừa chỗ riêng. Có chấm đặt bút, hướng khởi đầu và hộp xem mẫu. Nét vẽ bằng ngón tay/bút, chọn độ đậm, hoàn tác, xác nhận xóa. Tọa độ chuẩn hóa và lưu trạng thái khi xoay máy/chuyển tab. Đổi chữ sẽ bắt đầu bảng viết mới. Chi tiết và nguồn đối chiếu: [Mẫu chữ và ô ly](docs/HANDWRITING.md).
@@ -27,7 +29,7 @@ thực hiện ở đây; chỉ cập nhật khi quy tắc hoặc chức năng t�
 - Ghép câu: chọn/bỏ thẻ từ, nghe câu mẫu, kiểm tra thứ tự.
 - Điện thoại dùng thanh điều hướng dưới; từ 840dp dùng navigation rail. Nội dung đọc chữ và tập viết chuyển sang hai cột khi đủ rộng.
 
-**Đăng nhập, lớp học và bài cô giao đã dùng backend.** Học liệu hành trình trong `DemoContent.kt` và `LetterCurriculum.kt` vẫn là nội dung mẫu. Tiến độ hành trình và bản nháp lưu trên thiết bị theo từng tài khoản; bài nộp được gửi lên server. Chưa đồng bộ hành trình giữa thiết bị, chưa nhận dạng phát âm hoặc chấm nét viết tự động. Không tạo điểm viết ngẫu nhiên; bài viết chờ cô chấm. Dữ liệu bản xem trước cũ được giữ riêng.
+**Đăng nhập, lớp học, bài cô giao và báo cáo phụ huynh dùng backend.** Học liệu hành trình trong `DemoContent.kt` và `LetterCurriculum.kt` vẫn là nội dung mẫu. Tiến độ hành trình và bản nháp lưu riêng trên thiết bị; hoạt động và snapshot được gửi cho phụ huynh. Chưa có khôi phục hành trình từ cloud, nhận dạng phát âm hoặc chấm nét viết tự động. Bài viết được giao chờ cô chấm. Dữ liệu bản xem trước cũ được giữ riêng.
 
 ## Mở bằng Android Studio
 
@@ -57,7 +59,12 @@ $env:JAVA_HOME = 'C:\path\to\jdk-21'
 Thay đường dẫn SDK/JDK ví dụ bằng đường dẫn thật trên máy.
 APK: `app/build/outputs/apk/debug/app-debug.apk`.
 
-Preview điện thoại và tablet có sẵn ở cuối `StudentApp.kt`; mở file trong Studio và chọn **Split / Design**. Để kiểm tra viết tay, cần Run trên máy ảo hoặc thiết bị thật. Nghe đọc cần thiết bị có engine TTS và dữ liệu giọng tiếng Việt.
+Preview học sinh có ở cuối `StudentApp.kt`, preview phụ huynh trong source set debug tại `ui/ParentPreviews.kt`; mở trong Studio và chọn **Split / Design**. Để kiểm tra viết tay, cần Run trên máy ảo hoặc thiết bị thật. Nghe đọc cần thiết bị có engine TTS và dữ liệu giọng tiếng Việt.
+
+Đăng nhập tài khoản học sinh để học và lấy mã ở **Hồ sơ → Liên kết phụ huynh**.
+Đăng nhập tài khoản phụ huynh để mở **Hôm nay, Tiến độ, Gia đình**; nhập mã ở
+Gia đình nếu chưa liên kết. Hoạt động ngoại tuyến được gửi lại khi có mạng.
+Chưa có khôi phục hành trình từ cloud trên thiết bị mới. App không cung cấp chat.
 
 ## Cấu trúc mã
 

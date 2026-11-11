@@ -28,7 +28,7 @@ public class Notification {
     private String content;
 
     @Column(length = 50)
-    private String type; // 'ASSIGNMENT', 'CHAT', 'PRACTICE', 'SYSTEM'
+    private String type; // 'ASSIGNMENT', 'PRACTICE', 'SYSTEM'
 
     @Column(name = "is_read")
     private Boolean isRead;

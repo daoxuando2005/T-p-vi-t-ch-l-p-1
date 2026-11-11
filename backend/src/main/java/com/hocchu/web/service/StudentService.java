@@ -396,44 +396,11 @@ public class StudentService {
         } catch (IllegalArgumentException e) { return false; }
     }
 
-    // Sinh mã liên kết phụ huynh
+    @Autowired
+    private LearningTrackingService tracking;
+
+    @Transactional
     public Map<String, String> getParentLinkCode(Long studentId) {
-        User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy học sinh"));
-        
-        Optional<ParentStudentLink> linkOpt = parentStudentLinkRepository.findByStudentId(studentId);
-        String code;
-        if (linkOpt.isPresent()) {
-            code = linkOpt.get().getLinkCode();
-        } else {
-            // Sinh mã link ngẫu nhiên 8 ký tự
-            code = UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-            // Lưu tạm PENDING
-            // Tìm ngẫu nhiên phụ huynh mẫu hoặc chỉ lưu bản ghi rỗng chờ phụ huynh nhập
-            // Để lưu đúng, ta không cần điền parent_id ngay, tuy nhiên trong schema parent_id là NOT NULL.
-            // Do đó chúng ta sẽ không tạo bản ghi trước, mà khi phụ huynh nhập mã liên kết,
-            // chúng ta sẽ kiểm tra mã liên kết do con sở hữu. Hoặc cách tốt hơn:
-            // Phụ huynh và học sinh được liên kết bằng cách con sinh mã liên kết (lưu vào bộ nhớ đệm / in ra màn hình)
-            // hoặc chúng ta lưu một bản ghi liên kết phụ huynh-con, để phụ huynh tìm kiếm.
-            // Để đơn giản và chính xác hơn: Mỗi học sinh sẽ có một link_code duy nhất được lưu trực tiếp trên User,
-            // hoặc ta cho phép con tạo trước bản ghi liên kết với parent_id = 1 (seed admin/parent) rồi đổi sau,
-            // hoặc ta đổi trường parent_id trong bảng parent_student_links thành NULLABLE.
-            // Nhưng trong schema V1 ta đã viết `parent_id BIGINT NOT NULL`. Do đó:
-            // Cách đơn giản nhất: Ta tạo mã liên kết chính là SĐT của con hoặc username của con để phụ huynh tìm kiếm.
-            // Hoặc chúng ta lưu bản ghi parent_student_links bằng cách: Phụ huynh chính là người nhập username + SĐT của con để gửi yêu cầu liên kết.
-            // Hoặc khi học sinh yêu cầu mã liên kết, ta tạo bản ghi liên kết tạm với parent_id chính là Admin (id=1), linkCode = code, status = 'PENDING'.
-            // Khi phụ huynh nhập mã này, ta đổi parent_id thành id của phụ huynh và status = 'APPROVED'. Thiết kế này cực kỳ thông minh và giải quyết được ràng buộc NOT NULL!
-            ParentStudentLink link = ParentStudentLink.builder()
-                    .parent(userRepository.getReferenceById(1L)) // Trỏ tạm tới admin id=1
-                    .student(student)
-                    .linkCode(code)
-                    .status("PENDING")
-                    .build();
-            parentStudentLinkRepository.save(link);
-        }
-        
-        Map<String, String> res = new HashMap<>();
-        res.put("linkCode", code);
-        return res;
+        return tracking.issueLinkCode(studentId);
     }
 }

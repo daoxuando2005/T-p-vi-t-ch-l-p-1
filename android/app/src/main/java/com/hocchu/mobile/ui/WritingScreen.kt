@@ -42,12 +42,14 @@ private val StrokeSaver = listSaver<List<InkStroke>, ArrayList<Float>>(
 )
 
 @Composable
-fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit, guided: GuidedWriting? = null) {
+fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit, guided: GuidedWriting? = null, onPracticed: (Int)->Unit = {}) {
     var index by rememberSaveable(initial) { mutableIntStateOf(initial) }
     var strokes by rememberSaveable(index, stateSaver = StrokeSaver) { mutableStateOf(emptyList<InkStroke>()) }
     var active by remember(index) { mutableStateOf(emptyList<Offset>()) }
     var pen by rememberSaveable { mutableIntStateOf(1) }
     var complete by rememberSaveable { mutableStateOf(false) }
+    var revision by rememberSaveable(index) {mutableLongStateOf(0L)}
+    var recordedRevision by rememberSaveable(index) {mutableLongStateOf(-1L)}
     var confirmClear by remember { mutableStateOf(false) }
     var pendingLetter by rememberSaveable { mutableStateOf<Int?>(null) }
     var showReference by rememberSaveable { mutableStateOf(false) }
@@ -84,7 +86,7 @@ fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit, g
                             onStart = { active = listOf(it) },
                             onMove = { active = active + it },
                             onEnd = {
-                                if (active.isNotEmpty()) strokes = strokes + InkStroke(active, pen)
+                                if (active.isNotEmpty()) {strokes = strokes + InkStroke(active, pen);revision++}
                                 active = emptyList()
                             },
                             onCancel = { active = emptyList() }
@@ -99,10 +101,11 @@ fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit, g
                     sidePanel = sidePanel,
                     onPenChange = { pen = it },
                     onListen = { speak(lesson.sound) },
-                    onUndo = { strokes = strokes.dropLast(1) },
+                    onUndo = { strokes = strokes.dropLast(1);revision++ },
                     onClear = { confirmClear = true },
                     onComplete = {
-                        if (!complete) { complete = true; onPraise() }
+                        if (!complete) { complete = true; onPraise()
+                            if(recordedRevision!=revision) {recordedRevision=revision;onPracticed(index)} }
                     }
                 )
             }

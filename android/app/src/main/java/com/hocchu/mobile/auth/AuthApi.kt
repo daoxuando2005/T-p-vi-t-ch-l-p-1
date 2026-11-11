@@ -77,15 +77,15 @@ class AuthApi(private val transport: AuthTransport = UrlAuthTransport()) {
     }
     companion object {
         fun json(value: String): JSONObject = try { JSONObject(value) } catch (_: Exception) { throw AuthFailure.InvalidResponse() }
-        fun parseAccount(value: JSONObject): StudentAccount {
+        fun parseAccount(value: JSONObject): UserAccount {
             try {
                 val id = value.getLong("id")
                 val username = value.getString("username")
                 val rolesJson = value.getJSONArray("roles")
                 val roles = (0 until rolesJson.length()).map { rolesJson.getString(it) }.toSet()
                 if (id <= 0 || username.isBlank()) throw AuthFailure.InvalidResponse()
-                if ("ROLE_STUDENT" !in roles) throw AuthFailure.StudentOnly()
-                return StudentAccount(id, username, value.optString("fullName").takeUnless { it.isBlank() || it == "null" } ?: username, roles)
+                if ("ROLE_STUDENT" !in roles && "ROLE_PARENT" !in roles) throw AuthFailure.MobileOnly()
+                return UserAccount(id, username, value.optString("fullName").takeUnless { it.isBlank() || it == "null" } ?: username, roles)
             } catch (e: AuthFailure) { throw e } catch (_: Exception) { throw AuthFailure.InvalidResponse() }
         }
         fun parseSession(server: String, value: String): AuthSession {

@@ -3,8 +3,8 @@ package com.hocchu.mobile.auth
 import java.net.URI
 import java.security.MessageDigest
 
-data class StudentAccount(val id: Long, val username: String, val fullName: String, val roles: Set<String>)
-data class AuthSession(val server: String, val token: String, val account: StudentAccount, val expiresAt: Long) {
+data class UserAccount(val id: Long, val username: String, val fullName: String, val roles: Set<String>)
+data class AuthSession(val server: String, val token: String, val account: UserAccount, val expiresAt: Long) {
     override fun toString() = "AuthSession(userId=${account.id}, token=[redacted])"
 }
 
@@ -30,7 +30,7 @@ sealed class AuthFailure(val publicMessage: String) : Exception(publicMessage) {
     class Configuration : AuthFailure("Địa chỉ máy chủ chưa đúng. Vui lòng kiểm tra kết nối.")
     class Credentials : AuthFailure("Tên đăng nhập hoặc mật khẩu chưa đúng, hoặc tài khoản chưa được kích hoạt.")
     class Expired : AuthFailure("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.")
-    class StudentOnly : AuthFailure("Ứng dụng này dành cho học sinh. Vui lòng dùng tài khoản học sinh.")
+    class MobileOnly : AuthFailure("Vui lòng dùng tài khoản học sinh hoặc phụ huynh để đăng nhập app.")
     class Network : AuthFailure("Chưa kết nối được máy chủ. Hãy kiểm tra mạng và thử lại.")
     class Server : AuthFailure("Máy chủ chưa xử lý được yêu cầu. Vui lòng thử lại sau.")
     class InvalidResponse : AuthFailure("Dữ liệu đăng nhập từ máy chủ chưa hợp lệ.")

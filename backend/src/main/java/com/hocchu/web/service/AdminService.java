@@ -197,7 +197,6 @@ public class AdminService {
                 "PERM_EDIT_ALPHABET", "✏️ Quyền Sửa Học Liệu Chữ Cái",
                 "PERM_ADD_ALPHABET", "➕ Quyền Thêm/Xóa Chữ Cái Mới",
                 "PERM_MANAGE_CLASSES", "🏫 Quyền Quản Lý Lớp Học",
-                "PERM_CHAT_ACCESS", "💬 Quyền Nhắn Tin Realtime",
                 "PERM_PARENT_TRACKING", "👨‍👩‍👧 Quyền Theo Dõi Tiến Độ Con"
             );
 
@@ -357,7 +356,7 @@ public class AdminService {
             if ("TEACHER".equals(request.getRole().toUpperCase())) {
                 List<String> defaultTeacherPerms = List.of(
                         "PERM_ASSIGN_HOMEWORK", "PERM_MANAGE_CLASSES",
-                        "PERM_VIEW_ALPHABET", "PERM_EDIT_ALPHABET", "PERM_CHAT_ACCESS"
+                        "PERM_VIEW_ALPHABET", "PERM_EDIT_ALPHABET"
                 );
                 for (String perm : defaultTeacherPerms) {
                     Role role = roleRepository.findByName(perm)
@@ -366,7 +365,7 @@ public class AdminService {
                 }
             } else if ("PARENT".equals(request.getRole().toUpperCase())) {
                 List<String> defaultParentPerms = List.of(
-                        "PERM_PARENT_TRACKING", "PERM_CHAT_ACCESS"
+                        "PERM_PARENT_TRACKING"
                 );
                 for (String perm : defaultParentPerms) {
                     Role role = roleRepository.findByName(perm)

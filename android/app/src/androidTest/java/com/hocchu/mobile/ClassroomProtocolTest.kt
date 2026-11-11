@@ -16,7 +16,7 @@ class ClassroomProtocolTest {
     private val instrumentation = InstrumentationRegistry.getInstrumentation()
     private val app = instrumentation.targetContext.applicationContext as Application
     private fun student(id: Long = 701) = AuthSession("https://classroom-${UUID.randomUUID()}.test/", "test.token.value",
-        StudentAccount(id, "fixture", "Học sinh thử", setOf("ROLE_STUDENT")), System.currentTimeMillis() + 600000)
+        UserAccount(id, "fixture", "Học sinh thử", setOf("ROLE_STUDENT")), System.currentTimeMillis() + 600000)
     private fun assignment(type: String = "QUIZ", raw: String = "[{\"question\":\"Chọn A\",\"options\":[\"A\",\"B\"],\"answer\":\"A\"}]") =
         SchoolAssignment(15, 12, "Lớp thử", "Bài thử", "", type, raw, "", false, null, "", ClassroomJson.content(type, raw))
 

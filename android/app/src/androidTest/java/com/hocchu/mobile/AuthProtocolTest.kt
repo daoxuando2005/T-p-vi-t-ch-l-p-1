@@ -49,7 +49,9 @@ class AuthProtocolTest {
         assertFalse(session.toString().contains(session.token))
     }
     @Test fun roleExpiredJwtAndMalformedResponsesCannotOpenStudentUi() {
-        try { AuthApi.parseSession(server, response(role = "ROLE_TEACHER")); fail() } catch (_: AuthFailure.StudentOnly) { }
+        assertTrue(AuthApi.parseSession(server, response(role = "ROLE_PARENT")).account.roles.contains("ROLE_PARENT"))
+        try { AuthApi.parseSession(server, response(role = "ROLE_ADMIN")); fail() } catch (_: AuthFailure.MobileOnly) { }
+        try { AuthApi.parseSession(server, response(role = "ROLE_TEACHER")); fail() } catch (_: AuthFailure.MobileOnly) { }
         try { AuthApi.parseSession(server, response(expires = 1)); fail() } catch (_: AuthFailure.Expired) { }
         try { AuthApi.parseSession(server, "<html>error</html>"); fail() } catch (_: AuthFailure.InvalidResponse) { }
         val valid = AuthApi.parseSession(server, response())

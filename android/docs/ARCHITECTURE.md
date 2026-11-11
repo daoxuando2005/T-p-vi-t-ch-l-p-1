@@ -6,16 +6,17 @@ buộc dưới đây khi thay đổi chức năng liên quan. Không ghi kết q
 
 ## Phạm vi sản phẩm
 
-- Ứng dụng học sinh native Kotlin và Jetpack Compose; namespace/application ID
+- Ứng dụng học sinh và phụ huynh native Kotlin và Jetpack Compose; namespace/application ID
   là `com.hocchu.mobile`. Không thay giao diện native bằng trang web nhúng.
 - Backend Spring Boot và website nằm ở `../../backend` và `../../frontend`.
   Android gọi API backend, không kết nối MySQL trực tiếp.
 - Xác thực, tham gia lớp, nhận bài và nộp bài dùng backend thật. Bài viết chờ
   giáo viên chấm; trắc nghiệm được backend tính điểm, nhận xét tải lại từ server.
 - Học liệu hành trình 29 chữ vẫn là nội dung mẫu. Tiến độ hành trình và bản nháp
-  bài tập lưu trên thiết bị theo tài khoản, chưa đồng bộ tiến độ hành trình giữa thiết bị.
-- Không mô tả đăng ký/OTP, nhận dạng phát âm, chấm nét viết tự động hoặc đồng bộ
-  tiến độ hành trình là chức năng đã có của Android.
+  bài tập lưu trên thiết bị theo tài khoản. Hoạt động và snapshot hành trình được gửi
+  để phụ huynh theo dõi; chưa khôi phục hành trình từ cloud trên thiết bị mới.
+- Không mô tả đăng ký/OTP, nhận dạng phát âm, chấm nét viết tự động hoặc
+  khôi phục tiến độ hành trình trên thiết bị mới là chức năng đã có của Android.
 
 ## Nền tảng xây dựng
 
@@ -48,6 +49,9 @@ Các đường dẫn sau nằm trong `app/src/main/java/com/hocchu/mobile/`.
 | `classroom/ClassroomViewModel.kt`, `AssignmentDraftStore.kt`, `SubmissionImages.kt` | Trạng thái theo tài khoản, bản nháp và ảnh bài viết |
 | `ui/ClassroomScreen.kt` | Tham gia/chọn lớp, làm bài, nộp bài và xem điểm/nhận xét |
 | `ui/StudentApp.kt` | Khung học sinh, điều hướng, vùng lưu trạng thái và tiến độ tài khoản |
+| `family/FamilyModels.kt`, `FamilyApi.kt` | Mô hình báo cáo, liên kết con và hợp đồng API |
+| `family/ParentViewModel.kt`, `StudentActivityModel.kt` | Phiên phụ huynh và outbox hoạt động của học sinh |
+| `ui/ParentApp.kt` | Hôm nay, Tiến độ và Gia đình với dữ liệu backend thật |
 | `data/DemoContent.kt`, `LetterCurriculum.kt` | Danh sách 29 chữ và học liệu minh họa |
 | `data/LessonProgress.kt`, `LessonProgressStore.kt` | Quy tắc bài học và lưu tiến độ |
 | `ui/LearningScreens.kt`, `LetterLessonScreen.kt` | Trang chủ, đọc chữ, lớp minh họa và hành trình |
@@ -62,6 +66,8 @@ trạng thái chờ/lỗi rõ ràng, không đặt yêu cầu mạng trực ti�
 
 - Giữ bốn tab: Trang chủ, Đọc chữ, Tập viết, Lớp học. Nút Back phải trở về từ
   hoạt động đang mở trước khi rời khung học sinh.
+- Phụ huynh có ba tab riêng theo [PARENT.md](PARENT.md). Không mở hoặc khôi phục
+  chat/WebSocket trên Android, web hoặc backend.
 - Dùng `VuiHocTheme` và thành phần dùng chung; giữ chữ tiếng Việt có dấu,
   font Nunito Sans đóng gói cùng app và giấy phép đi kèm.
 - Header gọn, không khôi phục lời chào và các dòng phụ đã bỏ. Trang chủ không

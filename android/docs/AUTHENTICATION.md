@@ -7,10 +7,10 @@ Phải tuân theo [kiến trúc](ARCHITECTURE.md). Không ghi kết quả thực
 
 1. Gửi `POST /api/auth/signin` bằng JSON `usernameOrEmail` và `password`.
    Bỏ khoảng trắng đầu/cuối tên đăng nhập; không tự sửa mật khẩu.
-2. Phản hồi phải có ID dương, username hợp lệ, `roles` chứa `ROLE_STUDENT`,
+2. Phản hồi phải có ID dương, username hợp lệ, `roles` chứa `ROLE_STUDENT` hoặc `ROLE_PARENT`,
    `tokenType` bằng `Bearer`, `accessToken` đúng cấu trúc JWT và chưa hết hạn.
 3. Gọi `GET /api/auth/me` với `Authorization: Bearer <token>` trước khi lưu phiên
-   và mở giao diện học sinh. ID từ `/me` phải khớp tài khoản vừa đăng nhập.
+   và mở giao diện đúng vai trò. ID từ `/me` phải khớp tài khoản vừa đăng nhập.
 4. `/me` không cấp token mới; giữ token đã xác minh, cập nhật thông tin tài khoản.
    Không tự thay đổi hợp đồng backend để bỏ bước xác minh.
 
@@ -20,7 +20,7 @@ Không dùng việc giải mã JWT ở client như bằng chứng token hợp l�
 ## Trạng thái và lỗi
 
 - `AuthViewModel` giữ yêu cầu qua xoay màn hình. Dùng các trạng thái `Login`,
-  `Loading`, `SignedIn`, `Retry`; không hiện nội dung học sinh trước khi xác minh.
+  `Loading`, `SignedIn`, `Retry`; không hiện nội dung tài khoản trước khi xác minh.
 - Chặn gửi đăng nhập lặp khi yêu cầu đang chạy. Biểu mẫu phải có nhãn, kiểm tra
   trường bắt buộc, nút ẩn/hiện mật khẩu và thông báo lỗi đọc được.
 - Khởi động lại phải đọc phiên mã hóa và gọi `/me`. Lỗi mạng giữ phiên để thử lại;
@@ -51,8 +51,11 @@ Không dùng việc giải mã JWT ở client như bằng chứng token hợp l�
   hoặc học sinh phải tách dữ liệu; đăng nhập lại cùng tài khoản phải đọc lại vùng cũ.
 - SharedPreferences `learning` của bản xem trước cũ chỉ phục vụ preview/fixture.
   Không tự chuyển dữ liệu này cho tài khoản thật đầu tiên.
-- Bài cô giao được gửi lên backend theo [CLASSROOM.md](CLASSROOM.md), nhưng tiến độ
-  hành trình vẫn ở trên máy. Không mô tả hai loại dữ liệu này là cùng một cơ chế đồng bộ.
+- Bài cô giao được gửi theo [CLASSROOM.md](CLASSROOM.md). Hành trình lưu trên máy
+  và gửi snapshot/outbox cho phụ huynh theo [PARENT.md](PARENT.md); chưa phục hồi
+  hành trình từ cloud. Không trộn các cơ chế này hoặc gán dữ liệu cho tài khoản khác.
+- `UserAccount` dùng chung cho hai vai trò. `AuthGate` kết nối model đúng vai trò;
+  đăng xuất/đổi vai trò phải hủy yêu cầu cũ và bỏ báo cáo phụ huynh trong bộ nhớ.
 
 ## Cấu hình debug và release
 
