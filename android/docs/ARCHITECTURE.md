@@ -92,6 +92,9 @@ trạng thái chờ/lỗi rõ ràng, không đặt yêu cầu mạng trực ti�
 - Ưu tiên file âm thanh của học liệu/câu hỏi, dùng TTS tiếng Việt khi chưa có
   hoặc file lỗi. Lỗi ảnh/âm thanh phải có phản hồi. Dừng âm thanh khi tắt tiếng,
   rời app; giải phóng player/TTS theo vòng đời. Không gửi JWT theo URL media.
+- TTS phải báo cả lỗi trả về tức thời và lỗi tổng hợp/phát bất đồng bộ. Dùng
+  âm lượng đa phương tiện; khi thiếu giọng tiếng Việt, cho mở cài dữ liệu TTS
+  hoặc hướng dẫn cài thủ công. Không coi đã xếp hàng đọc là đã nghe thành công.
 
 ## Khi sửa chức năng
 

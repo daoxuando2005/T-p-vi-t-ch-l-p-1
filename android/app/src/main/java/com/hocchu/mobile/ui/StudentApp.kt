@@ -55,7 +55,7 @@ fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: Stri
     val studyContent=LocalStudyContent.current
     val context = LocalContext.current
     val inspection = LocalInspectionMode.current
-    val speech = remember(context, inspection) { if (inspection) null else Speech(context) }
+    val speech = remember(context, inspection) { if (inspection) null else Speech(context) { speechNotice = true } }
     DisposableEffect(speech) { onDispose { speech?.close() } }
     LaunchedEffect(sound) { if (!sound) speech?.stop() }
     val speak: (String) -> Unit = { if (sound && speech?.speak(it) == false) speechNotice = true }
@@ -200,7 +200,13 @@ fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: Stri
         dismissButton = { if(onLogout != null) TextButton(onClick = { profile = false; onLogout() }) { Text("Đăng xuất") } })
     if (speechNotice) AlertDialog(onDismissRequest = { speechNotice = false },
         title = { Text("Âm thanh tiếng Việt") },
-        text = { Text("Máy đang khởi tạo giọng đọc hoặc chưa có giọng tiếng Việt. Nếu chưa nghe được, hãy kiểm tra phần Chuyển văn bản thành giọng nói trong cài đặt thiết bị.") },
+        text = { Text("Hãy bật Âm thanh trong Hồ sơ và tăng âm lượng đa phương tiện. Máy cần giọng đọc tiếng Việt để đọc chữ, câu và lời khen. Nếu dùng tai nghe Bluetooth, âm thanh có thể đang phát qua tai nghe. Sau khi cài giọng tiếng Việt, hãy mở lại app.") },
+        dismissButton = { TextButton(onClick = {
+            try { context.startActivity(android.content.Intent(android.speech.tts.TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA)) }
+            catch (_: android.content.ActivityNotFoundException) {
+                android.widget.Toast.makeText(context,"Mở Cài đặt điện thoại → Chuyển văn bản thành giọng nói để cài giọng tiếng Việt.",android.widget.Toast.LENGTH_LONG).show()
+            }
+        }) { Text("Cài giọng đọc") } },
         confirmButton = { TextButton(onClick = { speechNotice = false }) { Text("Đã hiểu") } })
     activities?.code?.let {link ->
         val clipboard=androidx.compose.ui.platform.LocalClipboardManager.current

@@ -98,7 +98,10 @@ internal fun rememberMediaSpeech(fallback:(String)->Unit):(String,String)->Unit 
             else job=scope.launch {
                 try {
                     val bytes=withContext(Dispatchers.IO){mediaBytes(url,server)}
-                    val media=MediaPlayer();player=media;media.setDataSource(ByteAudio(bytes))
+                    val media=MediaPlayer();player=media
+                    media.setAudioAttributes(android.media.AudioAttributes.Builder().setUsage(android.media.AudioAttributes.USAGE_MEDIA)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SPEECH).build())
+                    media.setDataSource(ByteAudio(bytes))
                     media.setOnPreparedListener {if(player===it)it.start()}
                     media.setOnCompletionListener {it.release();if(player===it)player=null}
                     media.setOnErrorListener {p,_,_->p.release();if(player===p)player=null;currentFallback(text);true}
