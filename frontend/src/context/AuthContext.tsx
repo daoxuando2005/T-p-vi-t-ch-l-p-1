@@ -1,5 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import api from '../services/api';
+import { ANDROID_ACCOUNT_MESSAGE, AndroidAccountError, webHome } from '../utils/webAccess';
 
 interface User {
   id: number;
@@ -12,6 +13,7 @@ interface AuthContextType {
   user: User | null;
   token: string | null;
   loading: boolean;
+  notice: string | null;
   login: (usernameOrEmail: string, password: string) => Promise<any>;
   register: (data: any) => Promise<any>;
   verifyOtp: (emailOrUsername: string, otpCode: string) => Promise<any>;
@@ -25,6 +27,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
+  const [notice, setNotice] = useState<string | null>(null);
 
   useEffect(() => {
     // Khôi phục trạng thái đăng nhập khi tải trang
@@ -33,6 +36,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setToken(storedToken);
       api.get('/auth/me')
         .then((response) => {
+          if (!webHome(response.data?.roles)) {
+            localStorage.removeItem('token');
+            setToken(null);
+            setUser(null);
+            setNotice(ANDROID_ACCOUNT_MESSAGE);
+            return;
+          }
           setUser(response.data);
         })
         .catch(() => {
@@ -51,9 +61,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (usernameOrEmail: string, password: string) => {
     setLoading(true);
+    setNotice(null);
     try {
       const response = await api.post('/auth/signin', { usernameOrEmail, password });
       const { accessToken, id, username, fullName, roles } = response.data;
+      if (!webHome(roles)) throw new AndroidAccountError();
       
       localStorage.setItem('token', accessToken);
       setToken(accessToken);
@@ -66,7 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('token');
       setToken(null);
       setUser(null);
-      const message = error.response?.data?.message || 'Đăng nhập không thành công';
+      const message = error instanceof AndroidAccountError ? error.message : error.response?.data?.message || 'Đăng nhập không thành công';
       throw new Error(message);
     } finally {
       setLoading(false);
@@ -107,7 +119,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, loading, login, register, verifyOtp, logout, hasRole }}>
+    <AuthContext.Provider value={{ user, token, loading, notice, login, register, verifyOtp, logout, hasRole }}>
       {children}
     </AuthContext.Provider>
   );

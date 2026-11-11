@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import StudentLayout from './StudentLayout';
 import { BookOpen, LogOut, Home, ClipboardList, Shield, X, GraduationCap } from 'lucide-react';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
@@ -17,14 +16,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 
   if (!user) return null;
 
-  if (user.roles.includes('ROLE_STUDENT')) {
-    return <StudentLayout>{children}</StudentLayout>;
-  }
-
   const getMenuItems = () => {
     const hasPerm = (perm: string) => user.roles.includes(perm) || user.roles.includes('ROLE_ADMIN');
 
-    if (user.roles.includes('ROLE_TEACHER')) {
+    if (user.roles.includes('ROLE_TEACHER') && !user.roles.includes('ROLE_ADMIN')) {
       const items = [
         { label: 'Thống kê tổng quan', path: '/teacher', icon: Home }
       ];
@@ -36,16 +31,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       }
       if (hasPerm('PERM_VIEW_ALPHABET')) {
         items.push({ label: 'Quản lý học liệu', path: '/teacher/alphabet', icon: BookOpen });
-      }
-      return items;
-    }
-    if (user.roles.includes('ROLE_PARENT')) {
-      const items = [];
-      if (hasPerm('PERM_PARENT_TRACKING')) {
-        items.push({ label: 'Theo dõi tiến độ con', path: '/parent', icon: Home });
-      }
-      if (hasPerm('PERM_ASSIGN_HOMEWORK')) {
-        items.push({ label: 'Giao bài tập', path: '/parent/assignments', icon: ClipboardList });
       }
       return items;
     }
@@ -62,9 +47,8 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const menuItems = getMenuItems();
 
   const roleLabel = () => {
-    if (user.roles.includes('ROLE_TEACHER')) return 'Giáo viên';
-    if (user.roles.includes('ROLE_PARENT')) return 'Phụ huynh';
     if (user.roles.includes('ROLE_ADMIN')) return 'Quản trị viên';
+    if (user.roles.includes('ROLE_TEACHER')) return 'Giáo viên';
     return 'Người dùng';
   };
 

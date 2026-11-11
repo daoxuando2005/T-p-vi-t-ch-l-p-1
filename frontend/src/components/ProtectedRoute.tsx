@@ -1,10 +1,11 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { webHome } from '../utils/webAccess';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
-  allowedRole?: string; // STUDENT, TEACHER, PARENT, ADMIN
+  allowedRole?: 'TEACHER' | 'ADMIN';
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRole }) => {
@@ -25,13 +26,9 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children, allowedRole }
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRole && !hasRole(allowedRole)) {
-    // Nếu có tài khoản nhưng sai quyền hạn, tự động chuyển về trang của họ
-    if (user.roles.includes('ROLE_STUDENT')) return <Navigate to="/student" replace />;
-    if (user.roles.includes('ROLE_TEACHER')) return <Navigate to="/teacher" replace />;
-    if (user.roles.includes('ROLE_PARENT')) return <Navigate to="/parent" replace />;
-    if (user.roles.includes('ROLE_ADMIN')) return <Navigate to="/admin" replace />;
-  }
+  const home = webHome(user.roles);
+  if (!home) return <Navigate to="/login" replace />;
+  if (allowedRole && !hasRole(allowedRole)) return <Navigate to={home} replace />;
 
   return <>{children}</>;
 };

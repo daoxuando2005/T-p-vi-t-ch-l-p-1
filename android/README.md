@@ -1,6 +1,6 @@
 # Vui Học Lớp 1 — Android
 
-Ứng dụng **native Kotlin + Jetpack Compose** cho học sinh và phụ huynh, dùng chung phong cách từ bộ thiết kế Stitch. Website và backend nằm ở `../frontend` và `../backend`.
+Ứng dụng **native Kotlin + Jetpack Compose** cho học sinh và phụ huynh, dùng chung phong cách từ bộ thiết kế Stitch. Website giáo viên/admin và backend dùng chung nằm ở `../frontend` và `../backend`.
 
 ## Quy tắc phát triển
 

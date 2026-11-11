@@ -22,7 +22,7 @@ Không ghi kết quả thực hiện ở đây.
 
 - Học sinh lấy mã ở Hồ sơ → Liên kết phụ huynh. Mã ngẫu nhiên phân biệt hoa thường,
   có hiệu lực 30 phút, chỉ sử dụng một lần. Backend chỉ lưu SHA-256 của mã mời.
-- Phụ huynh nhập mã tại Gia đình hoặc website. Không dùng tên đăng nhập của con
+- Phụ huynh nhập mã tại Gia đình trên Android. Không dùng tên đăng nhập của con
   làm bằng chứng sở hữu; không chuyển học sinh đã liên kết sang phụ huynh khác.
 - Mọi API báo cáo phải kiểm tra quan hệ `APPROVED` tại server. Quan hệ `PENDING`,
   ID được sửa thủ công hoặc dữ liệu client đều không cấp quyền xem học sinh.

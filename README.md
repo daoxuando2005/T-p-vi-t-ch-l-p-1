@@ -8,7 +8,11 @@ Hệ thống cung cấp một nền tảng học tập trực tuyến toàn di�
 
 Thư mục [`android/`](android/) chứa ứng dụng học sinh và phụ huynh viết bằng Kotlin và Jetpack Compose, dùng chung phong cách thiết kế Stitch. Mở riêng thư mục này bằng Android Studio. Xem [hướng dẫn cấu hình và chạy Android](android/README.md).
 
-Android đăng nhập theo vai trò học sinh/phụ huynh, lưu phiên mã hóa và tách tiến độ theo tài khoản. Lớp học và bài cô giao dùng API thật. Hành trình vẫn dùng học liệu minh họa; hoạt động cùng snapshot 29 chữ được gửi lên backend để phụ huynh xem theo ngày và theo tuần. Chưa có khôi phục hành trình từ cloud trên thiết bị mới. Xem [luồng theo dõi phụ huynh](android/docs/PARENT.md). Xem [luồng lớp học Android](android/docs/CLASSROOM.md). Xem [cấu hình backend local cho Android](android/docs/AUTHENTICATION.md) và [quy tắc phát triển Android](android/AGENTS.md). Website tiếp tục hoạt động độc lập.
+Android đăng nhập theo vai trò học sinh/phụ huynh, lưu phiên mã hóa và tách tiến độ theo tài khoản. Lớp học và bài cô giao dùng API thật. Hành trình vẫn dùng học liệu minh họa; hoạt động cùng snapshot 29 chữ được gửi lên backend để phụ huynh xem theo ngày và theo tuần. Chưa có khôi phục hành trình từ cloud trên thiết bị mới. Xem [luồng theo dõi phụ huynh](android/docs/PARENT.md), [lớp học Android](android/docs/CLASSROOM.md), [kết nối backend](android/docs/AUTHENTICATION.md) và [quy tắc phát triển](android/AGENTS.md).
+
+Website chỉ dành cho **giáo viên và admin**. Học sinh và phụ huynh dùng Android;
+các trang web tương ứng đã được bỏ. Biểu mẫu đăng ký/OTP chung trên web vẫn
+cho phép tạo tài khoản trước khi dùng app. Backend và dữ liệu dùng chung được giữ.
 
 ---
 
@@ -39,7 +43,7 @@ Sau khi khởi chạy ứng dụng lần đầu, cơ sở dữ liệu sẽ đư�
 
 ### Môi trường yêu cầu
 *   Java Development Kit (JDK) 17 hoặc cao hơn.
-*   Node.js (phiên bản 18 hoặc cao hơn) & npm.
+*   Node.js 22.12 hoặc cao hơn & npm.
 *   MySQL Server (cổng mặc định 3306).
 
 ---
@@ -100,17 +104,17 @@ Sau khi khởi chạy ứng dụng lần đầu, cơ sở dữ liệu sẽ đư�
 2.  Sau khi nhấn nút Đăng ký, hệ thống hiển thị trang nhập OTP.
 3.  Mở **Console Log** của terminal chạy **Backend Spring Boot** lên. Bạn sẽ thấy dòng log hiển thị mã OTP 6 chữ số:
     `MÃ OTP KÍCH HOẠT TÀI KHOẢN CHO USER '...': XXXXXX`
-4.  Nhập mã OTP đó trên màn hình frontend để kích hoạt tài khoản thành công và đăng nhập.
+4.  Nhập mã OTP trên website để kích hoạt. Giáo viên đăng nhập website; học sinh/phụ huynh mở app Android để đăng nhập. Admin cũng có thể tạo các tài khoản này trong Quản lý người dùng.
 
 ### 2. Module Luyện viết chữ của Học sinh
-*   Học sinh vào mục **Luyện viết chữ**, chọn một chữ cái.
+*   Học sinh mở app Android, vào mục **Tập viết**, chọn một chữ cái.
 *   Bảng ô ly chuẩn tập viết sẽ hiện ra cùng chữ cái mẫu mờ nhạt nằm phía sau.
-*   Dùng chuột hoặc vẽ bằng tay (trên iPad/điện thoại) để viết đè lên chữ mẫu.
-*   Lượt tập viết trên Android ghi nhận việc luyện tập, chưa nhận dạng hoặc chấm độ chính xác nét chữ. Bài viết được giao chờ giáo viên chấm; không sử dụng điểm minh họa của website như kết quả đánh giá năng lực.
+*   Dùng ngón tay hoặc bút trên điện thoại/tablet Android để luyện theo chữ mẫu.
+*   Lượt tập viết ghi nhận việc luyện tập, chưa nhận dạng hoặc chấm độ chính xác nét chữ. Bài viết được giao chờ giáo viên chấm.
 
 ### 3. Liên kết Phụ huynh & Xem biểu đồ học tập của con
 *   Đăng nhập tài khoản học sinh trong app, mở **Hồ sơ → Liên kết phụ huynh** để lấy mã dùng một lần có hiệu lực 30 phút.
-*   Đăng nhập tài khoản Phụ huynh (`parent1`), nhấn **Liên kết con mới**, nhập mã liên kết này để hoàn tất kết nối.
-*   Trong app phụ huynh, chọn con và ngày ở **Hôm nay** để xem lượt đọc, viết, câu luyện tập, bài đã nộp và dòng hoạt động. **Tiến độ** hiển thị 29 chữ và hoạt động bảy ngày. Trên website, phụ huynh tiếp tục xem các báo cáo hiện có.
+*   Đăng nhập tài khoản phụ huynh (`parent1`) trên Android, mở **Gia đình** và nhập mã liên kết.
+*   Chọn con và ngày ở **Hôm nay** để xem lượt đọc, viết, câu luyện tập, bài đã nộp và dòng hoạt động. **Tiến độ** hiển thị 29 chữ và hoạt động bảy ngày.
 
 Chat đã được gỡ khỏi Android, website và backend. Hệ thống không mở endpoint WebSocket; các migration cũ và lịch sử dữ liệu được giữ nguyên.

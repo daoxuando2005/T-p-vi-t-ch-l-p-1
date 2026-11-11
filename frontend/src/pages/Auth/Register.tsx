@@ -52,7 +52,9 @@ const Register: React.FC = () => {
     setError('');
     try {
       const res = await verifyOtp(registeredEmail, otpCode);
-      alert(res.message || 'Kích hoạt tài khoản thành công! Bạn có thể đăng nhập ngay.');
+      alert(role === 'TEACHER'
+        ? (res.message || 'Kích hoạt tài khoản thành công! Bạn có thể đăng nhập ngay.')
+        : 'Kích hoạt tài khoản thành công! Hãy mở ứng dụng Vui Học trên Android để đăng nhập.');
       navigate('/login');
     } catch (err: any) {
       setError(err.message || 'Kích hoạt OTP thất bại. Vui lòng kiểm tra lại.');
@@ -209,6 +211,7 @@ const Register: React.FC = () => {
 
                 {/* Vai trò */}
                 <div>
+                  <p className="mb-3 text-sm font-bold text-slate-500">Học sinh và phụ huynh dùng tài khoản trên Android. Giáo viên đăng nhập tại website.</p>
                   <label className="block text-xs font-black text-sky-700/80 uppercase tracking-wider mb-2">Bạn là ai?</label>
                   <div className="grid grid-cols-3 gap-3">
                     {roles.map(({ key, label, icon: Icon }) => (

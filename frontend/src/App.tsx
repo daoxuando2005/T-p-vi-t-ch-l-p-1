@@ -8,20 +8,10 @@ import Layout from './components/Layout';
 import Login from './pages/Auth/Login';
 import Register from './pages/Auth/Register';
 
-// Student Pages
-import StudentDashboard from './pages/Student/Dashboard';
-import Alphabet from './pages/Student/Alphabet';
-import WritingCanvas from './pages/Student/WritingCanvas';
-import StudentClasses from './pages/Student/Classes';
-
 // Teacher Pages
 import TeacherDashboard from './pages/Teacher/Dashboard';
 import TeacherAssignments from './pages/Teacher/Assignments';
 import TeacherAlphabetManagement from './pages/Teacher/AlphabetManagement';
-
-// Parent Pages
-import ParentDashboard from './pages/Parent/Dashboard';
-import ParentAssignmentManagement from './pages/Parent/AssignmentManagement';
 
 // Admin Pages
 import AdminDashboard from './pages/Admin/Dashboard';
@@ -35,37 +25,6 @@ const App: React.FC = () => {
           {/* Public Routes */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-
-          {/* Student Protected Routes */}
-          <Route path="/student" element={
-            <ProtectedRoute allowedRole="STUDENT">
-              <Layout>
-                <StudentDashboard />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/student/alphabet" element={
-            <ProtectedRoute allowedRole="STUDENT">
-              <Layout>
-                <Alphabet />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/student/practice" element={
-            <ProtectedRoute allowedRole="STUDENT">
-              <Layout>
-                <WritingCanvas />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/student/classes" element={
-            <ProtectedRoute allowedRole="STUDENT">
-              <Layout>
-                <StudentClasses />
-              </Layout>
-            </ProtectedRoute>
-          } />
-
 
           {/* Teacher Protected Routes */}
           <Route path="/teacher" element={
@@ -93,29 +52,6 @@ const App: React.FC = () => {
             <ProtectedRoute allowedRole="TEACHER">
               <Layout>
                 <TeacherAlphabetManagement />
-              </Layout>
-            </ProtectedRoute>
-          } />
-
-          {/* Parent Protected Routes */}
-          <Route path="/parent" element={
-            <ProtectedRoute allowedRole="PARENT">
-              <Layout>
-                <ParentDashboard />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/parent/link" element={
-            <ProtectedRoute allowedRole="PARENT">
-              <Layout>
-                <ParentDashboard />
-              </Layout>
-            </ProtectedRoute>
-          } />
-          <Route path="/parent/assignments" element={
-            <ProtectedRoute allowedRole="PARENT">
-              <Layout>
-                <ParentAssignmentManagement />
               </Layout>
             </ProtectedRoute>
           } />

@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, Navigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { BookOpen, KeyRound, User, AlertCircle, Sparkles } from 'lucide-react';
+import { webHome } from '../../utils/webAccess';
 
 const Login: React.FC = () => {
-  const { login } = useAuth();
+  const { login, user, notice } = useAuth();
   const navigate = useNavigate();
   
   const [usernameOrEmail, setUsernameOrEmail] = useState('');
@@ -24,12 +25,7 @@ const Login: React.FC = () => {
 
     try {
       const res = await login(usernameOrEmail, password);
-      const roles = res.user.roles;
-      if (roles.includes('ROLE_STUDENT')) navigate('/student');
-      else if (roles.includes('ROLE_TEACHER')) navigate('/teacher');
-      else if (roles.includes('ROLE_PARENT')) navigate('/parent');
-      else if (roles.includes('ROLE_ADMIN')) navigate('/admin');
-      else navigate('/');
+      navigate(webHome(res.user.roles) || '/login', { replace: true });
     } catch (err: any) {
       setError(err.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.');
     } finally {
@@ -54,6 +50,9 @@ const Login: React.FC = () => {
     } catch (e) {}
   };
 
+  const home = webHome(user?.roles);
+  if (home) return <Navigate to={home} replace />;
+
   return (
     <div 
       className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-sky-100 via-pink-100 to-amber-100"
@@ -70,7 +69,7 @@ const Login: React.FC = () => {
             Học Chữ Tiếng Việt
             <Sparkles className="w-6 h-6 text-amber-500 animate-spin-slow" />
           </h1>
-          <p className="text-slate-500 text-sm font-bold mt-2">Hệ thống hỗ trợ học sinh lớp 1 luyện viết chữ</p>
+          <p className="text-slate-500 text-sm font-bold mt-2">Cổng giáo viên và quản trị viên</p>
         </div>
 
         {/* Card Panel (Bảng trắng bo tròn lớn) */}
@@ -78,12 +77,13 @@ const Login: React.FC = () => {
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-sky-400 via-pink-400 to-amber-400"></div>
 
           <h2 className="text-xl sm:text-2xl font-black text-sky-800 mb-6">Đăng nhập tài khoản</h2>
+          <p className="mb-5 text-sm font-bold text-slate-500">Học sinh và phụ huynh vui lòng sử dụng ứng dụng Vui Học trên Android.</p>
 
           {/* Sáng sủa tươi vui lỗi báo */}
-          {error && (
-            <div className="mb-6 p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl text-xs sm:text-sm font-black text-rose-600 flex items-center gap-3 animate-bounce-short">
+          {(error || notice) && (
+            <div role="alert" className="mb-6 p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl text-xs sm:text-sm font-black text-rose-600 flex items-center gap-3 animate-bounce-short">
               <AlertCircle className="w-5 h-5 shrink-0 text-rose-500" />
-              <span>{error}</span>
+              <span>{error || notice}</span>
             </div>
           )}
 

@@ -10,6 +10,8 @@ buộc dưới đây khi thay đổi chức năng liên quan. Không ghi kết q
   là `com.hocchu.mobile`. Không thay giao diện native bằng trang web nhúng.
 - Backend Spring Boot và website nằm ở `../../backend` và `../../frontend`.
   Android gọi API backend, không kết nối MySQL trực tiếp.
+- Website chỉ có khu vực giáo viên và admin; học sinh và phụ huynh sử dụng
+  Android. Không khôi phục các trang web cũ khi thêm chức năng cho app.
 - Xác thực, tham gia lớp, nhận bài và nộp bài dùng backend thật. Bài viết chờ
   giáo viên chấm; trắc nghiệm được backend tính điểm, nhận xét tải lại từ server.
 - Học liệu hành trình 29 chữ vẫn là nội dung mẫu. Tiến độ hành trình và bản nháp

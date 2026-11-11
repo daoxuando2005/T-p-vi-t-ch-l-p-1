@@ -2,14 +2,6 @@
 
 @import "tailwindcss";
 
-@font-face {
-  font-family: 'HP001';
-  src: url('/fonts/HP001.ttf') format('truetype');
-  font-weight: normal;
-  font-style: normal;
-  font-display: swap;
-}
-
 @theme {
   --color-brand-50: #f5f3ff;
   --color-brand-100: #ede9fe;
@@ -41,27 +33,6 @@
 
 .glass-input {
   @apply bg-white border-2 border-sky-100 rounded-xl px-4 py-3 text-slate-700 focus:outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-400/20 placeholder-slate-400 transition-all duration-200;
-}
-
-/* Notebook Writing Grid Style (Tập Vở Ô Ly Tiếng Việt Tiểu Học Chuẩn Nét) */
-.notebook-grid {
-  position: relative;
-  background-color: #fafdfa;
-  background-image: 
-    linear-gradient(rgba(56, 189, 248, 0.35) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(56, 189, 248, 0.35) 1px, transparent 1px);
-  background-size: 16px 16px; /* Ô ly nhỏ 16px */
-}
-
-.notebook-grid::before {
-  content: "";
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  pointer-events: none;
-  background-image: 
-    linear-gradient(rgba(2, 132, 199, 0.65) 1.5px, transparent 1.5px),
-    linear-gradient(90deg, rgba(2, 132, 199, 0.65) 1.5px, transparent 1.5px);
-  background-size: 64px 64px; /* Khung ô ly vuông chuẩn 4x4 ô nhỏ = 64px */
 }
 
 /* LÀM NẮC SẮC NÉT HÌNH ẢNH CHỮ MẪU KHỬ MỜ */
