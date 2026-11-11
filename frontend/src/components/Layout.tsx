@@ -2,16 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import StudentLayout from './StudentLayout';
-import { 
-  BookOpen, 
-  LogOut, 
-  Home, 
-  ClipboardList, 
-  Shield, 
-  Menu,
-  X,
-  GraduationCap
-} from 'lucide-react';
+import { BookOpen, LogOut, Home, ClipboardList, Shield, X, GraduationCap } from 'lucide-react';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, logout } = useAuth();

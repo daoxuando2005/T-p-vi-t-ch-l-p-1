@@ -1,32 +1,36 @@
-# React + TypeScript + Vite
+# Vui Học — Website
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Website React và TypeScript cho học sinh, phụ huynh, giáo viên và quản trị viên.
+Ứng dụng Android ở `../android`, backend dùng chung ở `../backend`.
+Giữ các trang còn có tuyến truy cập khi dọn mã.
 
-Currently, two official plugins are available:
+## Chạy và kiểm tra
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Chạy backend theo [hướng dẫn dự án](../README.md), rồi chạy từ thư mục này:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```sh
+npm ci
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+Website local: `http://localhost:5173`. URL API nằm trong `src/services/api.ts`.
+Website gọi backend, không kết nối trực tiếp MySQL.
+
+```sh
+npm run build
+npm run lint
+```
+
+`src/main.tsx` là điểm vào; `src/App.tsx` khai báo tuyến theo vai trò.
+
+## Mẫu chữ và tài sản
+
+`src/pages/Student/writing/engine/` được trang tập viết và bài tập học sinh sử dụng.
+Giữ `templateData.ts` và font đang dùng tại `public/fonts/HP001.ttf`.
+`../generate_templates.py` sinh lại dữ liệu mẫu; chạy từ thư mục gốc với môi
+trường Python có NumPy, Pillow và scikit-image. Chỉ sinh lại khi có chủ đích và
+duyệt diff trước khi commit.
+
+Ảnh/âm thanh từ backend có thể không xuất hiện trong import tĩnh. Trước khi xóa
+tài sản trong `public/`, kiểm tra cả URL trong CSS, cấu hình, backend và dữ liệu
+học liệu. Giữ các biểu tượng PWA và font đang được tham chiếu.

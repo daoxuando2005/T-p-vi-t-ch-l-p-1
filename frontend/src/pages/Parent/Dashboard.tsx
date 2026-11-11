@@ -1,29 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
-import { 
-  Users, 
-  Award, 
-  BookOpen, 
-  TrendingUp, 
-  AlertCircle, 
-  MessageSquare,
-  Plus,
-  BarChart2,
-  Bell,
-  Clock,
-  CheckCircle2,
-  Calendar,
-  Star,
-  Trophy,
-  Medal,
-  ThumbsUp,
-  X,
-  Sparkles,
-  Eye,
-  HelpCircle,
-  PenTool
-} from 'lucide-react';
+import { Users, AlertCircle, MessageSquare, Plus, BarChart2, Bell, Clock, CheckCircle2, Trophy, X, Sparkles, Eye, HelpCircle, PenTool } from 'lucide-react';
 
 interface ChildLink {
   id: number;

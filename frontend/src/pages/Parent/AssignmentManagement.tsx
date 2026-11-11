@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../../services/api';
-import { 
-  ClipboardList, 
-  Users, 
-  Plus, 
-  Calendar, 
-  CheckCircle, 
-  AlertCircle, 
-  ShieldAlert, 
-  Send,
-  BookOpen
-} from 'lucide-react';
+import { Plus, Calendar, CheckCircle, AlertCircle, ShieldAlert, Send, BookOpen } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface StudentLink {
