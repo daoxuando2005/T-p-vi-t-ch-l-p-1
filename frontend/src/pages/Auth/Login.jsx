@@ -69,7 +69,6 @@ const Login = () => {
           <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-sky-400 via-pink-400 to-amber-400"></div>
 
           <h2 className="text-xl sm:text-2xl font-black text-sky-800 mb-6">Đăng nhập tài khoản</h2>
-          <p className="mb-5 text-sm font-bold text-slate-500">Học sinh và phụ huynh vui lòng sử dụng ứng dụng Vui Học trên Android.</p>
 
           {/* Sáng sủa tươi vui lỗi báo */}
           {(error || notice) && (<div role="alert" className="mb-6 p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl text-xs sm:text-sm font-black text-rose-600 flex items-center gap-3 animate-bounce-short">

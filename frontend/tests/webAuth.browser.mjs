@@ -101,18 +101,25 @@ try {
   await send('Page.enable'); await send('Runtime.enable');
   await send('Fetch.enable', { patterns: [{ urlPattern: 'http*' }] });
   await navigate('/login'); await pathname('/login');
+  await until(() => evaluate('!!document.querySelector("form input[type=password]")'));
+  assert.equal(await evaluate('document.body.textContent.includes("Android")'), false);
+  await navigate('/register'); await pathname('/register');
+  await until(() => evaluate('!!document.querySelector("form input[type=password]")'));
+  assert.equal(await evaluate('document.body.textContent.includes("Android")'), false);
+  await navigate('/login'); await pathname('/login');
   for (const role of ['ROLE_STUDENT', 'ROLE_PARENT']) {
     await reset([role]); await signIn();
-    await until(() => evaluate('!!document.querySelector("[role=alert]")?.textContent.includes("Android")'));
+    await until(() => evaluate('!!document.querySelector("[role=alert]")?.textContent.includes("giáo viên")'));
+    assert.equal(await evaluate('document.body.textContent.includes("Android")'), false);
     assert.equal(await evaluate('localStorage.getItem("token")'), null);
     assert.ok(requests.every(p => p.startsWith('/api/auth/')));
     await evaluate('localStorage.setItem("token","old-android-web-token")');
     await navigate('/teacher'); await pathname('/login');
-    await until(() => evaluate('!!document.querySelector("[role=alert]")?.textContent.includes("Android")'));
+    await until(() => evaluate('!!document.querySelector("[role=alert]")?.textContent.includes("giáo viên")'));
     assert.equal(await evaluate('localStorage.getItem("token")'), null);
   }
   const screenshot = await send('Page.captureScreenshot', { format: 'png' });
-  await writeFile('node_modules/.tmp/web-auth-android-notice.png', Buffer.from(screenshot.data, 'base64'));
+  await writeFile('node_modules/.tmp/web-auth-role-notice.png', Buffer.from(screenshot.data, 'base64'));
   for (const role of ['ROLE_TEACHER', 'ROLE_ADMIN']) {
     await reset([role, 'PERM_VIEW_ALPHABET', 'PERM_ASSIGN_HOMEWORK', 'PERM_MANAGE_CLASSES']);
     await signIn(); const home = role === 'ROLE_ADMIN' ? '/admin' : '/teacher'; await pathname(home);

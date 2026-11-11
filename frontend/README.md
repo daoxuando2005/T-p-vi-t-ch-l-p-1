@@ -9,8 +9,8 @@ Android tiếp tục dùng Kotlin; backend dùng Java. Giữ mã giao diện tro
 và các hàm/API dùng chung trong `.js`; build trực tiếp bằng Vite.
 
 Website không cung cấp trang học sinh/phụ huynh. Đăng nhập và khôi phục phiên
-chỉ nhận vai trò giáo viên hoặc admin; các tài khoản dùng Android được hướng
-dẫn ngay trên trang đăng nhập. Biểu mẫu đăng ký/OTP chung vẫn tạo được tài
+chỉ nhận vai trò giáo viên hoặc admin; tài khoản khác nhận thông báo quyền truy
+cập, không hiển thị lời nhắc chuyển sang Android. Biểu mẫu đăng ký/OTP chung vẫn tạo được tài
 khoản học sinh/phụ huynh vì app chưa có chức năng đăng ký.
 
 ## Chạy và kiểm tra

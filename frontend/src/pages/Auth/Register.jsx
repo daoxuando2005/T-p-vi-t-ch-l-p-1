@@ -48,9 +48,7 @@ const Register = () => {
         setError('');
         try {
             const res = await verifyOtp(registeredEmail, otpCode);
-            alert(role === 'TEACHER'
-                ? (res.message || 'Kích hoạt tài khoản thành công! Bạn có thể đăng nhập ngay.')
-                : 'Kích hoạt tài khoản thành công! Hãy mở ứng dụng Vui Học trên Android để đăng nhập.');
+            alert(res.message || 'Kích hoạt tài khoản thành công.');
             navigate('/login');
         }
         catch (err) {
@@ -161,7 +159,6 @@ const Register = () => {
 
                 {/* Vai trò */}
                 <div>
-                  <p className="mb-3 text-sm font-bold text-slate-500">Học sinh và phụ huynh dùng tài khoản trên Android. Giáo viên đăng nhập tại website.</p>
                   <label className="block text-xs font-black text-sky-700/80 uppercase tracking-wider mb-2">Bạn là ai?</label>
                   <div className="grid grid-cols-3 gap-3">
                     {roles.map(({ key, label, icon: Icon }) => (<button key={key} type="button" onClick={() => setRole(key)} className={`py-3.5 px-2 rounded-2xl border-3 text-sm font-black transition-all flex flex-col items-center gap-1.5 ${role === key

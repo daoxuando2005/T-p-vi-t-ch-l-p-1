@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect, useContext } from 'react';
 import api from '../services/api';
-import { ANDROID_ACCOUNT_MESSAGE, AndroidAccountError, webHome } from '../utils/webAccess';
+import { WEB_ACCESS_MESSAGE, WebAccessError, webHome } from '../utils/webAccess';
 const AuthContext = createContext(undefined);
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -18,7 +18,7 @@ export const AuthProvider = ({ children }) => {
                     localStorage.removeItem('token');
                     setToken(null);
                     setUser(null);
-                    setNotice(ANDROID_ACCOUNT_MESSAGE);
+                    setNotice(WEB_ACCESS_MESSAGE);
                     return;
                 }
                 setUser(response.data);
@@ -44,7 +44,7 @@ export const AuthProvider = ({ children }) => {
             const response = await api.post('/auth/signin', { usernameOrEmail, password });
             const { accessToken, id, username, fullName, roles } = response.data;
             if (!webHome(roles))
-                throw new AndroidAccountError();
+                throw new WebAccessError();
             localStorage.setItem('token', accessToken);
             setToken(accessToken);
             const loggedUser = { id, username, fullName, roles };
@@ -55,7 +55,7 @@ export const AuthProvider = ({ children }) => {
             localStorage.removeItem('token');
             setToken(null);
             setUser(null);
-            const message = error instanceof AndroidAccountError ? error.message : error.response?.data?.message || 'Đăng nhập không thành công';
+            const message = error instanceof WebAccessError ? error.message : error.response?.data?.message || 'Đăng nhập không thành công';
             throw new Error(message);
         }
         finally {
