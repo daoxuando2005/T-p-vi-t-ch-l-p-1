@@ -72,7 +72,11 @@ try {
     const message = JSON.parse(event.data);
     if (message.id) {
       const waiter = pending.get(message.id);
-      if (waiter) { clearTimeout(waiter.timer); pending.delete(message.id); message.error ? waiter.reject(new Error(message.error.message)) : waiter.resolve(message.result); }
+      if (waiter) {
+        clearTimeout(waiter.timer); pending.delete(message.id);
+        if (message.error) waiter.reject(new Error(message.error.message));
+        else waiter.resolve(message.result);
+      }
       return;
     }
     if (message.method === 'Runtime.exceptionThrown') errors.push(message.params.exceptionDetails.text);

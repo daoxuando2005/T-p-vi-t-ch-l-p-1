@@ -21,7 +21,7 @@ cho phép tạo tài khoản trước khi dùng app. Backend và dữ liệu dù
 *   **Backend:** Java 17, Spring Boot 3 (Web, Security, Data JPA, Validation)
 *   **Database:** MySQL (Flyway migration quản lý schema tự động)
 *   **Xác thực:** JWT (JSON Web Token) + Xác thực OTP
-*   **Frontend:** React, TypeScript, Vite, Tailwind CSS, Axios, React Router, Recharts
+*   **Frontend:** React, JavaScript, Vite, Tailwind CSS, Axios, React Router, Recharts
 *   **Build Tool:** Maven (Backend), npm (Frontend)
 
 ---

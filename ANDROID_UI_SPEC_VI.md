@@ -140,9 +140,9 @@ Giao diện không gọi database. Các màn hình gọi repository của Androi
 
 ## 12. Nguồn đối chiếu trong mã hiện tại
 
-- Điều hướng web giáo viên/admin: `frontend/src/App.tsx`, `frontend/src/components/Layout.tsx`.
-- Đăng nhập: `frontend/src/pages/Auth/Login.tsx`, `frontend/src/pages/Auth/Register.tsx`.
+- Điều hướng web giáo viên/admin: `frontend/src/App.jsx`, `frontend/src/components/Layout.jsx`.
+- Đăng nhập: `frontend/src/pages/Auth/Login.jsx`, `frontend/src/pages/Auth/Register.jsx`.
 - Học sinh Android: `android/app/src/main/java/com/hocchu/mobile/ui/StudentApp.kt`.
 - Giáo viên: `frontend/src/pages/Teacher/`.
 - Phụ huynh Android: `android/app/src/main/java/com/hocchu/mobile/ui/ParentApp.kt`.
-- Quản trị: `frontend/src/pages/Admin/Dashboard.tsx`.
+- Quản trị: `frontend/src/pages/Admin/Dashboard.jsx`.

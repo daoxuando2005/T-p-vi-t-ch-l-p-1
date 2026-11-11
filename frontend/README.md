@@ -1,8 +1,12 @@
 # Vui Học — Website
 
-Website React và TypeScript dành cho giáo viên và quản trị viên.
+Website React và JavaScript dành cho giáo viên và quản trị viên.
 Học sinh và phụ huynh sử dụng ứng dụng Android tại `../android`.
 Hai nền tảng dùng chung backend trong `../backend`.
+
+Frontend dùng JavaScript/JSX, không dùng TypeScript hoặc script Python.
+Android tiếp tục dùng Kotlin; backend dùng Java. Giữ mã giao diện trong `.jsx`
+và các hàm/API dùng chung trong `.js`; build trực tiếp bằng Vite.
 
 Website không cung cấp trang học sinh/phụ huynh. Đăng nhập và khôi phục phiên
 chỉ nhận vai trò giáo viên hoặc admin; các tài khoản dùng Android được hướng
@@ -18,7 +22,7 @@ npm ci
 npm run dev
 ```
 
-Website local: `http://localhost:5173`. URL API nằm trong `src/services/api.ts`.
+Website local: `http://localhost:5173`. URL API nằm trong `src/services/api.js`.
 Website gọi backend, không kết nối trực tiếp MySQL.
 
 ```sh
@@ -27,7 +31,7 @@ npm run lint
 npm test
 ```
 
-`src/main.tsx` là điểm vào; `src/App.tsx` khai báo tuyến theo vai trò.
+`src/main.jsx` là điểm vào; `src/App.jsx` khai báo tuyến theo vai trò.
 
 Để kiểm tra đăng nhập, khôi phục phiên và chuyển trang trong trình duyệt, chạy
 web local rồi `npm run test:browser` (Node.js 22.12 trở lên). Bài kiểm tra dùng Edge/Chrome đã cài, profile
