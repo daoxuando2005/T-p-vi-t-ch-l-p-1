@@ -189,7 +189,7 @@ public class TeacherService {
             notificationRepository.save(notif);
 
             // Thông báo cho phụ huynh của học sinh nếu có
-            parentStudentLinkRepository.findByStudentId(cm.getStudent().getId()).ifPresent(link -> {
+            parentStudentLinkRepository.findAllByStudentId(cm.getStudent().getId()).forEach(link -> {
                 if ("APPROVED".equals(link.getStatus())) {
                     Notification parentNotif = Notification.builder()
                             .user(link.getParent())
@@ -307,7 +307,7 @@ public class TeacherService {
         notificationRepository.save(notif);
 
         // Thông báo phụ huynh
-        parentStudentLinkRepository.findByStudentId(submission.getStudent().getId()).ifPresent(link -> {
+        parentStudentLinkRepository.findAllByStudentId(submission.getStudent().getId()).forEach(link -> {
             if ("APPROVED".equals(link.getStatus())) {
                 Notification parentNotif = Notification.builder()
                         .user(link.getParent())

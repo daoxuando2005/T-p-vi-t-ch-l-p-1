@@ -13,8 +13,10 @@ học sinh từ client để chọn chủ sở hữu: backend lấy ID từ prin
 | --- | --- |
 | `GET /api/student/class/joined` | Danh sách lớp thật: ID, tên lớp, tên giáo viên |
 | `POST /api/student/class/join?inviteCode=...` | Mã được trim và URL-encode; chỉ báo tham gia thành công khi `success=true` |
+| `DELETE /api/student/class/leave/{id}` | Rời lớp sau xác nhận; giữ bài nộp và lịch sử học |
 | `GET /api/student/assignments` | Bài của các lớp đã tham gia, nội dung, hạn nộp, trạng thái, điểm và nhận xét |
 | `POST /api/student/assignments/{id}/submit` | JSON có `submissionData` là một chuỗi JSON; chỉ xác nhận hoàn thành sau phản hồi thành công |
+| `GET /api/student/assignments/{id}/submission` | Xem lại bài gần nhất của chính học sinh, ảnh/đáp án/điểm/nhận xét |
 
 Backend phải kiểm tra học sinh thuộc lớp của bài trước khi lưu bài nộp. Phân biệt
 401 (phiên không hợp lệ, quay lại đăng nhập) với 403 (không có quyền với lớp/bài).
@@ -36,8 +38,8 @@ Lỗi HTTP, JSON hỏng hoặc `success=false` không được biến thành th�
   App hiển thị câu hỏi/lựa chọn, hỗ trợ TTS; gửi `{"answers":[...]}` trong
   `submissionData`. Không tự quyết định điểm ở client; backend kiểm tra đủ đáp án
   hợp lệ và tính trên thang 10.
-- Nếu có `animalName`, dùng làm nội dung TTS hỗ trợ. Bản hiện tại chưa tải ảnh
-  hoặc phát file âm thanh riêng của câu hỏi; không mô tả các media này là đã hỗ trợ.
+- Nếu có `animalName`, dùng làm nội dung TTS hỗ trợ. `imageUrl`/`audioUrl` được
+  hiển thị/phát từ media công khai; tải lỗi phải có phản hồi và TTS dự phòng.
 - `WRITING`: hỗ trợ chữ đơn dạng text và JSON `{"letter":"A"}` hoặc
   `{"letters":["A","B"],"targetScore":70}`. Chỉ nhận chữ thuộc bảng 29 chữ tiếng Việt.
 - Dùng lại `WritingBoard` và mẫu ô li hiện có; giữ nét từng chữ khi đổi chữ.
@@ -50,6 +52,14 @@ Lỗi HTTP, JSON hỏng hoặc `success=false` không được biến thành th�
 - Tổng dữ liệu nộp tối đa 4.000.000 ký tự; cột `submission_data` cần LONGTEXT qua
   migration V10 để không cắt mất bộ ảnh. Nội dung hỏng/loại bài chưa hỗ trợ phải
   có thông báo, không mở bài trống rồi cho nộp.
+- Backend kiểm tra ảnh có định dạng PNG/JPEG thực, kích thước không quá 4096 mỗi
+  chiều và 8 triệu pixel; bộ ảnh phải khớp đủ chữ được giao, không trùng/sai chữ.
+- Khóa bài tập khi nhận bài nộp và dùng transaction READ_COMMITTED để hai yêu cầu
+  đồng thời không tạo hai bài. Gửi lại cùng nội dung trả xác nhận cũ, giữ nguyên
+  điểm/nhận xét và không gửi thêm thông báo. Bài đã nộp không được đổi nội dung.
+- “Xem bài đã nộp” mở dữ liệu server. Không suy diễn điểm còn null thành 0.
+  Đáp án đúng chỉ hiển thị khi đã có điểm; dữ liệu lịch sử không đọc được phải
+  có thông báo định dạng cũ. Chấm bài giới hạn 0–10, nhận xét tối đa 4000 ký tự.
 
 ## Bản nháp và vòng đời
 
@@ -63,8 +73,8 @@ Lỗi HTTP, JSON hỏng hoặc `success=false` không được biến thành th�
 - Ghi nháp theo thứ tự. Trước khi gửi phải đợi lần ghi còn chờ; chỉ dọn bản nháp
   sau khi backend xác nhận. Nếu mạng lỗi, giữ bài và cho thử lại, không báo hoàn thành.
 - Sau khi backend xác nhận, lỗi tải lại/dọn nháp không được mô tả thành lỗi nộp bài.
-- Bản nháp và tiến độ hành trình vẫn ở trên thiết bị. Bài đã nộp mới nằm trên
-  server; không gọi đây là đồng bộ toàn bộ tiến độ giữa các thiết bị.
+- Bản nháp vẫn ở trên thiết bị. Bài đã nộp và tiến độ hành trình đã đồng bộ có
+  trên server; không gọi đây là đồng bộ nét tự luyện hoặc mọi bản nháp giữa thiết bị.
 
 ## Kiểm tra
 

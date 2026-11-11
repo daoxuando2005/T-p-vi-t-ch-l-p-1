@@ -11,6 +11,7 @@ Không ghi kết quả thực hiện, số test đã đạt, ngày chạy hay th
 | Chỉ tài liệu | Đường dẫn/link, tham chiếu tên cũ, đối chiếu quy tắc với mã và kiểm tra diff |
 | Kotlin hoặc cấu hình debug | Build debug, unit test liên quan, Lint; build APK kiểm thử nếu có ảnh hưởng |
 | Tiến độ/học liệu | `LessonProgressTest`; `LetterJourneyTest` khi sửa điều phối hoặc tương tác |
+| Khôi phục/media | `ProgressRestoreTest`, `MediaAddressTest`; kiểm tra dữ liệu sai, gộp không lùi và HTTP release |
 | Hình học mẫu chữ | `CopybookFormTest`; duyệt hình đủ 29 chữ và các chữ đại diện |
 | Bảng viết/trạng thái/bố cục | `StudentExperienceTest` và kiểm tra thao tác viết theo thay đổi |
 | Xác thực/phiên/kết nối | `AuthModelsTest`, `AuthProtocolTest`, `LoginScreenTest` theo lớp bị ảnh hưởng |
@@ -33,6 +34,12 @@ Backend có `LearningTrackingServiceTest` cho validation/quyền xem và
 thư mục backend bằng `mvn test -Dtest=ParentTrackingLiveTest -DliveBackend=true`
 khi server local đang chạy. Dùng tài khoản tạm do test tạo, dọn đúng ID của test;
 không thay tiến độ hoặc quan hệ phụ huynh của tài khoản đang sử dụng.
+
+Kiểm tra thêm `StudentServiceTest`, `SubmissionReviewServiceTest`, `MediaStorageServiceTest`
+cho đủ chữ được giao, ảnh hợp lệ, giữ điểm khi gửi lại, phân quyền bài nộp và lưu
+media đúng thư mục. Luồng live phải kiểm tra nộp đồng thời không trùng, chấm/đọc
+bài qua hai vai trò, ngắt liên kết thu hồi quyền, tải học liệu/tiến độ và media công khai.
+Không tự khẳng định kiểm thử API thay thế kiểm thử chạm, âm thanh hay xoay máy.
 
 Chạy từ thư mục `android`, với JDK 21 đã được chọn:
 

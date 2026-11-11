@@ -21,5 +21,6 @@ class Speech(context: Context) : TextToSpeech.OnInitListener {
         if (!ready) { pending = text; return false }
         return engine.speak(text, TextToSpeech.QUEUE_FLUSH, null, "hocchu") == TextToSpeech.SUCCESS
     }
-    fun close() { engine.stop(); engine.shutdown() }
+    fun stop() { pending = null; engine.stop() }
+    fun close() { stop(); engine.shutdown() }
 }

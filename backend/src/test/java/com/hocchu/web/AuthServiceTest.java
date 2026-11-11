@@ -25,6 +25,10 @@ import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 public class AuthServiceTest {
+    @Test void publicRegistrationCannotCreateAnAdministrator() {
+        var request=new SignUpRequest();request.setRole("ADMIN");
+        assertFalse(authService.registerUser(request).getSuccess());verifyNoInteractions(userRepository,roleRepository,passwordEncoder);
+    }
 
     @Mock
     private UserRepository userRepository;

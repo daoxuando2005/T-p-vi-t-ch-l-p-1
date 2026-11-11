@@ -1,11 +1,11 @@
 package com.hocchu.mobile.classroom
 
-import com.hocchu.mobile.data.DemoContent
+import com.hocchu.mobile.data.AlphabetContent
 import org.json.JSONArray
 import org.json.JSONObject
 
 data class SchoolClass(val id: Long, val name: String, val teacher: String)
-data class QuizQuestion(val text: String, val options: List<String>, val spoken: String)
+data class QuizQuestion(val text: String, val options: List<String>, val spoken: String,val imageUrl:String="",val audioUrl:String="")
 sealed interface AssignmentContent {
     data class Quiz(val questions: List<QuizQuestion>) : AssignmentContent
     data class Writing(val letters: List<String>) : AssignmentContent
@@ -64,7 +64,7 @@ internal object ClassroomJson {
                     val options = (0 until aOptions.length()).map { n -> aOptions.getString(n) }
                     require(options.size in 2..8 && options.all(String::isNotBlank) && options.distinct().size == options.size)
                     QuizQuestion(q.optString("question").ifBlank { "Chọn đáp án đúng" }, options,
-                        text(q, "animalName").ifBlank { q.optString("question") })
+                        text(q, "animalName").ifBlank { q.optString("question") },text(q,"imageUrl"),text(q,"audioUrl"))
                 }
                 AssignmentContent.Quiz(questions)
             }
@@ -76,7 +76,7 @@ internal object ClassroomJson {
                         ?: listOf(o.getString("letter"))
                 } else listOf(text)
                 val normalized = letters.map { it.trim().uppercase(java.util.Locale.ROOT) }.distinct()
-                require(normalized.isNotEmpty() && normalized.all { letter -> DemoContent.lessons.any { it.letter == letter } })
+                require(normalized.isNotEmpty() && normalized.all { letter -> AlphabetContent.lessons.any { it.letter == letter } })
                 AssignmentContent.Writing(normalized)
             }
             else -> AssignmentContent.Unsupported

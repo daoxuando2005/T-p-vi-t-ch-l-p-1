@@ -51,11 +51,14 @@ Không dùng việc giải mã JWT ở client như bằng chứng token hợp l�
   hoặc học sinh phải tách dữ liệu; đăng nhập lại cùng tài khoản phải đọc lại vùng cũ.
 - SharedPreferences `learning` của bản xem trước cũ chỉ phục vụ preview/fixture.
   Không tự chuyển dữ liệu này cho tài khoản thật đầu tiên.
-- Bài cô giao được gửi theo [CLASSROOM.md](CLASSROOM.md). Hành trình lưu trên máy
-  và gửi snapshot/outbox cho phụ huynh theo [PARENT.md](PARENT.md); chưa phục hồi
-  hành trình từ cloud. Không trộn các cơ chế này hoặc gán dữ liệu cho tài khoản khác.
+- Bài cô giao được gửi theo [CLASSROOM.md](CLASSROOM.md). Hành trình lưu trên máy,
+  khôi phục/gộp từ `GET /api/student/learning/progress` trước khi gửi snapshot/outbox
+  theo [PARENT.md](PARENT.md). Chỉ gộp cùng origin và ID đã xác minh; không áp
+  tiến độ, học liệu cache hay bản nháp của tài khoản khác.
 - `UserAccount` dùng chung cho hai vai trò. `AuthGate` kết nối model đúng vai trò;
   đăng xuất/đổi vai trò phải hủy yêu cầu cũ và bỏ báo cáo phụ huynh trong bộ nhớ.
+- Android chưa có đăng ký/quên mật khẩu/OTP; không tự bỏ xác thực server để
+  tạo tài khoản. Giai đoạn này dùng tài khoản có sẵn hoặc admin cấp.
 
 ## Cấu hình debug và release
 

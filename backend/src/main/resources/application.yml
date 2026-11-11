@@ -6,6 +6,10 @@ spring:
     import: "optional:file:./.env.local[.properties]"
   application:
     name: viet-letters-backend
+  servlet:
+    multipart:
+      max-file-size: 8MB
+      max-request-size: 9MB
   datasource:
     url: jdbc:mysql://localhost:3306/viet_letters_db?createDatabaseIfNotExist=true&useSSL=false&serverTimezone=UTC&allowPublicKeyRetrieval=true
     username: ${DB_USERNAME:root}
@@ -25,11 +29,12 @@ spring:
     baseline-on-migrate: true
     baseline-version: 0
     locations: classpath:db/migration
-    clean-disabled: false
-    clean-on-validation-error: true
+    clean-disabled: true
 
 # Custom App Config
 app:
+  media:
+    directory: ${APP_MEDIA_DIRECTORY:./uploads}
   jwt:
     secret: ${APP_JWT_SECRET}
     expiration-ms: 86400000 # 1 day in milliseconds

@@ -54,8 +54,8 @@ class LessonProgressTest {
     }
 
     @Test fun curriculumHasThreeValidWordsAndReusableSentencesForEveryLetter() {
-        DemoContent.lessons.indices.forEach { index ->
-            val letter = DemoContent.lessons[index].letter.lowercase()
+        AlphabetContent.lessons.indices.forEach { index ->
+            val letter = AlphabetContent.lessons[index].letter.lowercase()
             val rows = LetterCurriculum.words(index)
             assertEquals("three different words for $letter", 3, rows.map { it.text }.toSet().size)
             rows.forEachIndexed { question, row ->

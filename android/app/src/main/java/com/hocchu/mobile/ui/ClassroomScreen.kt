@@ -16,21 +16,26 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.unit.dp
 import com.hocchu.mobile.classroom.*
-import com.hocchu.mobile.data.DemoContent
+import com.hocchu.mobile.data.AlphabetContent
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 @Composable
 fun ClassroomScreen(model: ClassroomViewModel?, speak: (String) -> Unit) {
     val state = model?.state ?: ClassroomState()
+    model?.let {SubmissionReviewDialog(it.review,it::closeReview,it::retryReview)}
     if(state.selected != null) {
         AssignmentScreen(state, model!!, speak)
         return
     }
     var expanded by rememberSaveable { mutableStateOf(false) }
     var code by rememberSaveable { mutableStateOf("") }
+    var leaving by remember {mutableStateOf(false)}
     val focus = LocalFocusManager.current
     val selected = state.classes.find { it.id == state.classId }
+    if(leaving)AlertDialog(onDismissRequest={leaving=false},title={Text("Rời ${selected?.name?:"lớp học"}?")},
+        text={Text("Bé sẽ không nhận bài mới của lớp. Bài đã nộp vẫn được giữ; bé có thể dùng mã lớp để tham gia lại.")},
+        confirmButton={TextButton(onClick={leaving=false;model?.leave()}){Text("Rời lớp")}},dismissButton={TextButton(onClick={leaving=false}){Text("Ở lại")}})
     ScreenColumn {
         Paper {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
@@ -59,6 +64,7 @@ fun ClassroomScreen(model: ClassroomViewModel?, speak: (String) -> Unit) {
             TextButton(onClick = { model?.refresh() }, enabled = model != null && !state.loading) {
                 Icon(Icons.Rounded.Refresh, null); Text("Tải lại")
             }
+            if(selected!=null) TextButton(onClick={leaving=true},enabled=!state.joining&&!state.submitting){Text("Rời lớp",color=MaterialTheme.colorScheme.error)}
         }
         if(state.loading) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("Đang tải lớp học…", color = Muted) }
         state.error?.let { ClassroomError(it) { model?.refresh() } }
@@ -83,7 +89,7 @@ fun ClassroomScreen(model: ClassroomViewModel?, speak: (String) -> Unit) {
                 if(!assignment.submitted) {
                     if(assignment.content == AssignmentContent.Unsupported) Text("Bài này chưa mở được trên app. Bé báo cô kiểm tra nội dung nhé.", color = Muted)
                     else PlayButton("Làm bài", modifier = Modifier.testTag("assignment-${assignment.id}")) { model?.open(assignment.id) }
-                }
+                } else TextButton(onClick={model?.review(assignment.id)},modifier=Modifier.testTag("review-assignment-${assignment.id}")){Text("Xem bài đã nộp")}
             }
         }
     }
@@ -92,6 +98,7 @@ fun ClassroomScreen(model: ClassroomViewModel?, speak: (String) -> Unit) {
 @Composable
 private fun AssignmentScreen(state: ClassroomState, model: ClassroomViewModel, speak: (String) -> Unit) {
     val assignment = state.selected ?: return
+    val read=rememberMediaSpeech(speak)
     var confirm by rememberSaveable(assignment.id) { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
         Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
@@ -106,7 +113,8 @@ private fun AssignmentScreen(state: ClassroomState, model: ClassroomViewModel, s
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     content.questions.forEachIndexed { index, question -> Paper {
                         Text("Câu ${index + 1}: ${question.text}", style = MaterialTheme.typography.titleMedium)
-                        TextButton(onClick = { speak(question.spoken) }) {
+                        if(question.imageUrl.isNotBlank()) LearningPicture(question.imageUrl,"",question.spoken)
+                        TextButton(onClick = { read(question.spoken,question.audioUrl) }) {
                             Icon(Icons.AutoMirrored.Rounded.VolumeUp, null); Text("Nghe câu hỏi") }
                         question.options.forEachIndexed { optionIndex, value ->
                             FilterChip(selected = state.draft.answers.getOrNull(index) == value,
@@ -158,7 +166,7 @@ private fun AssignmentWriting(content: AssignmentContent.Writing, draft: Assignm
             FilterChip(selected = false, enabled = enabled, onClick = { pen = (pen + 1) % 3 }, label = { Text("Nét ${pen + 1}") })
             TextButton(onClick = { changeDrawing(letter, saved.dropLast(1)) }, enabled = enabled && saved.isNotEmpty()) { Text("Hoàn tác") }
             TextButton(onClick = { clear = true }, enabled = enabled && saved.isNotEmpty()) { Text("Xóa") }
-            IconButton(onClick = { speak(DemoContent.lessons.first { it.letter == letter }.sound) }) { Icon(Icons.AutoMirrored.Rounded.VolumeUp, "Nghe chữ") }
+            IconButton(onClick = { speak(AlphabetContent.lessons.first { it.letter == letter }.sound) }) { Icon(Icons.AutoMirrored.Rounded.VolumeUp, "Nghe chữ") }
         }
         Text("Đã viết ${content.letters.count { draft.drawings[it].orEmpty().isNotEmpty() }}/${content.letters.size} chữ · Cô sẽ chấm bài", color = Muted,
             style = MaterialTheme.typography.bodySmall)

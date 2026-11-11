@@ -32,7 +32,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.hocchu.mobile.data.DemoContent
+import com.hocchu.mobile.data.AlphabetContent
 import com.hocchu.mobile.data.LessonProgress
 
 @Composable
@@ -56,7 +56,7 @@ fun HomeScreen(current: Int, progress: List<LessonProgress>, onRead: () -> Unit,
         item {
         Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
         SectionTitle("Hôm nay bé học gì?")
-        PlayButton(if(progress.all { it.complete }) "Ôn lại chữ A" else "Tiếp tục học chữ ${DemoContent.lessons[current].letter}",
+        PlayButton(if(progress.all { it.complete }) "Ôn lại chữ A" else "Tiếp tục học chữ ${AlphabetContent.lessons[current].letter}",
             modifier = Modifier.testTag("journey-continue"), icon = Icons.AutoMirrored.Rounded.ArrowForward,
             onClick = { onLetter(if(progress.all { it.complete }) 0 else current) })
         BoxWithConstraints {
@@ -79,14 +79,14 @@ fun HomeScreen(current: Int, progress: List<LessonProgress>, onRead: () -> Unit,
             Text("${progress.count { it.complete }} / 29 chữ đã hoàn thành", color = SuccessText)
             Spacer(Modifier.height(18.dp))
         }
-        items(DemoContent.lessons.size, key = { DemoContent.lessons[it].letter }) { index ->
+        items(AlphabetContent.lessons.size, key = { AlphabetContent.lessons[it].letter }) { index ->
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
                 JourneyLetter(index, current, progress[index], LessonProgress.unlocked(index, progress), { pulse }) { onLetter(index) }
             }
         }
         item {
             Spacer(Modifier.height(16.dp))
-            PlayButton(if(progress.all { it.complete }) "Ôn lại chữ A" else "Tiếp tục chữ ${DemoContent.lessons[current].letter}",
+            PlayButton(if(progress.all { it.complete }) "Ôn lại chữ A" else "Tiếp tục chữ ${AlphabetContent.lessons[current].letter}",
                 icon = Icons.AutoMirrored.Rounded.ArrowForward, onClick = { onLetter(if(progress.all { it.complete }) 0 else current) })
         }
     }
@@ -98,7 +98,7 @@ private fun JourneyLetter(index: Int, current: Int, progress: LessonProgress, un
     BoxWithConstraints(Modifier.widthIn(max = 440.dp).fillMaxWidth().height(144.dp)) {
         val position = .5f + .28f * sin(index * Math.PI.toFloat() / 3f)
         val next = .5f + .28f * sin((index + 1) * Math.PI.toFloat() / 3f)
-        if(index < DemoContent.lessons.lastIndex) Canvas(Modifier.fillMaxSize()) {
+        if(index < AlphabetContent.lessons.lastIndex) Canvas(Modifier.fillMaxSize()) {
             val path = Path().apply {
                 moveTo(size.width * position, 50.dp.toPx())
                 cubicTo(size.width * position, 105.dp.toPx(),
@@ -133,14 +133,14 @@ private fun JourneyLetter(index: Int, current: Int, progress: LessonProgress, un
                 shadowElevation = if(selected) 6.dp else 2.dp,
                 border = androidx.compose.foundation.BorderStroke(3.dp, if(selected) GreenDark else Outline)) {
                 Box(contentAlignment = Alignment.Center) {
-                    Text(DemoContent.lessons[index].letter, fontSize = 32.sp,
+                    Text(AlphabetContent.lessons[index].letter, fontSize = 32.sp,
                         fontWeight = FontWeight.ExtraBold, color = if(selected) Color(0xFF1F5100) else if(!unlocked) Muted else SkyDark)
                     if (progress.complete || !unlocked) Icon(if(progress.complete) Icons.Rounded.CheckCircle else Icons.Rounded.Lock,
                         null, Modifier.align(Alignment.BottomCenter).padding(bottom = 4.dp).size(16.dp),
                         tint = if(progress.complete) GreenDark else Muted)
                 }
             }
-            Text("Chữ ${DemoContent.lessons[index].letter}", Modifier.padding(top = 6.dp),
+            Text("Chữ ${AlphabetContent.lessons[index].letter}", Modifier.padding(top = 6.dp),
                 fontWeight = FontWeight.Bold, color = Ink)
         }
     }
@@ -174,8 +174,8 @@ fun LetterPicker(selected: Int, onSelect: (Int) -> Unit) {
         horizontalArrangement = Arrangement.spacedBy(8.dp),
         contentPadding = PaddingValues(4.dp)
     ) {
-        items(DemoContent.lessons.size, key = { DemoContent.lessons[it].letter }) { index ->
-            val lesson = DemoContent.lessons[index]
+        items(AlphabetContent.lessons.size, key = { AlphabetContent.lessons[it].letter }) { index ->
+            val lesson = AlphabetContent.lessons[index]
             Surface(
                 onClick = { onSelect(index) },
                 modifier = Modifier.size(54.dp).semantics { this.selected = index == selected },
@@ -194,24 +194,26 @@ fun LetterPicker(selected: Int, onSelect: (Int) -> Unit) {
 
 @Composable
 fun ReadingScreen(index: Int, select: (Int) -> Unit, speak: (String) -> Unit, onWrite: () -> Unit, onRead: ()->Unit = {}) {
-    val lesson = DemoContent.lessons[index]
+    val lesson = com.hocchu.mobile.data.LocalStudyContent.current.lessons[index]
+    val read=rememberMediaSpeech(speak)
     ScreenColumn {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(Modifier.weight(1f)) {
                 Text("CÙNG LÀM QUEN", color = Muted, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 Text("Chữ ${lesson.letter}", style = MaterialTheme.typography.headlineMedium)
             }
-            Text("${index + 1} / ${DemoContent.lessons.size} chữ", color = SkyDark, fontWeight = FontWeight.Bold)
+            Text("${index + 1} / ${AlphabetContent.lessons.size} chữ", color = SkyDark, fontWeight = FontWeight.Bold)
         }
         LetterPicker(index, select)
+        if(lesson.hidden) {Paper {Text("Chữ này đang được cô cập nhật. Bé chọn chữ khác để học nhé.")};return@ScreenColumn}
         BoxWithConstraints {
             val wide = maxWidth >= 650.dp
             if (wide) Row(horizontalArrangement = Arrangement.spacedBy(20.dp)) {
-                LetterCard(lesson.letter, Modifier.weight(1f)) { speak(lesson.sound);onRead() }
-                ExampleCard(lesson.picture, lesson.word, Modifier.weight(1f)) { speak(lesson.word) }
+                LetterCard(lesson.letter, Modifier.weight(1f)) { read(lesson.sound,lesson.audioUrl);onRead() }
+                ExampleCard(lesson.picture, lesson.word, Modifier.weight(1f),lesson.imageUrl) { read(lesson.word,lesson.exampleAudioUrl) }
             } else Column(verticalArrangement = Arrangement.spacedBy(20.dp)) {
-                LetterCard(lesson.letter) { speak(lesson.sound);onRead() }
-                ExampleCard(lesson.picture, lesson.word) { speak(lesson.word) }
+                LetterCard(lesson.letter) { read(lesson.sound,lesson.audioUrl);onRead() }
+                ExampleCard(lesson.picture, lesson.word,imageUrl=lesson.imageUrl) { read(lesson.word,lesson.exampleAudioUrl) }
             }
         }
         Paper(color = PaleBlue) {
@@ -224,9 +226,9 @@ fun ReadingScreen(index: Int, select: (Int) -> Unit, speak: (String) -> Unit, on
         Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             PlayButton("Trước", Modifier.weight(1f), Color.White, Icons.AutoMirrored.Rounded.ArrowBack, enabled = index > 0) { select(index - 1) }
             PlayButton("Tiếp theo", Modifier.weight(1f), icon = Icons.AutoMirrored.Rounded.ArrowForward,
-                enabled = index < DemoContent.lessons.lastIndex) { select(index + 1) }
+                enabled = index < AlphabetContent.lessons.lastIndex) { select(index + 1) }
         }
-        if (index == DemoContent.lessons.lastIndex) Text("Bé đã xem hết bảng chữ cái. Chọn chữ bất kỳ để nghe lại nhé!", color = SuccessText)
+        if (index == AlphabetContent.lessons.lastIndex) Text("Bé đã xem hết bảng chữ cái. Chọn chữ bất kỳ để nghe lại nhé!", color = SuccessText)
     }
 }
 
@@ -243,12 +245,12 @@ internal fun LetterCard(letter: String, modifier: Modifier = Modifier, onListen:
 }
 
 @Composable
-internal fun ExampleCard(picture: String, word: String, modifier: Modifier = Modifier, onListen: () -> Unit) {
+internal fun ExampleCard(picture: String, word: String, modifier: Modifier = Modifier,imageUrl:String="", onListen: () -> Unit) {
     Paper(modifier.fillMaxWidth()) {
         Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("TỪ VÍ DỤ", fontSize = 12.sp, fontWeight = FontWeight.Bold, color = Muted)
-            Text(picture, fontSize = 70.sp)
+            LearningPicture(imageUrl,picture,"Hình minh họa $word")
             Text(word, style = MaterialTheme.typography.headlineMedium)
             PlayButton("Nghe từ ví dụ", color = Orange, icon = Icons.AutoMirrored.Rounded.VolumeUp, onClick = onListen)
         }

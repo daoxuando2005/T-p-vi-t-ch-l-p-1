@@ -10,6 +10,8 @@
 .env.*
 !.env.example
 *.log
+backend/uploads/
+*.log.err
 
 # Android local configuration and generated files
 android/.gradle/

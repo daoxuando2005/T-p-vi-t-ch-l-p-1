@@ -20,9 +20,11 @@ import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
-import com.hocchu.mobile.data.DemoContent
+import com.hocchu.mobile.data.AlphabetContent
 import com.hocchu.mobile.data.LessonProgress
 import com.hocchu.mobile.data.LessonProgressStore
+import com.hocchu.mobile.data.StudyContentModel
+import com.hocchu.mobile.data.LocalStudyContent
 import com.hocchu.mobile.classroom.ClassroomViewModel
 import com.hocchu.mobile.family.StudentActivityModel
 
@@ -32,7 +34,7 @@ private val symbols = listOf(Icons.Rounded.Home, Icons.AutoMirrored.Rounded.Menu
 @Composable
 fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: String = "learning",
                studentName: String? = null, onLogout: (() -> Unit)? = null, classroom: ClassroomViewModel? = null,
-               activities: StudentActivityModel? = null) {
+               activities: StudentActivityModel? = null,study:StudyContentModel?=null) {
     var tab by rememberSaveable { mutableIntStateOf(0) }
     var exercise by rememberSaveable { mutableStateOf("") }
     val contextForProgress = LocalContext.current
@@ -49,12 +51,33 @@ fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: Stri
     var profile by remember { mutableStateOf(false) }
     var sound by rememberSaveable { mutableStateOf(prefs.getBoolean("sound", true)) }
     var speechNotice by remember { mutableStateOf(false) }
+    var contentNotice by remember {mutableStateOf(false)}
+    val studyContent=LocalStudyContent.current
     val context = LocalContext.current
     val inspection = LocalInspectionMode.current
     val speech = remember(context, inspection) { if (inspection) null else Speech(context) }
     DisposableEffect(speech) { onDispose { speech?.close() } }
+    LaunchedEffect(sound) { if (!sound) speech?.stop() }
     val speak: (String) -> Unit = { if (sound && speech?.speak(it) == false) speechNotice = true }
     val stateHolder = rememberSaveableStateHolder()
+    LaunchedEffect(activities?.progressRevision) {
+        val restored = lessonStore.readAll()
+        if (exercise == "lesson" && journeyIndex in restored.indices && restored[journeyIndex] != lessonProgress[journeyIndex]) {
+            // Rebuild the open stage when another device has advanced this lesson.
+            stateHolder.removeState("journey:$journeyIndex:$journeyEntry")
+            journeyEntry++
+        }
+        lessonProgress = restored
+    }
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+    DisposableEffect(lifecycleOwner, activities) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) activities?.retryNow()
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_PAUSE) speech?.stop()
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+    }
     val go: (Int) -> Unit = { tab = it; exercise = "" }
     val startWriting: (Int) -> Unit = { letter ->
         stateHolder.removeState("writing:$writingEntry")
@@ -63,7 +86,8 @@ fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: Stri
         go(2)
     }
     val openLesson: (Int) -> Unit = { letter ->
-        if (LessonProgress.unlocked(letter, lessonProgress)) {
+        if(letter in studyContent.lessons.indices&&studyContent.lessons[letter].hidden) contentNotice=true
+        else if (LessonProgress.unlocked(letter, lessonProgress)) {
             if (journeyIndex != letter || lessonProgress[letter].complete) {
                 stateHolder.removeState("journey:$journeyIndex:$journeyEntry")
                 journeyEntry++
@@ -77,6 +101,7 @@ fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: Stri
         if(tab == 3 && classroom?.state?.selectedId != null) classroom.close()
         else if (exercise.isNotEmpty()) exercise = "" else tab = 0
     }
+    CompositionLocalProvider(LocalSoundEnabled provides sound) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Background)) {
         val expanded = maxWidth >= 840.dp
         Scaffold(containerColor = Background,
@@ -87,7 +112,7 @@ fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: Stri
                     else Box(Modifier.size(48.dp), contentAlignment = Alignment.Center) { Mascot(Modifier.size(44.dp)) }
                     Column(Modifier.weight(1f)) {
 
-                        Text(when(exercise) { "lesson" -> "Cùng học chữ ${DemoContent.lessons[journeyIndex].letter}"
+                        Text(when(exercise) { "lesson" -> "Cùng học chữ ${AlphabetContent.lessons[journeyIndex].letter}"
                             else -> if (tab == 3) "Lớp học của bé" else destinations[tab] },
                             style = MaterialTheme.typography.titleLarge, maxLines = 1, overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis)
                     }
@@ -152,14 +177,21 @@ fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: Stri
             }
         }
     }
+    }
     if (profile) AlertDialog(onDismissRequest = { profile = false },
         title = { Text(studentName ?: "Cùng khám phá Vui Học!") },
         text = { Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
             Text("Bài cô giao được gửi đến cô khi bé nộp. Hoạt động tự học được gửi để phụ huynh theo dõi khi có kết nối.")
+            study?.let {content->
+                if(content.loading) Text("Đang cập nhật học liệu…",color=Muted)
+                content.notice?.let {Text(it,color=Muted)}
+                TextButton(onClick=content::refresh,enabled=!content.loading) {Text("Cập nhật học liệu")}
+            }
             if(activities!=null) {
                 TextButton(onClick=activities::showLinkCode,enabled=!activities.codeLoading) {Text(if(activities.codeLoading) "Đang lấy mã…" else "Liên kết phụ huynh")}
                 if(activities.pending>0) Text("Còn ${activities.pending} hoạt động chờ gửi",color=Muted)
-                activities.error?.let {Text(it,color=MaterialTheme.colorScheme.error);TextButton(onClick=activities::retry) {Text("Thử gửi lại")}}
+                if(activities.restoring)Text("Đang khôi phục tiến độ từ máy chủ…",color=Muted)
+                activities.error?.let {Text(it,color=MaterialTheme.colorScheme.error);TextButton(onClick=activities::retryNow) {Text("Thử gửi lại")}}
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text("Âm thanh", Modifier.weight(1f)); Switch(sound, onCheckedChange = { sound = it; prefs.edit().putBoolean("sound", it).apply() })
@@ -181,6 +213,8 @@ fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: Stri
                 }
             }},confirmButton={TextButton(onClick=activities::hideCode) {Text("Đóng")}})
     }
+    if(contentNotice) AlertDialog(onDismissRequest={contentNotice=false},title={Text("Học liệu đang cập nhật")},
+        text={Text("Chữ này đang được cô cập nhật. Bé thử lại sau nhé.")},confirmButton={TextButton(onClick={contentNotice=false}){Text("Đã hiểu")}})
 }
 
 @Composable

@@ -34,7 +34,7 @@ fun LetterLessonScreen(index: Int, saved: LessonProgress, onSave: (LessonProgres
         if(next!=progress) onActivity(progress,next,review)
         if (advance) step = next.stage.ordinal
     }
-    val letter = DemoContent.lessons[index]
+    val letter = LocalStudyContent.current.lessons[index]
     Column(Modifier.fillMaxSize()) {
         if (stage != LessonStage.Done) {
             Row(Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
@@ -54,12 +54,12 @@ fun LetterLessonScreen(index: Int, saved: LessonProgress, onSave: (LessonProgres
         Box(Modifier.weight(1f).fillMaxWidth()) {
             when (stage) {
                 LessonStage.Read -> {
+                    val read=rememberMediaSpeech(speak)
                     var heard by rememberSaveable(index) { mutableStateOf(false) }
-                    val example = LetterCurriculum.words(index).first()
                     ScreenColumn {
                         SectionTitle("Nghe rồi đọc theo nhé", "Làm quen chữ ${letter.letter} và ${letter.letter.lowercase()}")
-                        LetterCard(letter.letter) { heard = true; speak(letter.sound) }
-                        ExampleCard(example.picture, example.text) { speak(example.text) }
+                        LetterCard(letter.letter) { heard = true; read(letter.sound,letter.audioUrl) }
+                        ExampleCard(letter.picture, letter.word,imageUrl=letter.imageUrl) { read(letter.word,letter.exampleAudioUrl) }
                         PlayButton("Con đã đọc theo", enabled = heard, icon = Icons.Rounded.Check,
                             modifier = Modifier.testTag("lesson-read-done")) { save(progress.finishReading()) }
                     }
@@ -85,8 +85,8 @@ fun LetterLessonScreen(index: Int, saved: LessonProgress, onSave: (LessonProgres
                         SectionTitle(if(review) "Bé ôn tập thật chăm!" else "Hoàn thành chữ ${letter.letter}!",
                             "Đã đọc theo, luyện viết và làm xong 3 từ, 3 câu.")
                         Text("Phần viết ghi nhận lượt luyện của bé.", color = Muted)
-                        if (index < DemoContent.lessons.lastIndex) PlayButton(
-                            "Học chữ ${DemoContent.lessons[index + 1].letter}",
+                        if (index < AlphabetContent.lessons.lastIndex) PlayButton(
+                            "Học chữ ${AlphabetContent.lessons[index + 1].letter}",
                             icon = Icons.AutoMirrored.Rounded.ArrowForward, onClick = onNext)
                         else Text("Bé đã hoàn thành hành trình 29 chữ cái. Cùng ôn lại nhé!", color = SuccessText)
                         PlayButton("Về hành trình", color = Color.White, icon = Icons.Rounded.Home, onClick = onExit)
@@ -99,8 +99,9 @@ fun LetterLessonScreen(index: Int, saved: LessonProgress, onSave: (LessonProgres
 
 @Composable
 private fun LessonWordQuestion(index: Int, question: Int, speak: (String) -> Unit, onAnswer: (Boolean) -> Unit) {
-    val item = LetterCurriculum.words(index)[question]
-    val answer = DemoContent.lessons[index].letter.lowercase()
+    val live = LocalStudyContent.current.practices[index][question]
+    val item = remember(index,question) {live}
+    val answer = AlphabetContent.lessons[index].letter.lowercase()
     var selected by rememberSaveable { mutableStateOf("") }
     var checked by rememberSaveable { mutableStateOf(false) }
     ScreenColumn {
@@ -134,10 +135,11 @@ private fun LessonWordQuestion(index: Int, question: Int, speak: (String) -> Uni
 
 @Composable
 private fun LessonSentenceQuestion(index: Int, question: Int, speak: (String) -> Unit, onAnswer: (Boolean) -> Unit) {
-    val item = LetterCurriculum.words(index)[question]
+    val live = LocalStudyContent.current.practices[index][question]
+    val item = remember(index,question) {live}
     var chosen by rememberSaveable { mutableStateOf(listOf<Int>()) }
     var checked by rememberSaveable { mutableStateOf(false) }
-    val correct = LetterCurriculum.sentenceCorrect(index, question, chosen)
+    val correct = chosen == item.sentence.indices.toList()
     ScreenColumn {
         SectionTitle("Ghép theo câu mẫu", "Câu ${question + 1} / 3 · Xếp đúng câu vừa nghe, chạm lại để bỏ")
         Paper(color = PaleBlue) {
@@ -159,7 +161,7 @@ private fun LessonSentenceQuestion(index: Int, question: Int, speak: (String) ->
             }
         }
         FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            LetterCurriculum.tileOrder(index, question).forEach { tile ->
+            List(item.sentence.size) {(it+1+question%(item.sentence.size-1))%item.sentence.size}.forEach { tile ->
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     WordChip(item.sentence[tile], enabled = tile !in chosen && !checked,
                         modifier = Modifier.testTag("sentence-tile-$tile")) { chosen = chosen + tile }

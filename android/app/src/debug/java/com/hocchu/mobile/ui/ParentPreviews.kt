@@ -2,7 +2,7 @@ package com.hocchu.mobile.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.tooling.preview.Preview
-import com.hocchu.mobile.data.DemoContent
+import com.hocchu.mobile.data.AlphabetContent
 import com.hocchu.mobile.family.*
 import java.time.LocalDate
 
@@ -15,7 +15,7 @@ private fun previewFamily(): ParentState {
             ChildActivity("preview:1","SUBMISSION","","Nộp bài: Ôn tập chữ A",activity, null,"Đang chờ cô nhận xét"),
             ChildActivity("preview:2","WRITING","A","Tập viết chữ A",activity.minusSeconds(120),null,""),
             ChildActivity("preview:3","READING","A","Nghe và đọc chữ A",activity.minusSeconds(300),null,"")),
-            DemoContent.lessons.mapIndexed {i,l->LetterStatus(l.letter,i<5,if(i<4) 2 else 0,if(i<4) 3 else 0,if(i<4) 3 else 0,i<4)},
+            AlphabetContent.lessons.mapIndexed {i,l->LetterStatus(l.letter,i<5,if(i<4) 2 else 0,if(i<4) 3 else 0,if(i<4) 3 else 0,i<4)},
             (6 downTo 0).map {DayCount(day.minusDays(it.toLong()),if(it%2==0) 7 else 3)},4,true,false),
         refreshedAt=activity)
 }

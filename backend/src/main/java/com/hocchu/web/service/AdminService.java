@@ -248,58 +248,18 @@ public class AdminService {
         alphabetLessonRepository.deleteById(id);
     }
 
-    public ApiResponse uploadAlphabetImage(org.springframework.web.multipart.MultipartFile file, String filename) {
-        try {
-            if (file.isEmpty()) {
-                return new ApiResponse(false, "File ảnh rỗng!");
-            }
-            java.nio.file.Path targetDir = java.nio.file.Paths.get("d:/study/doanchuyennganh/code/code/frontend/public/alphabet");
-            if (!java.nio.file.Files.exists(targetDir)) {
-                java.nio.file.Files.createDirectories(targetDir);
-            }
-            java.nio.file.Path targetFile = targetDir.resolve(filename);
-            java.nio.file.Files.copy(file.getInputStream(), targetFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            return new ApiResponse(true, "Đã lưu thành công file ảnh: " + filename);
-        } catch (Exception e) {
-            return new ApiResponse(false, "Không thể lưu tệp ảnh: " + e.getMessage());
-        }
+    @Autowired
+    private MediaStorageService mediaStorage;
+
+    public ApiResponse uploadAlphabetImage(org.springframework.web.multipart.MultipartFile file,String filename) {
+        return mediaStorage.store(file,"alphabet",filename);
     }
-
-    public ApiResponse uploadAlphabetAudio(org.springframework.web.multipart.MultipartFile file, String filename) {
-        try {
-            if (file.isEmpty()) {
-                return new ApiResponse(false, "File âm thanh rỗng!");
-            }
-            java.nio.file.Path targetDir = java.nio.file.Paths.get("d:/study/doanchuyennganh/code/code/frontend/public/audio");
-            if (!java.nio.file.Files.exists(targetDir)) {
-                java.nio.file.Files.createDirectories(targetDir);
-            }
-            java.nio.file.Path targetFile = targetDir.resolve(filename);
-            java.nio.file.Files.copy(file.getInputStream(), targetFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            return new ApiResponse(true, "/audio/" + filename);
-        } catch (Exception e) {
-            return new ApiResponse(false, "Không thể lưu tệp âm thanh: " + e.getMessage());
-        }
+    public ApiResponse uploadAlphabetAudio(org.springframework.web.multipart.MultipartFile file,String filename) {
+        return mediaStorage.store(file,"audio",filename);
     }
-
-    public ApiResponse uploadAlphabetExampleImage(org.springframework.web.multipart.MultipartFile file, String filename) {
-        try {
-            if (file.isEmpty()) {
-                return new ApiResponse(false, "File ảnh ví dụ rỗng!");
-            }
-            java.nio.file.Path targetDir = java.nio.file.Paths.get("d:/study/doanchuyennganh/code/code/frontend/public/example_images");
-            if (!java.nio.file.Files.exists(targetDir)) {
-                java.nio.file.Files.createDirectories(targetDir);
-            }
-            java.nio.file.Path targetFile = targetDir.resolve(filename);
-            java.nio.file.Files.copy(file.getInputStream(), targetFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            return new ApiResponse(true, "/example_images/" + filename);
-        } catch (Exception e) {
-            return new ApiResponse(false, "Không thể lưu tệp ảnh ví dụ: " + e.getMessage());
-        }
+    public ApiResponse uploadAlphabetExampleImage(org.springframework.web.multipart.MultipartFile file,String filename) {
+        return mediaStorage.store(file,"example_images",filename);
     }
-
-
 
     // Thống kê hệ thống
     public Map<String, Object> getSystemStats() {

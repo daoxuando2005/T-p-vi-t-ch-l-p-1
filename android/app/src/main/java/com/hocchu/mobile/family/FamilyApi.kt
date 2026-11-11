@@ -6,8 +6,12 @@ import org.json.JSONObject
 import java.time.Instant
 import java.time.LocalDate
 import java.net.URLEncoder
+import com.hocchu.mobile.data.AlphabetContent
+import com.hocchu.mobile.data.LessonProgress
+import com.hocchu.mobile.classroom.SubmissionReview
+import com.hocchu.mobile.classroom.parseSubmissionReview
 
-class FamilyApi(private val transport: AuthTransport = UrlAuthTransport(2 * 1024 * 1024)) {
+class FamilyApi(private val transport: AuthTransport = UrlAuthTransport(8 * 1024 * 1024)) {
     private fun request(session: AuthSession, path: String, method: String = "GET", body: String? = null): String {
         if(session.expiresAt <= System.currentTimeMillis()) throw AuthFailure.Expired()
         val reply = transport.request(session.server+"api/"+path, method, session.token, body)
@@ -43,6 +47,13 @@ class FamilyApi(private val transport: AuthTransport = UrlAuthTransport(2 * 1024
         val o=JSONObject(request(session,"parent/link?linkCode="+URLEncoder.encode(code.trim(),"UTF-8"),"POST"))
         if(!o.getBoolean("success")) throw FamilyFailure(o.text("message").ifBlank { "Chưa liên kết được với con." })
     }
+    fun unlink(session:AuthSession,studentId:Long)=parse {
+        val o=JSONObject(request(session,"parent/students/$studentId/link","DELETE"));require(o.getBoolean("success"))
+    }
+    fun review(session:AuthSession,studentId:Long,submissionId:Long):SubmissionReview=parse {
+        parseSubmissionReview(request(session,"parent/students/$studentId/submissions/$submissionId"))
+            .also {require(it.studentId==studentId&&it.id==submissionId)}
+    }
     fun linkCode(session: AuthSession): LinkCode = parse {
         val o=JSONObject(request(session,"student/link-code"))
         LinkCode(o.text("linked")=="true",o.text("linkCode"),o.text("expiresAt"),o.text("parentName"))
@@ -51,6 +62,15 @@ class FamilyApi(private val transport: AuthTransport = UrlAuthTransport(2 * 1024
         val o=JSONObject(request(session,"student/learning/sync","POST",body.toString()))
         require(o.getBoolean("success"))
         o.getJSONArray("acceptedIds").let { a->(0 until a.length()).map { a.getString(it) }.toSet() }
+    }
+    fun progress(session: AuthSession): List<LessonProgress> = parse {
+        val array=JSONArray(request(session,"student/learning/progress"))
+        require(array.length()==29)
+        (0 until 29).map {i->val o=array.getJSONObject(i)
+            require(o.getString("letter")==AlphabetContent.lessons[i].letter)
+            val p=LessonProgress(o.getBoolean("read"),o.getInt("writes"),o.getInt("words"),o.getInt("sentences"))
+            require(LessonProgress.decode(p.encode())==p);p
+        }.also {all->require(all.indices.all {LessonProgress.unlocked(it,all)||all[it]==LessonProgress()})}
     }
     private inline fun <T> parse(block: () -> T): T = try { block() }
         catch(e: AuthFailure) { throw e }

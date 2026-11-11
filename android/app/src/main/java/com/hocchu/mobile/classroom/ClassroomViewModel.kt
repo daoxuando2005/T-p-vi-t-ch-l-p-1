@@ -20,6 +20,9 @@ class ClassroomViewModel(app: Application, private val api: ClassroomApi) : Andr
     private var actionJob: Job? = null
     private var draftJob: Job? = null
     private var openJob: Job? = null
+    var review by mutableStateOf(ReviewState());private set
+    private var reviewJob:Job?=null
+    private var reviewAssignment:Long?=null
     private var accountScope = CoroutineScope(viewModelScope.coroutineContext + SupervisorJob(viewModelScope.coroutineContext[Job]))
 
     fun connect(value: AuthSession?, expired: () -> Unit) {
@@ -30,6 +33,7 @@ class ClassroomViewModel(app: Application, private val api: ClassroomApi) : Andr
         loadJob?.cancel(); actionJob?.cancel(); draftJob?.cancel(); openJob?.cancel()
         session = value
         state = ClassroomState()
+        review=ReviewState();reviewJob=null;reviewAssignment=null
         store = value?.let { AssignmentDraftStore(getApplication<Application>()
             .getSharedPreferences(accountPreferences(it.server, it.account.id) + ".classroom", 0)) }
         if(value != null) refresh()
@@ -131,6 +135,23 @@ class ClassroomViewModel(app: Application, private val api: ClassroomApi) : Andr
         }
     }
     fun dismissNotice() { state = state.copy(notice = null) }
+    fun leave() {
+        val user=session?:return;val id=state.classId?:return
+        if(state.joining||state.submitting)return
+        actionJob=accountScope.launch {state=state.copy(joining=true,error=null)
+            try{withContext(Dispatchers.IO){api.leave(user,id)};state=state.copy(joining=false,classId=null,notice="Đã rời lớp. Bài đã nộp vẫn được cô lưu.");refresh()}
+            catch(e:CancellationException){throw e}catch(e:Exception){state=state.copy(joining=false);failed(e)}
+        }
+    }
+    fun review(id:Long) {
+        val user=session?:return
+        if(state.assignments.none {it.id==id&&it.submitted})return
+        reviewJob?.cancel();reviewAssignment=id;review=ReviewState(visible=true,loading=true)
+        reviewJob=accountScope.launch {try {val detail=withContext(Dispatchers.IO){api.review(user,id)};review=ReviewState(visible=true,review=detail)}
+            catch(e:CancellationException){throw e}catch(e:Exception){if(e is AuthFailure.Expired)onExpired() else review=ReviewState(visible=true,error="Chưa tải được bài đã nộp. Bé thử lại nhé.")}}
+    }
+    fun closeReview(){reviewJob?.cancel();review=ReviewState();reviewAssignment=null}
+    fun retryReview(){reviewAssignment?.let(::review)}
     private fun failed(e: Exception) {
         if(e is AuthFailure.Expired) { onExpired(); return }
         state = state.copy(error = when(e) {

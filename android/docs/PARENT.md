@@ -26,6 +26,12 @@ Không ghi kết quả thực hiện ở đây.
   làm bằng chứng sở hữu; không chuyển học sinh đã liên kết sang phụ huynh khác.
 - Mọi API báo cáo phải kiểm tra quan hệ `APPROVED` tại server. Quan hệ `PENDING`,
   ID được sửa thủ công hoặc dữ liệu client đều không cấp quyền xem học sinh.
+- Gia đình có thể ngắt liên kết sau xác nhận qua
+  `DELETE /api/parent/students/{id}/link`; chỉ xóa quan hệ/mã mời còn chờ, giữ lịch sử
+  và tiến độ của con. Liên kết lại cần mã mới do tài khoản học sinh cung cấp.
+- “Xem bài làm” từ dòng nộp bài gọi `GET /api/parent/students/{id}/submissions/{submissionId}`.
+  Backend kiểm tra liên kết rồi đối chiếu chủ bài; client kiểm tra lại ID phản hồi.
+  Đổi con/ngày, mất quyền hoặc tải báo cáo lỗi phải bỏ bài/báo cáo cũ khỏi màn hình.
 - Đổi tài khoản hoặc đăng xuất phải hủy yêu cầu, bỏ dữ liệu trẻ và mã mời trong
   bộ nhớ. Không ghi JWT, mã mời hay dữ liệu báo cáo vào SavedState/log.
 
@@ -41,9 +47,9 @@ Không ghi kết quả thực hiện ở đây.
 - Gửi tối đa 100 hoạt động cùng snapshot 29 chữ mỗi yêu cầu tới
   `POST /api/student/learning/sync`. Chỉ xóa UUID backend xác nhận; lỗi/hết thời
   gian chờ phải giữ lại. Backend khử trùng theo học sinh và UUID, không hạ bộ đếm.
-- Khởi động phiên gửi snapshot kể cả khi không có hoạt động mới. Snapshot cũ
-  không được tạo thời điểm học giả cho hôm nay. Đây là đồng bộ để báo cáo phụ huynh;
-  chưa phải cơ chế khôi phục hành trình từ cloud trên thiết bị mới.
+- Khởi động phiên phải tải/gộp tiến độ server rồi gửi snapshot kể cả khi không có
+  hoạt động mới. Khôi phục trên thiết bị mới không tạo thời điểm học giả cho hôm nay.
+  Giữ outbox khi hết thời gian chờ đăng xuất để gửi lại ở lần đăng nhập sau.
 
 ## Ý nghĩa báo cáo
 

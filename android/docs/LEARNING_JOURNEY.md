@@ -35,8 +35,14 @@ Không tăng tiến độ vì chỉ mở màn hình, chọn sai đáp án hoặc
 
 ## Học liệu
 
-- `DemoContent.kt` giữ danh sách chữ; `LetterCurriculum.kt` cung cấp 3 từ/cụm từ
-  và 3 câu mẫu cho mỗi chữ. Câu phải dùng lại từ tương ứng để bé luyện tiếp nội dung vừa học.
+- `GET /api/student/content` trả đúng thứ tự 29 chữ, 3 từ/cụm từ và 3 câu mỗi chữ.
+  Học liệu trong bảng `student_learning_content` được kết hợp với thông tin,
+  ảnh/âm thanh và trạng thái ẩn của `alphabet_lessons` do giáo viên/admin quản lý.
+- `StudyContentModel` kiểm tra nội dung, lưu cache ở `<accountPreferences>.content`.
+  Khi tải lỗi, dùng cache hợp lệ hoặc `AlphabetContent.kt`/`LetterCurriculum.kt`
+  đóng gói; phải hiển thị trạng thái cập nhật/lỗi trong Hồ sơ. Không giả đồng bộ thành công.
+- Chữ bị ẩn không mở để học. Nội dung câu đang trả lời phải ổn định khi học liệu
+  được cập nhật; thẻ từ dùng đúng số từ của câu thực nhận. Câu dùng lại từ tương ứng.
 - Ô trống phải thay đúng chữ đang học; giữ nguyên dấu thanh/dấu phụ ở vị trí khác.
   Giữ đáp án và thứ tự lựa chọn ổn định khi xoay máy.
 - Thẻ ghép câu có ID theo vị trí, không dùng chuỗi từ làm ID vì câu có thể lặp từ.
@@ -59,6 +65,13 @@ Không tăng tiến độ vì chỉ mở màn hình, chọn sai đáp án hoặc
   không hợp lệ phục hồi an toàn, không mở khóa sai hoặc làm app lỗi.
 - Không cho ghi lùi các bộ đếm hoặc trạng thái đọc. Không xử lý lại đáp án của
   câu cũ như một lần tăng tiến độ mới.
+- Khi mở phiên học sinh, tải tiến độ server rồi gộp: OR trạng thái đọc và lấy
+  giá trị lớn nhất ở từng bộ đếm, kiểm tra lại điều kiện chặng và mở khóa liên tiếp.
+  Lưu/merge phải được tuần tự hóa trên cùng preferences để tránh ghi đè lượt mới.
+  Nếu khôi phục làm tiến độ bài đang mở tiến xa hơn, dựng lại chặng từ kết quả gộp.
+- Khôi phục không sinh sự kiện mới. Lỗi mạng không xóa tiến độ/outbox trên máy;
+  thử lại khi quay lại app hoặc bấm thử lại trong Hồ sơ. Không đồng bộ bản vẽ
+  tự luyện/bản nháp lớp học thành một tính năng lưu bản vẽ trên cloud.
 - Trạng thái lựa chọn, thẻ từ và nét đang vẽ dùng saveable/state holder để giữ khi
   xoay máy và đổi màn hình trong phiên. Bản vẽ dang dở chưa có kho lưu trữ lâu dài riêng.
 - Đăng xuất giữ tiến độ tài khoản trên thiết bị. Không tự đồng bộ hoặc gộp vùng dữ

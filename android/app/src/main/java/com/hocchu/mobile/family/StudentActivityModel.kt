@@ -26,16 +26,19 @@ class StudentActivityModel(app: Application, private val api: FamilyApi) : Andro
     private var lastWrite: Job? = null
     private var expired: () -> Unit = {}
     private var progressVersion=0L
+    private var restored=false
+    var progressRevision by mutableIntStateOf(0);private set
     var pending by mutableIntStateOf(0); private set
     var error by mutableStateOf<String?>(null); private set
     var finishing by mutableStateOf(false); private set
     var code by mutableStateOf<LinkCode?>(null); private set
     var codeLoading by mutableStateOf(false); private set
+    var restoring by mutableStateOf(false);private set
     fun connect(value: AuthSession?, onExpired: () -> Unit = {}) {
         expired=onExpired
         if(session==value) return
         work.cancel();work=CoroutineScope(viewModelScope.coroutineContext+SupervisorJob(viewModelScope.coroutineContext[Job]))
-        syncJob=null;session=value;pending=0;error=null;finishing=false;code=null;codeLoading=false
+        syncJob=null;session=value;pending=0;error=null;finishing=false;code=null;codeLoading=false;restored=false;restoring=false
         if(value!=null) retry()
     }
     private fun prefs(user: AuthSession)=getApplication<Application>().getSharedPreferences(accountPreferences(user.server,user.account.id)+".activity",0)
@@ -45,8 +48,8 @@ class StudentActivityModel(app: Application, private val api: FamilyApi) : Andro
     }
     fun record(kind: String,index: Int,source: String="FREE",review: Boolean=false) {
         val user=session ?: return
-        if(index !in DemoContent.lessons.indices) return
-        val event=JSONObject().put("id",UUID.randomUUID().toString()).put("kind",kind).put("letter",DemoContent.lessons[index].letter)
+        if(index !in AlphabetContent.lessons.indices) return
+        val event=JSONObject().put("id",UUID.randomUUID().toString()).put("kind",kind).put("letter",AlphabetContent.lessons[index].letter)
             .put("source",source).put("review",review).put("occurredAt",Instant.now().toString())
         val local=prefs(user)
         // Persist even if logout begins while the disk write is waiting; never reuse another account's preferences.
@@ -84,7 +87,19 @@ class StudentActivityModel(app: Application, private val api: FamilyApi) : Andro
             if(succeeded) viewModelScope.launch {if(session==user&&pending>0) retry()}
         }
     }
+    fun retryNow(){syncJob?.cancel();syncJob=null;retry()}
     private suspend fun flush(user: AuthSession) = network.withLock {
+        val queued=withContext(Dispatchers.IO){disk.withLock{queue(prefs(user)).length()}}
+        if(session==user)pending=queued
+        if(!restored) {
+            restoring=true
+            try {
+                val remote=withContext(Dispatchers.IO) {api.progress(user)}
+                withContext(Dispatchers.IO) {LessonProgressStore(getApplication<Application>().getSharedPreferences(accountPreferences(user.server,user.account.id),0)).merge(remote)}
+            }finally{if(session==user)restoring=false}
+            if(session!=user) return@withLock
+            restored=true;progressRevision++
+        }
         do {
             val local=prefs(user)
             val batch=withContext(Dispatchers.IO) {disk.withLock {val q=queue(local);JSONArray().apply {for(i in 0 until minOf(q.length(),100)) put(q.getJSONObject(i))}}}
@@ -92,7 +107,7 @@ class StudentActivityModel(app: Application, private val api: FamilyApi) : Andro
             val sentVersion=progressVersion
             val snapshot=LessonProgressStore(progress).readAll()
             val body=JSONObject().put("events",batch).put("progress",JSONArray().apply { snapshot.forEachIndexed { i,p ->
-                put(JSONObject().put("letter",DemoContent.lessons[i].letter).put("read",p.read).put("writes",p.writes).put("words",p.words).put("sentences",p.sentences)) } })
+                put(JSONObject().put("letter",AlphabetContent.lessons[i].letter).put("read",p.read).put("writes",p.writes).put("words",p.words).put("sentences",p.sentences)) } })
             val accepted=withContext(Dispatchers.IO) {api.sync(user,body)}
             require(accepted==(0 until batch.length()).map {batch.getJSONObject(it).getString("id")}.toSet())
             val left=withContext(Dispatchers.IO) {disk.withLock {val current=queue(local);val remaining=JSONArray()
@@ -107,7 +122,10 @@ class StudentActivityModel(app: Application, private val api: FamilyApi) : Andro
         if(user==null) {done();return}
         finishing=true
         viewModelScope.launch {
-            try {withTimeout(9000) {lastWrite?.join();flush(user)}} catch (_: Exception) { /* Outbox remains for the next sign-in. */ }
+            try {withTimeout(9000) {lastWrite?.join();flush(user)}}
+            catch(_:TimeoutCancellationException) { /* Outbox remains for the next sign-in. */ }
+            catch(e:CancellationException){throw e}
+            catch (_: Exception) { /* Outbox remains for the next sign-in. */ }
             finally {finishing=false;done()}
         }
     }

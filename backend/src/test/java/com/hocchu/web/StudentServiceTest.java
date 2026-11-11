@@ -66,7 +66,7 @@ public class StudentServiceTest {
         request.setSubmissionData("{\"answers\":[\"A\",\"A\"]}");
 
         when(userRepository.findById(studentId)).thenReturn(Optional.of(student));
-        when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+        when(assignmentRepository.findForSubmissionById(assignmentId)).thenReturn(Optional.of(assignment));
         when(classMemberRepository.existsByClazzIdAndStudentId(3L, studentId)).thenReturn(true);
 
         ApiResponse response = studentService.submitAssignment(studentId, assignmentId, request);
@@ -81,7 +81,7 @@ public class StudentServiceTest {
     void studentCannotSubmitToAnotherClass() {
         Assignment assignment = assignment("WRITING", "A");
         when(userRepository.findById(1L)).thenReturn(Optional.of(User.builder().id(1L).build()));
-        when(assignmentRepository.findById(2L)).thenReturn(Optional.of(assignment));
+        when(assignmentRepository.findForSubmissionById(2L)).thenReturn(Optional.of(assignment));
         SubmissionRequest request = new SubmissionRequest();
         request.setSubmissionData("anything");
         assertThrows(org.springframework.security.access.AccessDeniedException.class,
@@ -93,7 +93,7 @@ public class StudentServiceTest {
     void writingIsStoredForTeacherWithoutInventedScore() {
         prepare(assignment("WRITING", "A"));
         SubmissionRequest request = new SubmissionRequest();
-        request.setSubmissionData("[{\"letter\":\"A\",\"image\":\"data:image/png;base64,iVBORw0KGgo=\"}]");
+        request.setSubmissionData("[{\"letter\":\"A\",\"image\":\""+png()+"\"}]");
         ApiResponse response = studentService.submitAssignment(1L, 2L, request);
         assertTrue(response.getSuccess());
         var saved = org.mockito.ArgumentCaptor.forClass(Submission.class);
@@ -125,6 +125,23 @@ public class StudentServiceTest {
         return Assignment.builder().id(2L).title("Bài kiểm thử").contentType(type).contentData(data)
                 .clazz(Clazz.builder().id(3L).name("Lớp thử").teacher(User.builder().id(4L).build()).build()).build();
     }
+    private String png() {
+        try{var output=new java.io.ByteArrayOutputStream();javax.imageio.ImageIO.write(new java.awt.image.BufferedImage(32,32,java.awt.image.BufferedImage.TYPE_INT_RGB),"png",output);
+            return "data:image/png;base64,"+java.util.Base64.getEncoder().encodeToString(output.toByteArray());
+        }catch(Exception e){throw new AssertionError(e);}
+    }
+    @Test void submittedWritingMustCoverExactlyTheAssignedLetters() {
+        prepare(assignment("WRITING","{\"letters\":[\"A\",\"Ă\"]}"));var request=new SubmissionRequest();
+        request.setSubmissionData("[{\"letter\":\"A\",\"image\":\""+png()+"\"}]");
+        assertFalse(studentService.submitAssignment(1L,2L,request).getSuccess());verifyNoInteractions(submissionRepository,notificationRepository);
+    }
+    @Test void retryDoesNotOverwriteTeachersGradeOrDeleteHistory() {
+        prepare(assignment("WRITING","A"));var request=new SubmissionRequest();request.setSubmissionData("[{\"letter\":\"A\",\"image\":\""+png()+"\"}]");
+        var graded=Submission.builder().submissionData(request.getSubmissionData()).score(8.5f).feedback("Cô đã chấm").build();
+        when(submissionRepository.findFirstByAssignmentIdAndStudentIdOrderByIdDesc(2L,1L)).thenReturn(Optional.of(graded));
+        assertTrue(studentService.submitAssignment(1L,2L,request).getSuccess());assertEquals(8.5f,graded.getScore());
+        verify(submissionRepository,never()).save(any());verify(submissionRepository,never()).delete(any());verifyNoInteractions(notificationRepository);
+    }
 
     @Test
     void assignmentListIncludesTeacherFeedbackAndCurrentGrade() {
@@ -141,7 +158,7 @@ public class StudentServiceTest {
     }
     private void prepare(Assignment assignment) {
         when(userRepository.findById(1L)).thenReturn(Optional.of(User.builder().id(1L).fullName("Học sinh thử").build()));
-        when(assignmentRepository.findById(2L)).thenReturn(Optional.of(assignment));
+        when(assignmentRepository.findForSubmissionById(2L)).thenReturn(Optional.of(assignment));
         when(classMemberRepository.existsByClazzIdAndStudentId(3L, 1L)).thenReturn(true);
     }
 }

@@ -28,18 +28,6 @@ public class StudentController {
         return ResponseEntity.ok(studentService.getAlphabetLessons());
     }
 
-    @PostMapping("/practice")
-    public ResponseEntity<PracticeResponse> saveWritingPractice(
-            @CurrentUser UserPrincipal currentUser,
-            @Valid @RequestBody PracticeRequest request) {
-        return ResponseEntity.ok(studentService.saveWritingPractice(currentUser.getId(), request));
-    }
-
-    @GetMapping("/practice/history")
-    public ResponseEntity<List<PracticeResponse>> getPracticeHistory(@CurrentUser UserPrincipal currentUser) {
-        return ResponseEntity.ok(studentService.getPracticeHistory(currentUser.getId()));
-    }
-
     @PostMapping("/class/join")
     public ResponseEntity<ApiResponse> joinClass(
             @CurrentUser UserPrincipal currentUser,

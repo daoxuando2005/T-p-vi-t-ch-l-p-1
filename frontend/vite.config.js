@@ -3,6 +3,15 @@ import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 // https://vite.dev/config/
 export default defineConfig({
+    server: {
+        host: '0.0.0.0',
+        proxy: {
+            '/api': { target: process.env.VITE_BACKEND_TARGET || 'http://127.0.0.1:8080', changeOrigin: true },
+            '/alphabet': { target: process.env.VITE_BACKEND_TARGET || 'http://127.0.0.1:8080', changeOrigin: true, rewrite: p => '/api/public/media' + p },
+            '/audio': { target: process.env.VITE_BACKEND_TARGET || 'http://127.0.0.1:8080', changeOrigin: true, rewrite: p => '/api/public/media' + p },
+            '/example_images': { target: process.env.VITE_BACKEND_TARGET || 'http://127.0.0.1:8080', changeOrigin: true, rewrite: p => '/api/public/media' + p },
+        },
+    },
     plugins: [
         react(),
         VitePWA({
@@ -11,7 +20,7 @@ export default defineConfig({
             manifest: {
                 name: 'Học Chữ Lớp 1',
                 short_name: 'Học Chữ',
-                description: 'Ứng dụng luyện viết chữ tiếng Việt cho học sinh',
+                description: 'Khu vực quản lý và giảng dạy Vui Học cho giáo viên và quản trị viên',
                 theme_color: '#bae6fd',
                 background_color: '#ffffff',
                 display: 'standalone',

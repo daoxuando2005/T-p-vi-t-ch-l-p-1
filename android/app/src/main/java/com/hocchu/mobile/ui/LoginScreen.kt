@@ -26,36 +26,41 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hocchu.mobile.classroom.ClassroomViewModel
 import com.hocchu.mobile.family.ParentViewModel
 import com.hocchu.mobile.family.StudentActivityModel
+import com.hocchu.mobile.data.*
 
 @Composable
 fun AuthGate(model: AuthViewModel) {
     val classroom: ClassroomViewModel = viewModel()
     val parent: ParentViewModel = viewModel()
     val activities: StudentActivityModel = viewModel()
+    val study:StudyContentModel=viewModel()
     LaunchedEffect(model.state) {
         val session=(model.state as? AuthState.SignedIn)?.session
         val isParent=session?.account?.roles?.contains("ROLE_PARENT")==true
         classroom.connect(session?.takeUnless {isParent}) { model.logout(AuthFailure.Expired().publicMessage) }
         activities.connect(session?.takeUnless {isParent}) {model.logout(AuthFailure.Expired().publicMessage)}
         parent.connect(session?.takeIf {isParent}) {model.logout(AuthFailure.Expired().publicMessage)}
+        study.connect(session?.takeUnless {isParent}) {model.logout(AuthFailure.Expired().publicMessage)}
     }
     AuthContent(if(activities.finishing) AuthState.Loading("Đang lưu hoạt động của con…") else model.state,
-        model.server, model::signIn, model::restore, {activities.finishSession {model.logout()}}, model::changeServer, classroom,parent,activities)
+        model.server, model::signIn, model::restore, {activities.finishSession {model.logout()}}, model::changeServer, classroom,parent,activities,study)
 }
 
 @Composable
 internal fun AuthContent(state: AuthState, server: String, signIn: (String, String) -> Unit,
                          retry: () -> Unit, logout: () -> Unit, changeServer: (String) -> Unit,
                          classroom: ClassroomViewModel? = null, parent: ParentViewModel? = null,
-                         activities: StudentActivityModel? = null) {
+                         activities: StudentActivityModel? = null,study:StudyContentModel?=null) {
     var settings by remember { mutableStateOf(false) }
     when(state) {
         is AuthState.SignedIn -> {
             val session = state.session
             val scope = accountPreferences(session.server, session.account.id)
             key(scope) {
+                CompositionLocalProvider(LocalStudyContent provides (study?.content?:StudyContent.bundled()),LocalMediaServer provides session.server) {
                 if("ROLE_PARENT" in session.account.roles) ParentApp(session.account.fullName,parent,logout)
-                else StudentApp(preferencesName = scope, studentName = session.account.fullName, onLogout = logout, classroom = classroom,activities=activities)
+                else StudentApp(preferencesName = scope, studentName = session.account.fullName, onLogout = logout, classroom = classroom,activities=activities,study=study)
+                }
             }
         }
         is AuthState.Login -> key(server) {

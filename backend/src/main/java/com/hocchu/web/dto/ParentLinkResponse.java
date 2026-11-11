@@ -19,7 +19,6 @@ public class ParentLinkResponse {
     private Long studentId;
     private String studentName;
     private String studentUsername;
-    private String linkCode;
     private String status; // 'PENDING' hoặc 'APPROVED'
     private LocalDateTime linkedAt;
 }

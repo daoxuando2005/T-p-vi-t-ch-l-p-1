@@ -7,7 +7,7 @@ import android.graphics.Paint
 import android.graphics.Path
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
-import com.hocchu.mobile.data.DemoContent
+import com.hocchu.mobile.data.AlphabetContent
 import com.hocchu.mobile.ui.CopybookForms
 import com.hocchu.mobile.ui.CopybookPage
 import com.hocchu.mobile.ui.copybookGlyph
@@ -79,7 +79,7 @@ class CopybookFormTest {
 
     @Test
     fun all29ModelsFitThePaperAndHaveAStartingCueOnTheGlyph() {
-        val letters = DemoContent.lessons.map { it.letter.lowercase() }.toSet()
+        val letters = AlphabetContent.lessons.map { it.letter.lowercase() }.toSet()
         assertEquals(29, letters.size)
         assertEquals(letters, CopybookForms.all.map { it.letter }.toSet())
         CopybookForms.all.forEach { form ->

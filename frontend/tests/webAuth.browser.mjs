@@ -18,6 +18,7 @@ await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
 const port = server.address().port;
 await new Promise(resolve => server.close(resolve));
 const browser = spawn(browserPath, ['--headless=new', '--disable-gpu', '--no-first-run', '--no-default-browser-check',
+  '--disable-background-mode',
   `--user-data-dir=${profile}`, `--remote-debugging-port=${port}`, 'about:blank'], { windowsHide: true, stdio: 'ignore' });
 const pending = new Map();
 const errors = [];
@@ -84,7 +85,7 @@ try {
     const { requestId, request } = message.params;
     try {
       const url = new URL(request.url);
-      if (url.origin === origin) { await send('Fetch.continueRequest', { requestId }); return; }
+      if (url.origin === origin && !url.pathname.startsWith('/api/')) { await send('Fetch.continueRequest', { requestId }); return; }
       const account = { id: 901, username: 'browser-test', fullName: 'Tài khoản kiểm thử', roles };
       let body = '';
       if (url.pathname.startsWith('/api/')) {
@@ -132,9 +133,11 @@ try {
   assert.deepEqual(errors, [], 'Browser JavaScript/interception errors');
   console.log('Browser checks passed: Android sign-in/restore blocked, teacher/admin routes preserved, retired URLs redirected.');
 } finally {
+  // Close the isolated browser's children before removing its temporary profile.
+  if (socket?.readyState === WebSocket.OPEN) await send('Browser.close').catch(() => {});
   socket?.close(); for (const waiter of pending.values()) { clearTimeout(waiter.timer); waiter.reject(new Error('Browser closed')); }
-  browser.kill();
-  await pause(500);
+  if (browser.exitCode === null) await Promise.race([new Promise(resolve => browser.once('exit', resolve)), pause(2000)]);
+  if (browser.exitCode === null) browser.kill();
   // The generated profile is always inside this project's ignored node_modules/.tmp directory.
   assert.ok(profile.startsWith(path.resolve('node_modules/.tmp') + path.sep));
   await rm(profile, { recursive: true, force: true, maxRetries: 8, retryDelay: 250 });

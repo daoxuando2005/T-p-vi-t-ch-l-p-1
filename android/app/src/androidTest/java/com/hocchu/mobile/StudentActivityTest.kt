@@ -5,6 +5,7 @@ import androidx.lifecycle.ViewModelStore
 import androidx.test.platform.app.InstrumentationRegistry
 import com.hocchu.mobile.auth.*
 import com.hocchu.mobile.family.*
+import com.hocchu.mobile.data.AlphabetContent
 import org.json.JSONArray
 import org.json.JSONObject
 import org.junit.Assert.*
@@ -35,7 +36,10 @@ class StudentActivityTest {
             waitUntil {JSONArray(aPrefs.getString("outbox","[]")).length()==1}
             val saved=JSONArray(aPrefs.getString("outbox","[]")).getJSONObject(0).getString("id")
             instrumentation.runOnMainSync {offline.connect(null)}
-            val online=model(FamilyApi(AuthTransport {_,_,token,body->
+            val online=model(FamilyApi(AuthTransport {url,_,token,body->
+                if(url.endsWith("/learning/progress")) return@AuthTransport HttpReply(200,JSONArray().apply {
+                    AlphabetContent.lessons.forEach {put(JSONObject().put("letter",it.letter).put("read",false).put("writes",0).put("words",0).put("sentences",0))}
+                }.toString())
                 val payload=JSONObject(body!!);received.add(token to body)
                 HttpReply(200,JSONObject().put("success",true).put("acceptedIds",JSONArray().apply {
                     val events=payload.getJSONArray("events");for(i in 0 until events.length()) put(events.getJSONObject(i).getString("id"))

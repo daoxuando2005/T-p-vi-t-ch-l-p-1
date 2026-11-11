@@ -31,5 +31,11 @@ data class LessonProgress(val read: Boolean = false, val writes: Int = 0, val wo
         }
         fun current(all: List<LessonProgress>) = all.indexOfFirst { !it.complete }.let { if (it < 0) all.lastIndex else it }
         fun unlocked(index: Int, all: List<LessonProgress>) = index in all.indices && all.take(index).all { it.complete }
+        fun merge(local:List<LessonProgress>,remote:List<LessonProgress>):List<LessonProgress> {
+            require(local.size==AlphabetContent.lessons.size&&remote.size==local.size)
+            require(remote.indices.all {remote[it]==decode(remote[it].encode())&&(unlocked(it,remote)||remote[it]==LessonProgress())})
+            return local.zip(remote).map {(a,b)->decode(LessonProgress(a.read||b.read,maxOf(a.writes,b.writes),
+                maxOf(a.words,b.words),maxOf(a.sentences,b.sentences)).encode())}
+        }
     }
 }

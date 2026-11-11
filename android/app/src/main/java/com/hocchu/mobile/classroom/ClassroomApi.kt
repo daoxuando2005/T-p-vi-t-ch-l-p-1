@@ -17,6 +17,12 @@ class ClassroomApi(private val transport: AuthTransport = UrlAuthTransport(8 * 1
         }
     }
     fun classes(session: AuthSession): List<SchoolClass> = parse { ClassroomJson.classes(request(session, "class/joined")) }
+    fun review(session:AuthSession,assignmentId:Long):SubmissionReview=parse {
+        parseSubmissionReview(request(session,"assignments/$assignmentId/submission")).also {require(it.studentId==session.account.id)}
+    }
+    fun leave(session:AuthSession,classId:Long)=parse {
+        val o=JSONObject(request(session,"class/leave/$classId","DELETE"));require(o.getBoolean("success"))
+    }
     fun assignments(session: AuthSession): List<SchoolAssignment> = parse { ClassroomJson.assignments(request(session, "assignments")) }
     fun join(session: AuthSession, code: String) {
         val clean = code.trim()

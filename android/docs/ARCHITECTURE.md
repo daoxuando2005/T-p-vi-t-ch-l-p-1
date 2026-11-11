@@ -14,11 +14,14 @@ buộc dưới đây khi thay đổi chức năng liên quan. Không ghi kết q
   Android. Không khôi phục các trang web cũ khi thêm chức năng cho app.
 - Xác thực, tham gia lớp, nhận bài và nộp bài dùng backend thật. Bài viết chờ
   giáo viên chấm; trắc nghiệm được backend tính điểm, nhận xét tải lại từ server.
-- Học liệu hành trình 29 chữ vẫn là nội dung mẫu. Tiến độ hành trình và bản nháp
-  bài tập lưu trên thiết bị theo tài khoản. Hoạt động và snapshot hành trình được gửi
-  để phụ huynh theo dõi; chưa khôi phục hành trình từ cloud trên thiết bị mới.
-- Không mô tả đăng ký/OTP, nhận dạng phát âm, chấm nét viết tự động hoặc
-  khôi phục tiến độ hành trình trên thiết bị mới là chức năng đã có của Android.
+- Học liệu 29 chữ tải từ backend và lưu cache theo tài khoản; nội dung đóng gói
+  là phương án dự phòng. Học liệu do dự án biên soạn, chưa theo bộ sách cụ thể.
+- Tiến độ hành trình được khôi phục và gộp với server khi mở phiên học sinh,
+  không hạ chặng đã đạt. Bản nháp bài tập và nét tự luyện vẫn lưu trên thiết bị.
+  Hoạt động thực có outbox để phụ huynh theo dõi khi kết nối trở lại.
+- Đăng ký/OTP trên Android được hoãn; dùng tài khoản đã có hoặc admin tạo.
+  Chưa có nhận dạng phát âm hoặc chấm nét viết tự động. Không trình bày lượt
+  luyện viết là điểm đánh giá chữ viết.
 
 ## Nền tảng xây dựng
 
@@ -54,9 +57,12 @@ Các đường dẫn sau nằm trong `app/src/main/java/com/hocchu/mobile/`.
 | `family/FamilyModels.kt`, `FamilyApi.kt` | Mô hình báo cáo, liên kết con và hợp đồng API |
 | `family/ParentViewModel.kt`, `StudentActivityModel.kt` | Phiên phụ huynh và outbox hoạt động của học sinh |
 | `ui/ParentApp.kt` | Hôm nay, Tiến độ và Gia đình với dữ liệu backend thật |
-| `data/DemoContent.kt`, `LetterCurriculum.kt` | Danh sách 29 chữ và học liệu minh họa |
+| `data/AlphabetContent.kt`, `LetterCurriculum.kt` | Danh sách 29 chữ và học liệu minh họa |
+| `data/StudyContent.kt`, `MediaAddress.kt` | Học liệu server/cache, đường dẫn media công khai |
 | `data/LessonProgress.kt`, `LessonProgressStore.kt` | Quy tắc bài học và lưu tiến độ |
-| `ui/LearningScreens.kt`, `LetterLessonScreen.kt` | Trang chủ, đọc chữ, lớp minh họa và hành trình |
+| `ui/LearningScreens.kt`, `LetterLessonScreen.kt` | Trang chủ, đọc chữ và hành trình |
+| `classroom/SubmissionReview.kt`, `ui/SubmissionReviewScreen.kt` | Đọc và hiển thị bài đã nộp cho học sinh/phụ huynh |
+| `ui/LearningMedia.kt` | Tải ảnh/phát âm thanh công khai có giới hạn, TTS dự phòng |
 | `ui/WritingScreen.kt`, `CopybookForm.kt`, `CopybookPaper.kt` | Nét vẽ, hình học mẫu chữ và giấy ô li |
 | `ui/ExerciseScreens.kt` | Đố vui, ghép câu và phản hồi |
 | `ui/DesignSystem.kt`, `JourneyDecoration.kt`, `Speech.kt` | Giao diện dùng chung, trang trí và vòng đời TTS |
@@ -83,8 +89,9 @@ trạng thái chờ/lỗi rõ ràng, không đặt yêu cầu mạng trực ti�
   Không nhầm SavedState với lưu trữ bản vẽ lâu dài sau mọi lần đóng app.
 - Đổi học sinh phải tạo cây trạng thái riêng theo vùng tiến độ tài khoản. Không
   dùng chung bản vẽ, đáp án đang chọn hoặc tiến độ của học sinh trước.
-- Âm thanh dùng TTS tiếng Việt của thiết bị. Lỗi hoặc thiếu giọng đọc phải có
-  phản hồi; vẫn cho phép sử dụng phần không cần âm thanh. Giải phóng TTS khi hết vòng đời.
+- Ưu tiên file âm thanh của học liệu/câu hỏi, dùng TTS tiếng Việt khi chưa có
+  hoặc file lỗi. Lỗi ảnh/âm thanh phải có phản hồi. Dừng âm thanh khi tắt tiếng,
+  rời app; giải phóng player/TTS theo vòng đời. Không gửi JWT theo URL media.
 
 ## Khi sửa chức năng
 

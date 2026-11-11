@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import com.hocchu.mobile.data.DemoContent
+import com.hocchu.mobile.data.AlphabetContent
 import com.hocchu.mobile.family.*
 import java.time.LocalDate
 import java.time.Instant
@@ -40,19 +40,21 @@ fun ParentApp(name: String,model: ParentViewModel?,logout: ()->Unit) {
         onDispose {owner.lifecycle.removeObserver(observer)}
     }
     ParentScreen(name,model?.state ?: ParentState(loading=true),{model?.refresh()}, {model?.chooseChild(it)},
-        {model?.date(it)}, {model?.link(it)},logout)
+        {model?.date(it)}, {model?.link(it)},logout,openReview={model?.openReview(it)},unlink={model?.unlink(it)})
+    model?.let {SubmissionReviewDialog(it.review,it::closeReview,it::retryReview)}
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 internal fun ParentScreen(name: String,state: ParentState,refresh: ()->Unit,chooseChild: (Long)->Unit,
-    selectDate: (LocalDate)->Unit,link: (String)->Unit,logout: ()->Unit,initialTab: Int=0) {
+    selectDate: (LocalDate)->Unit,link: (String)->Unit,logout: ()->Unit,initialTab: Int=0,openReview:(Long)->Unit={},unlink:(Long)->Unit={}) {
     var tab by rememberSaveable {mutableIntStateOf(initialTab)}
     var profile by remember {mutableStateOf(false)}
     var calendar by remember {mutableStateOf(false)}
     var childMenu by remember {mutableStateOf(false)}
     var code by rememberSaveable {mutableStateOf("")}
     var detail by remember {mutableStateOf<LetterStatus?>(null)}
+    var unlinkTarget by remember {mutableStateOf<LinkedChild?>(null)}
     val child=state.children.find {it.id==state.selectedId}
     val titles=listOf("Hôm nay","Tiến độ","Gia đình")
     val symbols=listOf(Icons.Rounded.WbSunny,Icons.Rounded.Insights,Icons.Rounded.FamilyRestroom)
@@ -113,6 +115,7 @@ internal fun ParentScreen(name: String,state: ParentState,refresh: ()->Unit,choo
                             Icon(Icons.Rounded.Verified,"Đã liên kết",tint=SuccessText)
                         }
                         TextButton(onClick={chooseChild(c.id);tab=0}) {Text("Xem hoạt động của con")}
+                        TextButton(onClick={unlinkTarget=c},enabled=!state.linking){Text("Ngắt liên kết",color=MaterialTheme.colorScheme.error)}
                     } }
                     item {Paper {
                         Text("Liên kết thêm con",style=MaterialTheme.typography.titleLarge)
@@ -156,7 +159,9 @@ internal fun ParentScreen(name: String,state: ParentState,refresh: ()->Unit,choo
                                 Text("Cùng chờ hoạt động mới từ con",style=MaterialTheme.typography.titleLarge)
                                 Text("Bạn có thể đổi ngày hoặc bấm cập nhật để xem lại.",color=Muted)
                             }}
-                            items(dashboard.timeline,key={it.id}) { activity->ParentActivityCard(activity) }
+                            items(dashboard.timeline,key={it.id}) { activity->ParentActivityCard(activity) {
+                                activity.id.removePrefix("submission:").toLongOrNull()?.let(openReview)
+                            } }
                             if(dashboard.truncated) item {Text("Đang hiển thị 200 hoạt động gần nhất của ngày.",color=Muted)}
                         } else {
                             item {Paper(color=PaleBlue) {
@@ -170,7 +175,7 @@ internal fun ParentScreen(name: String,state: ParentState,refresh: ()->Unit,choo
                             item {Paper {
                                 Text("Các chữ con đang khám phá",style=MaterialTheme.typography.titleLarge)
                                 FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp),verticalArrangement=Arrangement.spacedBy(8.dp)) {
-                                    DemoContent.lessons.forEach { letter->
+                                    AlphabetContent.lessons.forEach { letter->
                                         val status=dashboard.progress.find {it.letter==letter.letter}
                                         val learned=status?.complete==true
                                         FilledTonalButton(onClick={if(status!=null) detail=status},contentPadding=PaddingValues(4.dp),
@@ -200,6 +205,10 @@ internal fun ParentScreen(name: String,state: ParentState,refresh: ()->Unit,choo
         }
     }
     }
+    unlinkTarget?.let {target->AlertDialog(onDismissRequest={unlinkTarget=null},title={Text("Ngắt liên kết với ${target.name}?")},
+        text={Text("Bạn sẽ không xem được báo cáo của con. Tiến độ và bài làm vẫn được giữ; muốn kết nối lại cần mã mới từ hồ sơ của con.")},
+        confirmButton={TextButton(onClick={unlinkTarget=null;unlink(target.id)}){Text("Ngắt liên kết")}},
+        dismissButton={TextButton(onClick={unlinkTarget=null}){Text("Giữ lại")}})}
     if(childMenu) AlertDialog(onDismissRequest={childMenu=false},title={Text("Chọn con để theo dõi")},
         text={Column {state.children.forEach { c->TextButton(onClick={chooseChild(c.id);childMenu=false},modifier=Modifier.fillMaxWidth().heightIn(min=52.dp).testTag("parent-child-${c.id}")) {Text(c.name)} }}},
         confirmButton={TextButton(onClick={childMenu=false}) {Text("Đóng")}})
@@ -229,7 +238,7 @@ private fun ParentStat(title: String,count: Int,icon: androidx.compose.ui.graphi
     }
 }
 @Composable
-private fun ParentActivityCard(activity: ChildActivity) {Paper {
+private fun ParentActivityCard(activity: ChildActivity,open:()->Unit) {Paper {
     Row(horizontalArrangement=Arrangement.spacedBy(12.dp),verticalAlignment=Alignment.Top) {
         val icon=when(activity.kind) {"READING"->Icons.AutoMirrored.Rounded.MenuBook;"WRITING"->Icons.Rounded.Edit;"SUBMISSION"->Icons.Rounded.AssignmentTurnedIn;"LESSON_COMPLETE"->Icons.Rounded.CheckCircle;else->Icons.Rounded.Extension}
         Surface(shape=CircleShape,color=if(activity.kind=="LESSON_COMPLETE") Color(0xFFE6F9CF) else PaleBlue) {Icon(icon,null,tint=SkyDark,modifier=Modifier.padding(12.dp).size(24.dp))}
@@ -239,6 +248,7 @@ private fun ParentActivityCard(activity: ChildActivity) {Paper {
             activity.score?.let {Text("Điểm: ${String.format(java.util.Locale.ROOT,"%.1f",it)} / 10",color=SuccessText)}
             if(activity.feedback.isNotBlank()) Text(activity.feedback,color=Muted)
             if(activity.kind=="WRITING") Text("Ghi nhận lượt luyện, chưa đánh giá nét viết",style=MaterialTheme.typography.bodySmall,color=Muted)
+            if(activity.kind=="SUBMISSION")TextButton(onClick=open){Text("Xem bài làm")}
         }
     }
 } }

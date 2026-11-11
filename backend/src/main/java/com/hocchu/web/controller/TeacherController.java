@@ -125,44 +125,16 @@ public class TeacherController {
         return ResponseEntity.ok(teacherService.deleteClass(currentUser.getId(), classId));
     }
 
-    @PostMapping("/upload-image")
-    public ResponseEntity<ApiResponse> uploadQuizImage(
-            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
-            @RequestParam("filename") String filename) {
-        try {
-            if (file.isEmpty()) {
-                return ResponseEntity.badRequest().body(new ApiResponse(false, "File ảnh rỗng!"));
-            }
-            java.nio.file.Path targetDir = java.nio.file.Paths.get("d:/study/doanchuyennganh/code/code/frontend/public/example_images");
-            if (!java.nio.file.Files.exists(targetDir)) {
-                java.nio.file.Files.createDirectories(targetDir);
-            }
-            java.nio.file.Path targetFile = targetDir.resolve(filename);
-            java.nio.file.Files.copy(file.getInputStream(), targetFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            return ResponseEntity.ok(new ApiResponse(true, "/example_images/" + filename));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ApiResponse(false, "Không thể lưu tệp ảnh: " + e.getMessage()));
-        }
-    }
+    @Autowired private com.hocchu.web.service.MediaStorageService media;
 
+    @PostMapping("/upload-image")
+    public ResponseEntity<ApiResponse> uploadQuizImage(@RequestParam("file") org.springframework.web.multipart.MultipartFile file,@RequestParam("filename") String filename) {
+        var result=media.store(file,"example_images",filename);
+        return result.getSuccess()?ResponseEntity.ok(result):ResponseEntity.badRequest().body(result);
+    }
     @PostMapping("/upload-audio")
-    public ResponseEntity<ApiResponse> uploadQuizAudio(
-            @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
-            @RequestParam("filename") String filename) {
-        try {
-            if (file.isEmpty()) {
-                return ResponseEntity.badRequest().body(new ApiResponse(false, "File âm thanh rỗng!"));
-            }
-            java.nio.file.Path targetDir = java.nio.file.Paths.get("d:/study/doanchuyennganh/code/code/frontend/public/audio");
-            if (!java.nio.file.Files.exists(targetDir)) {
-                java.nio.file.Files.createDirectories(targetDir);
-            }
-            java.nio.file.Path targetFile = targetDir.resolve(filename);
-            java.nio.file.Files.copy(file.getInputStream(), targetFile, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
-            return ResponseEntity.ok(new ApiResponse(true, "/audio/" + filename));
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ApiResponse(false, "Không thể lưu tệp âm thanh: " + e.getMessage()));
-        }
+    public ResponseEntity<ApiResponse> uploadQuizAudio(@RequestParam("file") org.springframework.web.multipart.MultipartFile file,@RequestParam("filename") String filename) {
+        var result=media.store(file,"audio",filename);
+        return result.getSuccess()?ResponseEntity.ok(result):ResponseEntity.badRequest().body(result);
     }
 }
-

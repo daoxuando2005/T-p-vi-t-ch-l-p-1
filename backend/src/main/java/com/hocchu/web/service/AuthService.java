@@ -47,6 +47,8 @@ public class AuthService {
 
     @Transactional
     public ApiResponse registerUser(SignUpRequest signUpRequest) {
+        if(signUpRequest.getRole()==null||!Set.of("STUDENT","PARENT","TEACHER").contains(signUpRequest.getRole().toUpperCase(Locale.ROOT)))
+            return new ApiResponse(false,"Vai trò đăng ký chưa hợp lệ.");
         if (userRepository.existsByUsername(signUpRequest.getUsername())) {
             return new ApiResponse(false, "Tên đăng nhập đã tồn tại!");
         }
@@ -75,7 +77,7 @@ public class AuthService {
         user.setRoles(roles);
 
         // Sinh mã OTP 6 số ngẫu nhiên
-        Random random = new Random();
+        java.security.SecureRandom random = new java.security.SecureRandom();
         String otp = String.format("%06d", random.nextInt(1000000));
         user.setOtpCode(otp);
         user.setOtpExpiry(LocalDateTime.now().plusMinutes(otpExpiryMinutes));

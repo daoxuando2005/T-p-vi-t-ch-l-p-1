@@ -1,0 +1,40 @@
+CREATE TABLE student_learning_content (
+    letter VARCHAR(3) PRIMARY KEY,
+    sound VARCHAR(40) NOT NULL,
+    example_word VARCHAR(100) NOT NULL,
+    picture VARCHAR(40) NOT NULL,
+    practices JSON NOT NULL,
+    updated_at_utc DATETIME(3) NOT NULL
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_bin;
+
+-- Authored initial content. Changes are served by the API and cached per account on Android.
+INSERT INTO student_learning_content(letter,sound,example_word,picture,practices,updated_at_utc) VALUES
+('A','a','Con cá','🐟','[{"text":"ba","picture":"👨","sentence":["Bé","yêu","ba."]},{"text":"hoa","picture":"🌼","sentence":["Hoa","rất","thơm."]},{"text":"na","picture":"🍈","sentence":["Quả","na","rất ngon."]}]',UTC_TIMESTAMP(3)),
+('Ă','á','Cái khăn','🧣','[{"text":"khăn","picture":"🧣","sentence":["Bé","có","khăn."]},{"text":"chăn","picture":"🛏️","sentence":["Chăn","rất","ấm."]},{"text":"măng","picture":"🎋","sentence":["Mẹ","nấu","măng."]}]',UTC_TIMESTAMP(3)),
+('Â','ớ','Cái cân','⚖️','[{"text":"cân","picture":"⚖️","sentence":["Mẹ","có","cái cân."]},{"text":"chân","picture":"🦶","sentence":["Bé","rửa","chân."]},{"text":"sân","picture":"🏡","sentence":["Bé","chơi","ngoài sân."]}]',UTC_TIMESTAMP(3)),
+('B','bờ','Con bò','🐮','[{"text":"bò","picture":"🐮","sentence":["Con bò","ăn","cỏ."]},{"text":"bé","picture":"🧒","sentence":["Bé","đang","học."]},{"text":"bóng","picture":"⚽","sentence":["Bé","đá","bóng."]}]',UTC_TIMESTAMP(3)),
+('C','cờ','Con cua','🦀','[{"text":"cá","picture":"🐟","sentence":["Cá","đang","bơi."]},{"text":"cua","picture":"🦀","sentence":["Con cua","có","hai càng."]},{"text":"cam","picture":"🍊","sentence":["Bé","ăn","cam."]}]',UTC_TIMESTAMP(3)),
+('D','dờ','Con dê','🐐','[{"text":"dê","picture":"🐐","sentence":["Con dê","ăn","cỏ."]},{"text":"dưa","picture":"🍉","sentence":["Bé","ăn","dưa."]},{"text":"dừa","picture":"🥥","sentence":["Mẹ","mua","quả dừa."]}]',UTC_TIMESTAMP(3)),
+('Đ','đờ','Đu đủ','🥭','[{"text":"đò","picture":"🛶","sentence":["Đò","qua","sông."]},{"text":"đèn","picture":"💡","sentence":["Bé","bật","đèn."]},{"text":"đũa","picture":"🥢","sentence":["Mẹ","cầm","đũa."]}]',UTC_TIMESTAMP(3)),
+('E','e','Xe đạp','🚲','[{"text":"xe","picture":"🚲","sentence":["Bé","đi","xe."]},{"text":"ve","picture":"🪲","sentence":["Ve","kêu","trên cây."]},{"text":"me","picture":"🌳","sentence":["Quả me","có","vị chua."]}]',UTC_TIMESTAMP(3)),
+('Ê','ê','Quả lê','🍐','[{"text":"dê","picture":"🐐","sentence":["Dê","đang","ăn cỏ."]},{"text":"lê","picture":"🍐","sentence":["Bé","ăn","quả lê."]},{"text":"bê","picture":"🐄","sentence":["Bê","đi","theo mẹ."]}]',UTC_TIMESTAMP(3)),
+('G','gờ','Con gà','🐔','[{"text":"gà","picture":"🐔","sentence":["Gà","đang","gáy."]},{"text":"gạo","picture":"🍚","sentence":["Mẹ","vo","gạo."]},{"text":"gấu","picture":"🧸","sentence":["Bé","ôm","gấu bông."]}]',UTC_TIMESTAMP(3)),
+('H','hờ','Bông hoa','🌼','[{"text":"hoa","picture":"🌸","sentence":["Hoa","đang","nở."]},{"text":"hổ","picture":"🐯","sentence":["Hổ","sống","trong rừng."]},{"text":"hươu","picture":"🦌","sentence":["Hươu","ăn","lá cây."]}]',UTC_TIMESTAMP(3)),
+('I','i','Viên bi','🔵','[{"text":"bi","picture":"🔵","sentence":["Bé","chơi","bi."]},{"text":"pin","picture":"🔋","sentence":["Đèn","cần","pin."]},{"text":"chim","picture":"🐦","sentence":["Chim","đang","hót."]}]',UTC_TIMESTAMP(3)),
+('K','ca','Cái kéo','✂️','[{"text":"kéo","picture":"✂️","sentence":["Cô","cầm","kéo."]},{"text":"kem","picture":"🍦","sentence":["Bé","ăn","kem."]},{"text":"kiến","picture":"🐜","sentence":["Kiến","bò","trên lá."]}]',UTC_TIMESTAMP(3)),
+('L','lờ','Chiếc lá','🍃','[{"text":"lá","picture":"🍃","sentence":["Lá","có","màu xanh."]},{"text":"lê","picture":"🍐","sentence":["Quả lê","rất","ngọt."]},{"text":"lợn","picture":"🐷","sentence":["Lợn","đang","ăn."]}]',UTC_TIMESTAMP(3)),
+('M','mờ','Con mèo','🐱','[{"text":"mèo","picture":"🐱","sentence":["Mèo","đang","ngủ."]},{"text":"mũ","picture":"🧢","sentence":["Bé","đội","mũ."]},{"text":"mưa","picture":"🌧️","sentence":["Mưa","rơi","ngoài sân."]}]',UTC_TIMESTAMP(3)),
+('N','nờ','Cái nơ','🎀','[{"text":"nơ","picture":"🎀","sentence":["Bé","cài","nơ."]},{"text":"na","picture":"🍈","sentence":["Mẹ","mua","quả na."]},{"text":"nai","picture":"🦌","sentence":["Nai","ăn","cỏ."]}]',UTC_TIMESTAMP(3)),
+('O','o','Quả nho','🍇','[{"text":"con bò","picture":"🐮","sentence":["Con bò","đang","ăn cỏ."]},{"text":"nho","picture":"🍇","sentence":["Bé","ăn","nho."]},{"text":"voi","picture":"🐘","sentence":["Voi","có","vòi dài."]}]',UTC_TIMESTAMP(3)),
+('Ô','ô','Cái ô','☂️','[{"text":"tô","picture":"🥣","sentence":["Bé","cầm","cái tô."]},{"text":"ngô","picture":"🌽","sentence":["Mẹ","luộc","ngô."]},{"text":"xô","picture":"🪣","sentence":["Bé","xách","xô."]}]',UTC_TIMESTAMP(3)),
+('Ơ','ơ','Lá cờ','🚩','[{"text":"nơ","picture":"🎀","sentence":["Chiếc nơ","rất","đẹp."]},{"text":"mơ","picture":"🍑","sentence":["Quả mơ","có","vị chua."]},{"text":"bơ","picture":"🥑","sentence":["Bé","ăn","quả bơ."]}]',UTC_TIMESTAMP(3)),
+('P','pờ','Đèn pin','🔦','[{"text":"pin","picture":"🔋","sentence":["Bố","thay","pin."]},{"text":"đèn pin","picture":"🔦","sentence":["Bé","bật","đèn pin."]},{"text":"hộp","picture":"📦","sentence":["Bé","mở","hộp."]}]',UTC_TIMESTAMP(3)),
+('Q','quờ','Quả quýt','🍊','[{"text":"quạt","picture":"🪭","sentence":["Bé","bật","quạt."]},{"text":"quần","picture":"👖","sentence":["Bé","mặc","quần."]},{"text":"quả cam","picture":"🍊","sentence":["Mẹ","bóc","quả cam."]}]',UTC_TIMESTAMP(3)),
+('R','rờ','Con rùa','🐢','[{"text":"rùa","picture":"🐢","sentence":["Rùa","bò","rất chậm."]},{"text":"rau","picture":"🥬","sentence":["Mẹ","rửa","rau."]},{"text":"rổ","picture":"🧺","sentence":["Bé","cầm","cái rổ."]}]',UTC_TIMESTAMP(3)),
+('S','sờ','Ngôi sao','⭐','[{"text":"sao","picture":"⭐","sentence":["Sao","sáng","trên trời."]},{"text":"sóc","picture":"🐿️","sentence":["Sóc","chuyền","cành."]},{"text":"sư tử","picture":"🦁","sentence":["Sư tử","sống","trên đồng cỏ."]}]',UTC_TIMESTAMP(3)),
+('T','tờ','Quả táo','🍎','[{"text":"táo","picture":"🍎","sentence":["Bé","ăn","táo."]},{"text":"tôm","picture":"🦐","sentence":["Tôm","bơi","dưới nước."]},{"text":"túi","picture":"👜","sentence":["Mẹ","xách","túi."]}]',UTC_TIMESTAMP(3)),
+('U','u','Cái mũ','🧢','[{"text":"cua","picture":"🦀","sentence":["Cua","bò","trên cát."]},{"text":"su su","picture":"🥒","sentence":["Mẹ","gọt","su su."]},{"text":"đu quay","picture":"🎠","sentence":["Bé","chơi","đu quay."]}]',UTC_TIMESTAMP(3)),
+('Ư','ư','Sư tử','🦁','[{"text":"sư tử","picture":"🦁","sentence":["Sư tử","có","bờm."]},{"text":"thư","picture":"✉️","sentence":["Bé","nhận","thư."]},{"text":"cưa","picture":"🪚","sentence":["Bố","dùng","cưa."]}]',UTC_TIMESTAMP(3)),
+('V','vờ','Con voi','🐘','[{"text":"voi","picture":"🐘","sentence":["Voi","đang","uống nước."]},{"text":"vịt","picture":"🦆","sentence":["Vịt","bơi","trong ao."]},{"text":"vở","picture":"📓","sentence":["Bé","mở","vở."]}]',UTC_TIMESTAMP(3)),
+('X','xờ','Xe buýt','🚌','[{"text":"xe","picture":"🚲","sentence":["Xe","đỗ","trước nhà."]},{"text":"xôi","picture":"🍚","sentence":["Bé","ăn","xôi."]},{"text":"xoài","picture":"🥭","sentence":["Quả xoài","rất","thơm."]}]',UTC_TIMESTAMP(3)),
+('Y','i dài','Y tá','🧑‍⚕️','[{"text":"y tá","picture":"🧑‍⚕️","sentence":["Y tá","chăm sóc","em bé."]},{"text":"cây","picture":"🌳","sentence":["Cây","có","nhiều lá."]},{"text":"xe máy","picture":"🛵","sentence":["Bố","đi","xe máy."]}]',UTC_TIMESTAMP(3));

@@ -31,6 +31,14 @@ public class LearningTrackingService {
     public record Sync(List<Event> events, List<Progress> progress) {}
     public record Activity(String id, String kind, String letter, String title, Instant occurredAt, Float score, String feedback) {}
 
+    @Transactional(readOnly=true)
+    public List<Progress> progress(Long studentId) {
+        var saved=jdbc.query("SELECT letter,read_done,writes,words,sentences FROM learning_progress WHERE student_id=?",
+            (rs,n)->new Progress(rs.getString("letter"),rs.getBoolean("read_done"),rs.getInt("writes"),rs.getInt("words"),rs.getInt("sentences")),studentId);
+        Map<String,Progress> byLetter=new HashMap<>();saved.forEach(p->byLetter.put(p.letter(),p));
+        return LETTERS.stream().map(l->byLetter.getOrDefault(l,new Progress(l,false,0,0,0))).toList();
+    }
+
     @Transactional
     public Map<String,Object> sync(Long studentId, Sync body) {
         if(body == null || body.events() == null || body.progress() == null || body.events().size() > 100 || body.progress().size() != 29)
@@ -63,6 +71,11 @@ public class LearningTrackingService {
     public ParentStudentLink requireLinked(Long parentId, Long studentId) {
         return links.findByParentIdAndStudentId(parentId,studentId).filter(l->"APPROVED".equals(l.getStatus()))
             .orElseThrow(()->new AccessDeniedException("Không có quyền xem thông tin của học sinh này."));
+    }
+    @Transactional public Map<String,Object> unlink(Long parentId,Long studentId) {
+        var link=requireLinked(parentId,studentId);links.delete(link);
+        jdbc.update("DELETE FROM parent_link_invites WHERE student_id=?",studentId);
+        return Map.of("success",true,"message","Đã ngắt liên kết. Tiến độ và bài làm của con vẫn được giữ.");
     }
 
     @Transactional(readOnly=true)

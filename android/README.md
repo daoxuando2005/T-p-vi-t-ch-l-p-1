@@ -20,8 +20,8 @@ thực hiện ở đây; chỉ cập nhật khi quy tắc hoặc chức năng t�
 ## Phạm vi ứng dụng
 
 - Đăng nhập học sinh/phụ huynh bằng backend Spring Boot, xác minh/khôi phục phiên, đăng xuất và lưu tiến độ riêng theo tài khoản. Xem [cấu hình backend local và API xác thực](docs/AUTHENTICATION.md).
-- Phụ huynh: liên kết con bằng mã, xem hoạt động theo ngày, chặng học 29 chữ và thống kê bảy ngày. Xem [quy tắc theo dõi](docs/PARENT.md).
-- Trang chủ: thẻ tự luyện và hành trình 29 chữ theo thứ tự. Mỗi chữ: đọc theo → viết 2 lượt (có thể luyện thêm) → điền 3 từ → ghép 3 câu mẫu. Tiến độ lưu trên thiết bị, hoàn thành mới mở chữ kế tiếp; bài đã học có thể ôn lại. Xem [luồng bài học và lưu tiến độ](docs/LEARNING_JOURNEY.md).
+- Phụ huynh: liên kết/ngắt liên kết con bằng mã, xem hoạt động theo ngày, bài đã nộp, nhận xét của cô, chặng học 29 chữ và thống kê bảy ngày. Xem [quy tắc theo dõi](docs/PARENT.md).
+- Trang chủ: thẻ tự luyện và hành trình 29 chữ theo thứ tự. Mỗi chữ: đọc theo → viết 2 lượt (có thể luyện thêm) → điền 3 từ → ghép 3 câu mẫu. Tiến độ lưu theo tài khoản và gộp với server khi đăng nhập, hoàn thành mới mở chữ kế tiếp; bài đã học có thể ôn lại. Xem [luồng bài học và lưu tiến độ](docs/LEARNING_JOURNEY.md).
 - Đọc chữ: 29 chữ cái, chữ hoa/thường, từ ví dụ, đọc bằng TextToSpeech tiếng Việt trên thiết bị.
 - Tập viết: 29 mẫu chữ thường cỡ vừa từ HP001, căn theo chân chữ và tỉ lệ ô li; dấu phụ và đuôi chữ được chừa chỗ riêng. Có chấm đặt bút, hướng khởi đầu và hộp xem mẫu. Nét vẽ bằng ngón tay/bút, chọn độ đậm, hoàn tác, xác nhận xóa. Tọa độ chuẩn hóa và lưu trạng thái khi xoay máy/chuyển tab. Đổi chữ sẽ bắt đầu bảng viết mới. Chi tiết và nguồn đối chiếu: [Mẫu chữ và ô ly](docs/HANDWRITING.md).
 - Lớp học: nhập mã để tham gia lớp thật, chọn lớp, tải bài cô giao, làm trắc nghiệm hoặc viết các chữ được giao và nộp bài. Bản nháp lưu riêng theo tài khoản; gửi lỗi giữ bài để thử lại. Điểm/nhận xét được tải từ server. Xem [quy tắc lớp học](docs/CLASSROOM.md).
@@ -29,7 +29,7 @@ thực hiện ở đây; chỉ cập nhật khi quy tắc hoặc chức năng t�
 - Ghép câu: chọn/bỏ thẻ từ, nghe câu mẫu, kiểm tra thứ tự.
 - Điện thoại dùng thanh điều hướng dưới; từ 840dp dùng navigation rail. Nội dung đọc chữ và tập viết chuyển sang hai cột khi đủ rộng.
 
-**Đăng nhập, lớp học, bài cô giao và báo cáo phụ huynh dùng backend.** Học liệu hành trình trong `DemoContent.kt` và `LetterCurriculum.kt` vẫn là nội dung mẫu. Tiến độ hành trình và bản nháp lưu riêng trên thiết bị; hoạt động và snapshot được gửi cho phụ huynh. Chưa có khôi phục hành trình từ cloud, nhận dạng phát âm hoặc chấm nét viết tự động. Bài viết được giao chờ cô chấm. Dữ liệu bản xem trước cũ được giữ riêng.
+**Đăng nhập, học liệu, lớp học, bài cô giao và báo cáo phụ huynh dùng backend.** Học liệu tải về có cache; `AlphabetContent.kt` và `LetterCurriculum.kt` là nội dung dự phòng do dự án biên soạn. Hành trình khôi phục từ server theo tài khoản; bản nháp/nét tự luyện vẫn ở thiết bị. Ảnh và file âm thanh được hỗ trợ, có TTS dự phòng. Chưa có nhận dạng phát âm hoặc chấm nét viết tự động; bài viết được giao chờ cô chấm. Đăng ký/OTP trên Android được để sau, dùng tài khoản có sẵn hoặc admin cấp. Dữ liệu xem trước cũ được giữ riêng.
 
 ## Mở bằng Android Studio
 
@@ -74,7 +74,7 @@ app/src/main/java/com/hocchu/mobile/
   auth/                   API xác thực, phiên mã hóa, repository và ViewModel
   classroom/              Lớp/bài thật, ViewModel, bản nháp và xuất ảnh bài viết
   ui/ClassroomScreen.kt    Tham gia lớp, làm/nộp bài, xem kết quả
-  data/DemoContent.kt      Danh sách 29 chữ và bài minh họa
+  data/AlphabetContent.kt      Danh sách 29 chữ và bài minh họa
   data/LetterCurriculum.kt Học liệu theo chữ
   data/LessonProgress.kt   Quy tắc tiến độ và codec
   data/LessonProgressStore.kt Lưu tiến độ trong vùng tài khoản

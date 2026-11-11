@@ -22,8 +22,11 @@ npm ci
 npm run dev
 ```
 
-Website local: `http://localhost:5173`. URL API nằm trong `src/services/api.js`.
-Website gọi backend, không kết nối trực tiếp MySQL.
+Website local: `http://localhost:5173`. `src/services/api.js` dùng `/api` cùng
+origin; Vite proxy đến `http://127.0.0.1:8080`. Có thể đặt biến môi trường
+`VITE_BACKEND_TARGET` trước khi khởi động Vite để đổi đích backend. Bản build
+cần reverse proxy `/api` hoặc đặt `VITE_API_BASE_URL` khi build. Website không
+kết nối trực tiếp MySQL.
 
 ```sh
 npm run build
@@ -48,3 +51,8 @@ không phụ thuộc bộ chấm nét hay font cũ của website.
 Ảnh/âm thanh từ backend có thể không xuất hiện trong import tĩnh. Trước khi xóa
 tài sản trong `public/`, kiểm tra cả URL trong CSS, cấu hình, backend và dữ liệu
 học liệu. Giữ các biểu tượng PWA và font đang được tham chiếu.
+
+Upload mới lưu trong thư mục backend được cấu hình bởi `APP_MEDIA_DIRECTORY`
+(mặc định `backend/uploads`, không commit), tối đa 8 MB/tệp. URL trả về là
+`/api/public/media/...`, dùng được cho Android và web. Các đường dẫn cũ
+`/alphabet`, `/audio`, `/example_images` cũng được Vite chuyển tiếp đến backend.

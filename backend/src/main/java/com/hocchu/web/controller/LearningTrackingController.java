@@ -17,6 +17,10 @@ public class LearningTrackingController {
     @Autowired private LearningTrackingService tracking;
     @PostMapping("/student/learning/sync") @PreAuthorize("hasRole('STUDENT')")
     public Map<String,Object> sync(@CurrentUser UserPrincipal user,@RequestBody LearningTrackingService.Sync body) {return tracking.sync(user.getId(),body);}
+    @GetMapping("/student/learning/progress") @PreAuthorize("hasRole('STUDENT')")
+    public java.util.List<LearningTrackingService.Progress> progress(@CurrentUser UserPrincipal user) {return tracking.progress(user.getId());}
+    @DeleteMapping("/parent/students/{id}/link") @PreAuthorize("hasRole('PARENT')")
+    public Map<String,Object> unlink(@CurrentUser UserPrincipal user,@PathVariable Long id) {return tracking.unlink(user.getId(),id);}
     @GetMapping("/parent/students/{id}/dashboard") @PreAuthorize("hasRole('PARENT')")
     public Map<String,Object> dashboard(@CurrentUser UserPrincipal user,@PathVariable Long id,@RequestParam(required=false) String date) {
         return tracking.dashboard(user.getId(),id,date==null?LocalDate.now(LearningTrackingService.SCHOOL_ZONE):LocalDate.parse(date));

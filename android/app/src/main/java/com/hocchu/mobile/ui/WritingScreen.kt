@@ -31,7 +31,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.hocchu.mobile.data.DemoContent
+import com.hocchu.mobile.data.AlphabetContent
 import kotlinx.coroutines.CancellationException
 
 // Store normalized positions, so resizing does not stretch the logical writing space.
@@ -53,7 +53,7 @@ fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit, g
     var confirmClear by remember { mutableStateOf(false) }
     var pendingLetter by rememberSaveable { mutableStateOf<Int?>(null) }
     var showReference by rememberSaveable { mutableStateOf(false) }
-    val lesson = DemoContent.lessons[index]
+    val lesson = AlphabetContent.lessons[index]
     val letter = lesson.letter.lowercase()
     val form = CopybookForms.forLetter(letter)
     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 4.dp),
@@ -130,7 +130,7 @@ fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit, g
         dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Giữ bài viết") } })
     if (complete) WritingCompletion(
         letter = letter,
-        lastLetter = guided == null && index == DemoContent.lessons.lastIndex,
+        lastLetter = guided == null && index == AlphabetContent.lessons.lastIndex,
         continueLabel = guided?.let { if (it.completed == 0) "Viết lượt 2" else "Đố vui với từ" },
         repeatLabel = if (guided != null && guided.completed >= 1) "Luyện thêm một lượt" else "Viết lại",
         onDismiss = { complete = false },
@@ -142,7 +142,7 @@ fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit, g
         onContinue = {
             strokes = emptyList()
             complete = false
-            if (guided == null) index = (index + 1) % DemoContent.lessons.size else guided.onContinue()
+            if (guided == null) index = (index + 1) % AlphabetContent.lessons.size else guided.onContinue()
         }
     )
     if (pendingLetter != null) AlertDialog(

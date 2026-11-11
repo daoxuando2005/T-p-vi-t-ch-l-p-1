@@ -22,9 +22,6 @@ public class StudentService {
     private AlphabetLessonRepository alphabetLessonRepository;
 
     @Autowired
-    private WritingPracticeRepository writingPracticeRepository;
-
-    @Autowired
     private ClazzRepository clazzRepository;
 
     @Autowired
@@ -49,89 +46,6 @@ public class StudentService {
 
     public List<AlphabetLesson> getAlphabetLessons() {
         return alphabetLessonRepository.findAll();
-    }
-
-    @Transactional
-    public PracticeResponse saveWritingPractice(Long studentId, PracticeRequest request) {
-        User student = userRepository.findById(studentId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy học sinh"));
-
-        // Đọc điểm số so khớp thực tế do thuật toán Canvas Pixel-Matching tính toán từ frontend
-        float score = 0.0f;
-        if (request.getAccuracyScore() != null) {
-            score = request.getAccuracyScore();
-        } else {
-            // Fallback nếu không có
-            String base64Data = request.getCanvasImageUrl();
-            if (base64Data != null && base64Data.contains(",")) {
-                base64Data = base64Data.split(",")[1];
-            }
-            if (base64Data == null || base64Data.trim().length() < 500) {
-                score = 0.0f;
-            } else {
-                int letterSeed = request.getLetter().hashCode();
-                int canvasSeed = request.getCanvasImageUrl() != null ? request.getCanvasImageUrl().hashCode() : 0;
-                Random rand = new Random(letterSeed + canvasSeed);
-                score = 50.0f + rand.nextFloat() * 30.0f;
-            }
-        }
-        
-        // Làm tròn điểm 1 chữ số thập phân
-        score = Math.round(score * 10.0f) / 10.0f;
-        final float finalScore = score;
-
-        WritingPractice practice = WritingPractice.builder()
-                .student(student)
-                .letter(request.getLetter())
-                .canvasImageUrl(request.getCanvasImageUrl())
-                .accuracyScore(score)
-                .build();
-
-        WritingPractice saved = writingPracticeRepository.save(practice);
-
-        // Tạo thông báo kết quả luyện viết
-        Notification notif = Notification.builder()
-                .user(student)
-                .title("Kết quả luyện viết chữ " + request.getLetter())
-                .content("Bé vừa hoàn thành bài luyện viết tự do chữ '" + request.getLetter() + "' với độ chính xác " + score + "%!")
-                .type("PRACTICE")
-                .isRead(false)
-                .build();
-        notificationRepository.save(notif);
-
-        // Nếu bé đã liên kết phụ huynh, gửi thông báo cho phụ huynh luôn
-        parentStudentLinkRepository.findByStudentId(studentId).ifPresent(link -> {
-            if ("APPROVED".equals(link.getStatus())) {
-                Notification parentNotif = Notification.builder()
-                        .user(link.getParent())
-                        .title("Bé " + student.getFullName() + " vừa luyện viết")
-                        .content("Bé " + student.getFullName() + " vừa hoàn thành luyện viết chữ '" + request.getLetter() + "' đạt điểm: " + finalScore + "%!")
-                        .type("PRACTICE")
-                        .isRead(false)
-                        .build();
-                notificationRepository.save(parentNotif);
-            }
-        });
-
-        return PracticeResponse.builder()
-                .id(saved.getId())
-                .letter(saved.getLetter())
-                .canvasImageUrl(saved.getCanvasImageUrl())
-                .accuracyScore(saved.getAccuracyScore())
-                .practicedAt(LocalDateTime.now())
-                .build();
-    }
-
-    public List<PracticeResponse> getPracticeHistory(Long studentId) {
-        return writingPracticeRepository.findByStudentIdOrderByPracticedAtDesc(studentId).stream()
-                .map(p -> PracticeResponse.builder()
-                        .id(p.getId())
-                        .letter(p.getLetter())
-                        .canvasImageUrl(p.getCanvasImageUrl())
-                        .accuracyScore(p.getAccuracyScore())
-                        .practicedAt(p.getPracticedAt())
-                        .build())
-                .collect(Collectors.toList());
     }
 
     @Transactional
@@ -255,13 +169,15 @@ public class StudentService {
         return result;
     }
 
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public ApiResponse submitAssignment(Long studentId, Long assignmentId, SubmissionRequest request) {
+        // Lock before reading a receipt. READ_COMMITTED also avoids a stale MySQL
+        // repeatable-read snapshot when a concurrent request just committed.
+        Assignment assignment = assignmentRepository.findForSubmissionById(assignmentId)
+                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài tập"));
+
         User student = userRepository.findById(studentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy học sinh"));
-
-        Assignment assignment = assignmentRepository.findById(assignmentId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy bài tập"));
 
         if (assignment.getClazz() == null || !classMemberRepository.existsByClazzIdAndStudentId(
                 assignment.getClazz().getId(), studentId)) {
@@ -281,7 +197,7 @@ public class StudentService {
             }
             feedback = "Đã tự động chấm điểm trắc nghiệm: " + score + "/10";
         } else if ("WRITING".equalsIgnoreCase(assignment.getContentType())) {
-            if (!validWritingSubmission(request.getSubmissionData())) {
+            if (!validWritingSubmission(assignment.getContentData(),request.getSubmissionData())) {
                 return new ApiResponse(false, "Bài viết phải có ảnh PNG hoặc JPEG hợp lệ.");
             }
         } else {
@@ -289,36 +205,20 @@ public class StudentService {
         }
         final Float finalScore = score;
 
-        // Xử lý ghi đè và dọn dẹp bản ghi trùng lặp (nếu có do bấm nhanh)
-        List<Submission> existingSubs = submissionRepository.findAllByAssignmentIdAndStudentId(assignmentId, studentId);
-        Submission submission;
-        if (!existingSubs.isEmpty()) {
-            submission = existingSubs.get(0);
-            submission.setSubmissionData(request.getSubmissionData());
-            submission.setScore(score);
-            submission.setFeedback(feedback);
-            submission.setSubmittedAt(LocalDateTime.now());
-            // Dọn dẹp các bản ghi trùng lặp thừa nếu có
-            if (existingSubs.size() > 1) {
-                for (int i = 1; i < existingSubs.size(); i++) {
-                    submissionRepository.delete(existingSubs.get(i));
-                }
-            }
-        } else {
-            submission = Submission.builder()
-                    .assignment(assignment)
-                    .student(student)
-                    .submissionData(request.getSubmissionData())
-                    .score(score)
-                    .feedback(feedback)
-                    .submittedAt(LocalDateTime.now())
-                    .build();
+        var existing=submissionRepository.findFirstByAssignmentIdAndStudentIdOrderByIdDesc(assignmentId,studentId);
+        if(existing.isPresent()) {
+            if(Objects.equals(existing.get().getSubmissionData(),request.getSubmissionData()))
+                return new ApiResponse(true,"Bài đã được tiếp nhận trước đó. Điểm và nhận xét của cô được giữ nguyên.");
+            return new ApiResponse(false,"Bài đã nộp, không thể thay đổi nội dung.");
         }
+        Submission submission=Submission.builder().assignment(assignment).student(student)
+            .submissionData(request.getSubmissionData()).score(score).feedback(feedback)
+            .submittedAt(LocalDateTime.now(LearningTrackingService.SCHOOL_ZONE)).build();
 
         submissionRepository.save(submission);
 
         // Thông báo phụ huynh
-        parentStudentLinkRepository.findByStudentId(studentId).ifPresent(link -> {
+        parentStudentLinkRepository.findAllByStudentId(studentId).forEach(link -> {
             if ("APPROVED".equals(link.getStatus())) {
                 Notification parentNotif = Notification.builder()
                         .user(link.getParent())
@@ -370,17 +270,25 @@ public class StudentService {
         }
     }
 
-    private boolean validWritingSubmission(String data) {
+    private boolean validWritingSubmission(String content,String data) {
         try {
-            if (data.startsWith("data:image/")) return validWritingImage(data);
-            var images = objectMapper.readTree(data);
-            if (!images.isArray() || images.isEmpty() || images.size() > 29) return false;
-            for (var item : images) {
-                if (!item.path("letter").isTextual() || item.path("letter").asText().isBlank()
-                        || !validWritingImage(item.path("image").asText())) return false;
+            Set<String> expected=new LinkedHashSet<>();
+            String raw=content.trim();
+            if(raw.startsWith("{")) {
+                var target=objectMapper.readTree(raw);
+                if(target.path("letters").isArray())for(var letter:target.get("letters"))expected.add(letter.asText().trim().toUpperCase(Locale.ROOT));
+                else expected.add(target.path("letter").asText().trim().toUpperCase(Locale.ROOT));
+            } else expected.add(raw.toUpperCase(Locale.ROOT));
+            if(expected.isEmpty()||!LearningTrackingService.LETTERS.containsAll(expected))return false;
+            if(data.startsWith("data:image/"))return expected.size()==1&&validWritingImage(data);
+            var images=objectMapper.readTree(data);
+            if(!images.isArray()||images.size()!=expected.size())return false;
+            Set<String> actual=new HashSet<>();
+            for(var item:images) {
+                if(!actual.add(item.path("letter").asText().trim().toUpperCase(Locale.ROOT))||!validWritingImage(item.path("image").asText()))return false;
             }
-            return true;
-        } catch (Exception e) { return false; }
+            return actual.equals(expected);
+        }catch(Exception e){return false;}
     }
 
     private boolean validWritingImage(String image) {
@@ -389,11 +297,17 @@ public class StudentService {
         if (!png && !jpeg) return false;
         try {
             byte[] bytes = Base64.getDecoder().decode(image.substring(image.indexOf(',') + 1));
-            if (png) return bytes.length >= 8 && bytes[0] == (byte) 137 && bytes[1] == 80
-                    && bytes[2] == 78 && bytes[3] == 71;
-            return bytes.length >= 3 && bytes[0] == (byte) 255 && bytes[1] == (byte) 216
-                    && bytes[2] == (byte) 255;
-        } catch (IllegalArgumentException e) { return false; }
+            boolean signature=png?bytes.length>=8&&bytes[0]==(byte)137&&bytes[1]==80&&bytes[2]==78&&bytes[3]==71
+                :bytes.length>=3&&bytes[0]==(byte)255&&bytes[1]==(byte)216&&bytes[2]==(byte)255;
+            if(!signature)return false;
+            try(var input=javax.imageio.ImageIO.createImageInputStream(new java.io.ByteArrayInputStream(bytes))) {
+                var readers=javax.imageio.ImageIO.getImageReaders(input);if(!readers.hasNext())return false;
+                var reader=readers.next();try{reader.setInput(input);int w=reader.getWidth(0),h=reader.getHeight(0);
+                    if(w<=0||h<=0||w>4096||h>4096||(long)w*h>8_000_000)return false;
+                    return reader.read(0)!=null;
+                }finally{reader.dispose();}
+            }
+        } catch (Exception e) { return false; }
     }
 
     @Autowired

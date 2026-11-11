@@ -8,7 +8,7 @@ Hệ thống cung cấp một nền tảng học tập trực tuyến toàn di�
 
 Thư mục [`android/`](android/) chứa ứng dụng học sinh và phụ huynh viết bằng Kotlin và Jetpack Compose, dùng chung phong cách thiết kế Stitch. Mở riêng thư mục này bằng Android Studio. Xem [hướng dẫn cấu hình và chạy Android](android/README.md).
 
-Android đăng nhập theo vai trò học sinh/phụ huynh, lưu phiên mã hóa và tách tiến độ theo tài khoản. Lớp học và bài cô giao dùng API thật. Hành trình vẫn dùng học liệu minh họa; hoạt động cùng snapshot 29 chữ được gửi lên backend để phụ huynh xem theo ngày và theo tuần. Chưa có khôi phục hành trình từ cloud trên thiết bị mới. Xem [luồng theo dõi phụ huynh](android/docs/PARENT.md), [lớp học Android](android/docs/CLASSROOM.md), [kết nối backend](android/docs/AUTHENTICATION.md) và [quy tắc phát triển](android/AGENTS.md).
+Android đăng nhập theo vai trò học sinh/phụ huynh, lưu phiên mã hóa và tách dữ liệu theo tài khoản. Học liệu, lớp học, bài cô giao dùng API thật. Tiến độ hành trình 29 chữ được khôi phục/gộp từ server; hoạt động có hàng đợi để gửi khi có kết nối. Phụ huynh xem theo ngày/tuần và mở bài đã nộp, điểm/nhận xét của cô. Bản nháp/nét tự luyện vẫn ở thiết bị. Học liệu do dự án biên soạn cần được duyệt sư phạm trước khi dùng chính thức. Xem [luồng phụ huynh](android/docs/PARENT.md), [lớp học Android](android/docs/CLASSROOM.md), [kết nối backend](android/docs/AUTHENTICATION.md) và [quy tắc phát triển](android/AGENTS.md).
 
 Website chỉ dành cho **giáo viên và admin**. Học sinh và phụ huynh dùng Android;
 các trang web tương ứng đã được bỏ. Biểu mẫu đăng ký/OTP chung trên web vẫn
@@ -28,7 +28,10 @@ cho phép tạo tài khoản trước khi dùng app. Backend và dữ liệu dù
 
 ## 📋 Tài khoản kiểm thử mặc định (Demo Credentials)
 
-Sau khi khởi chạy ứng dụng lần đầu, cơ sở dữ liệu sẽ được tự động seed các vai trò và tài khoản mẫu sau. **Tất cả các tài khoản đều có mật khẩu mặc định là: `123456`**.
+Migration khởi tạo có các tên tài khoản mẫu dưới đây. Sử dụng mật khẩu hiện có
+trong cơ sở dữ liệu; backend không đặt lại mật khẩu, bật lại tài khoản hoặc tự
+liên kết `parent1` với `student1` khi khởi động. Ưu tiên tài khoản do admin cấp;
+đăng ký/OTP native Android được hoãn trong giai đoạn này.
 
 | Vai trò | Tên đăng nhập | Email liên kết | Mô tả chức năng |
 | :--- | :--- | :--- | :--- |
@@ -94,6 +97,16 @@ Sau khi khởi chạy ứng dụng lần đầu, cơ sở dữ liệu sẽ đư�
     npm run dev
     ```
 4.  Mở trình duyệt truy cập: `http://localhost:5173`.
+
+Frontend gọi `/api` trên cùng origin; Vite chuyển tiếp đến backend local cổng
+8080. Khi backend chạy chỗ khác, đặt `VITE_BACKEND_TARGET` trước khi chạy Vite.
+Bản triển khai cần reverse proxy `/api` đến backend hoặc cấu hình
+`VITE_API_BASE_URL` khi build.
+
+Tệp ảnh/âm thanh mới lưu ở `backend/uploads` (không thuộc Git), phục vụ qua
+`/api/public/media/`. Có thể cấu hình `APP_MEDIA_DIRECTORY` thành thư mục riêng
+và sao lưu cùng dữ liệu ứng dụng. Backend đọc thêm tài sản cũ trong
+`frontend/public`, không cần Vite để phục vụ ảnh/âm thanh cho Android.
 
 ---
 

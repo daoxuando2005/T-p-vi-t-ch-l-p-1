@@ -40,7 +40,7 @@ public class Submission {
     @PrePersist
     protected void onSubmit() {
         if (this.submittedAt == null) {
-            this.submittedAt = LocalDateTime.now();
+            this.submittedAt = LocalDateTime.now(java.time.ZoneId.of("Asia/Ho_Chi_Minh"));
         }
     }
 }

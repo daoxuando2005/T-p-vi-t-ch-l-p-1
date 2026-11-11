@@ -45,7 +45,7 @@ object LetterCurriculum {
     )
     fun words(index: Int): List<WordPractice> = content[index]
     fun options(index: Int, question: Int): List<String> {
-        val answer = DemoContent.lessons[index].letter.lowercase()
+        val answer = AlphabetContent.lessons[index].letter.lowercase()
         val distractors = listOf("a", "ă", "â", "b", "d", "đ", "c", "e", "ê", "o", "ô", "ơ", "u", "ư", "n", "m", "p", "q", "s", "x")
             .filter { it != answer }
         return (listOf(answer) + List(3) { distractors[(index + question * 3 + it) % distractors.size] })

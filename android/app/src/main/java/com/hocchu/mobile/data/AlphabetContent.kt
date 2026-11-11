@@ -1,8 +1,9 @@
 package com.hocchu.mobile.data
 
-// Explicit prototype fixtures. Replace through a repository when connecting the API.
-data class LetterLesson(val letter: String, val sound: String, val word: String, val picture: String)
-object DemoContent {
+// Stable letter identities and authored offline content; API content is cached separately per account.
+data class LetterLesson(val letter: String, val sound: String, val word: String, val picture: String,
+    val imageUrl:String="",val audioUrl:String="",val exampleAudioUrl:String="",val hidden:Boolean=false)
+object AlphabetContent {
     val lessons = listOf(
         LetterLesson("A", "a", "Con cá", "🐟"),
         LetterLesson("Ă", "á", "Cái khăn", "🧣"),
