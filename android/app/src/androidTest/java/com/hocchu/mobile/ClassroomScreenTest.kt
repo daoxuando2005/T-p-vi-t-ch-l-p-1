@@ -20,6 +20,40 @@ import java.util.UUID
 
 class ClassroomScreenTest {
     @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    @Test fun groupAndClassBadgesOnlyCountUnsubmittedWorkInThatClass() {
+        val user=AuthSession("https://class-badges-${UUID.randomUUID()}.test/","fixture.token.value",
+            UserAccount(7003,"fixture","Bé thử",setOf("ROLE_STUDENT")),System.currentTimeMillis()+600000)
+        val items=JSONArray()
+        for((id,school,type,done) in listOf(listOf(1,10,"WRITING",false),listOf(2,20,"QUIZ",false),listOf(3,20,"QUIZ",true))) {
+            items.put(JSONObject().put("id",id).put("classId",school).put("title","Bài $id").put("contentType",type)
+                .put("contentData",if(type=="WRITING") "A" else "[{\"question\":\"Chọn A\",\"options\":[\"A\",\"B\"],\"answer\":\"A\"}]")
+                .put("isSubmitted",done))
+        }
+        val api=ClassroomApi(AuthTransport {url,_,_,_->HttpReply(200,if(url.endsWith("class/joined"))
+            "[{\"id\":10,\"name\":\"Lớp A\"},{\"id\":20,\"name\":\"Lớp B\"}]" else items.toString())})
+        val model=ClassroomViewModel(compose.activity.application as Application,api)
+        try {
+            compose.activityRule.scenario.onActivity {activity->
+                activity.findViewById<ViewGroup>(android.R.id.content).removeAllViews()
+                model.connect(user) {};activity.setContent {VuiHocTheme {ClassroomScreen(model) {}}}
+            }
+            compose.waitUntil(10000) {!model.state.loading}
+            compose.onNodeWithTag("class-pending-20",useUnmergedTree=true).assertContentDescriptionEquals("1 bài chưa nộp")
+            compose.onNodeWithTag("group-pending-Writing",useUnmergedTree=true).assertExists()
+            compose.onNodeWithTag("group-pending-Quiz",useUnmergedTree=true).assertDoesNotExist()
+            java.io.File(compose.activity.filesDir,"classroom-groups-proof.png").outputStream().use {
+                compose.onRoot().captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
+            }
+            compose.onNodeWithTag("class-20").performScrollTo().performClick()
+            compose.onNodeWithTag("group-pending-Writing",useUnmergedTree=true).assertDoesNotExist()
+            compose.onNodeWithTag("group-pending-Quiz",useUnmergedTree=true).assertContentDescriptionEquals("1 bài chưa nộp")
+            compose.onNodeWithTag("assignment-group-Quiz").performScrollTo().performClick()
+            compose.onNodeWithText("Bài 2").assertExists()
+            compose.onNodeWithText("Bài 1").assertDoesNotExist()
+            compose.onNodeWithTag("assignment-groups-back").performScrollTo().performClick()
+            compose.onNodeWithTag("assignment-group-Sentence").assertExists()
+        } finally {compose.runOnIdle {model.connect(null) {}}}
+    }
     @Test fun writingRequiresAllLettersAndKeepsInkWhenChangingLetter() {
         val user = AuthSession("https://writing-ui-${UUID.randomUUID()}.test/", "fixture.token.value",
             UserAccount(7002,"fixture","Bé thử",setOf("ROLE_STUDENT")),System.currentTimeMillis()+600000)
@@ -39,6 +73,7 @@ class ClassroomScreenTest {
                 activity.setContent { VuiHocTheme { ClassroomScreen(model) {} } }
             }
             compose.waitUntil(10000) { model.state.assignments.isNotEmpty() }
+            compose.onNodeWithTag("assignment-group-Writing").performScrollTo().performClick()
             compose.onNodeWithTag("assignment-16").performScrollTo().performClick()
             compose.waitUntil(10000) { !model.state.opening }
             compose.onNodeWithTag("submit-assignment").assertIsNotEnabled()
@@ -95,6 +130,8 @@ class ClassroomScreenTest {
             compose.onNodeWithTag("class-join").performScrollTo().performClick()
             compose.waitUntil(10000) { model.state.assignments.isNotEmpty() }
             compose.onNodeWithText("Lớp Sao Nhỏ").assertExists()
+            compose.onNodeWithTag("group-pending-Quiz",useUnmergedTree=true).assertExists()
+            compose.onNodeWithTag("assignment-group-Quiz").performScrollTo().performClick()
             compose.onNodeWithTag("assignment-15").performScrollTo().performClick()
             compose.waitUntil(10000) { !model.state.opening }
             compose.onNodeWithTag("submit-assignment").assertIsNotEnabled()
@@ -109,6 +146,10 @@ class ClassroomScreenTest {
             compose.onNodeWithTag("confirm-submit").performClick()
             compose.waitUntil(10000) { posted && !model.state.loading && model.state.selectedId == null }
             compose.onNodeWithText("Điểm: 10.0 / 10").performScrollTo().assertIsDisplayed()
+            compose.onNodeWithTag("assignment-groups-back").performScrollTo().performClick()
+            compose.onNodeWithTag("group-pending-Quiz",useUnmergedTree=true).assertDoesNotExist()
+            compose.onNodeWithTag("assignment-group-Sentence").performScrollTo().performClick()
+            compose.onNodeWithText("Lớp chưa có bài tập ở mục này.").assertExists()
         } finally {
             compose.runOnIdle { model.connect(null) {} }
             app.deleteSharedPreferences(accountPreferences(user.server,user.account.id)+".classroom")

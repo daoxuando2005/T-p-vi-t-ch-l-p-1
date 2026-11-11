@@ -27,6 +27,15 @@ Lỗi HTTP, JSON hỏng hoặc `success=false` không được biến thành th�
 - Dùng dữ liệu server; không thay lỗi mạng bằng “Lớp 1A”, “Cô Mai” hoặc bài mẫu.
 - Tên lớp và nút tham gia cùng hàng. Ô nhập mã chỉ mở khi bấm; hỗ trợ nhiều lớp,
   chọn lớp, tải lại, trạng thái đang tải/lỗi và trường hợp chưa có lớp/bài tập.
+- Giữ ba thẻ: Tập viết chữ (xanh dương), Đố vui ghép chữ (xanh lá), Ghép câu (cam).
+  Bấm thẻ xem bài thuộc mục đó trong lớp đang chọn; Back quay lại ba thẻ trước
+  khi rời tab. Đổi lớp phải bỏ lựa chọn mục của lớp trước.
+- Huy hiệu đếm bài chưa nộp từ dữ liệu thật: từng mục theo lớp đang chọn, từng
+  lớp và tổng trên tab Lớp học. Bài đã nộp không còn trong số đếm; mở xem bài
+  chưa nộp không xóa huy hiệu. Tải lại khi quay lại app, không dùng thông báo đẩy.
+- Phân mục theo contentType, không đoán từ tên bài. Backend hiện giao WRITING
+  và QUIZ; mục Ghép câu hiển thị trống khi chưa có bài tương ứng. Dữ liệu loại
+  khác vẫn phải hiện với thông báo chưa hỗ trợ, không giả nội dung/nút làm bài.
 - Hiển thị tiêu đề, mô tả, hạn nộp, trạng thái, điểm và nhận xét nếu có. Hạn nộp
   chỉ hiển thị; backend hiện cho phép nộp sau hạn theo nghiệp vụ có sẵn.
 - Không hiển thị “đã có điểm” khi `score=null`; bài viết đã gửi phải hiện chờ cô chấm.

@@ -14,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.activity.compose.BackHandler
 import androidx.compose.ui.unit.dp
 import com.hocchu.mobile.classroom.*
 import com.hocchu.mobile.data.AlphabetContent
@@ -23,6 +24,8 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun ClassroomScreen(model: ClassroomViewModel?, speak: (String) -> Unit) {
     val state = model?.state ?: ClassroomState()
+    var groupName by rememberSaveable(state.classId) { mutableStateOf<String?>(null) }
+    val group = AssignmentGroup.entries.find { it.name == groupName }
     model?.let {SubmissionReviewDialog(it.review,it::closeReview,it::retryReview)}
     if(state.selected != null) {
         AssignmentScreen(state, model!!, speak)
@@ -33,6 +36,7 @@ fun ClassroomScreen(model: ClassroomViewModel?, speak: (String) -> Unit) {
     var leaving by remember {mutableStateOf(false)}
     val focus = LocalFocusManager.current
     val selected = state.classes.find { it.id == state.classId }
+    BackHandler(group != null) { groupName = null }
     if(leaving)AlertDialog(onDismissRequest={leaving=false},title={Text("Rời ${selected?.name?:"lớp học"}?")},
         text={Text("Bé sẽ không nhận bài mới của lớp. Bài đã nộp vẫn được giữ; bé có thể dùng mã lớp để tham gia lại.")},
         confirmButton={TextButton(onClick={leaving=false;model?.leave()}){Text("Rời lớp")}},dismissButton={TextButton(onClick={leaving=false}){Text("Ở lại")}})
@@ -41,7 +45,11 @@ fun ClassroomScreen(model: ClassroomViewModel?, speak: (String) -> Unit) {
             Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Column(Modifier.weight(1f)) {
-                    Text(selected?.name ?: "Lớp của bé", style = MaterialTheme.typography.titleLarge)
+                    Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                        Text(selected?.name ?: "Lớp của bé", style = MaterialTheme.typography.titleLarge,modifier=Modifier.weight(1f,false),
+                            maxLines=1,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
+                        AssignmentCount(state.assignments.pendingCount(state.classId),Modifier.testTag("selected-class-pending"))
+                    }
                     selected?.let { Text(it.teacher, color = Muted) }
                 }
                 OutlinedButton(onClick = { expanded = !expanded }, enabled = model != null,
@@ -55,16 +63,20 @@ fun ClassroomScreen(model: ClassroomViewModel?, speak: (String) -> Unit) {
                         modifier = Modifier.testTag("class-join")) { focus.clearFocus(); model?.join(code) }
                 }
             }
-            if(state.classes.size > 1) Column {
+            if(state.classes.size > 1) FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
                 state.classes.forEach { school ->
                     FilterChip(selected = state.classId == school.id, onClick = { model?.chooseClass(school.id) },
-                        label = { Text(school.name) }, modifier = Modifier.testTag("class-${school.id}"))
+                        label = { Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                            Text(school.name); AssignmentCount(state.assignments.pendingCount(school.id),Modifier.testTag("class-pending-${school.id}"))
+                        } }, modifier = Modifier.testTag("class-${school.id}"))
                 }
             }
+            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
             TextButton(onClick = { model?.refresh() }, enabled = model != null && !state.loading) {
                 Icon(Icons.Rounded.Refresh, null); Text("Tải lại")
             }
             if(selected!=null) TextButton(onClick={leaving=true},enabled=!state.joining&&!state.submitting){Text("Rời lớp",color=MaterialTheme.colorScheme.error)}
+            }
         }
         if(state.loading) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("Đang tải lớp học…", color = Muted) }
         state.error?.let { ClassroomError(it) { model?.refresh() } }
@@ -75,10 +87,17 @@ fun ClassroomScreen(model: ClassroomViewModel?, speak: (String) -> Unit) {
         if(!state.loading && state.classes.isEmpty() && state.error == null) {
             Text("Bé chưa tham gia lớp nào. Nhập mã cô giáo cung cấp để nhận bài tập nhé.", color = Muted)
         }
-        SectionTitle("Bài tập của bé")
         val assignments = state.assignments.filter { it.classId == state.classId }
-        if(!state.loading && assignments.isEmpty() && state.classes.isNotEmpty()) Text("Lớp chưa có bài tập mới.", color = Muted)
-        assignments.forEach { assignment ->
+        if(group==null) {
+            SectionTitle("Bài tập của bé")
+            AssignmentGroups(assignments, null) {groupName=it.name}
+        } else {
+            TextButton(onClick={groupName=null},modifier=Modifier.testTag("assignment-groups-back")){Text("‹ Các hoạt động")}
+            SectionTitle(group.title)
+            if(!state.loading && assignments.none {it.group()==group}) Text("Lớp chưa có bài tập ở mục này.", color=Muted)
+        }
+        // Keep unknown legacy formats visible rather than silently hiding assigned work.
+        assignments.filter {if(group==null)it.group()==null else it.group()==group}.forEach { assignment ->
             Paper {
                 Text(assignment.title, style = MaterialTheme.typography.titleLarge)
                 if(assignment.description.isNotBlank()) Text(assignment.description, color = Muted)

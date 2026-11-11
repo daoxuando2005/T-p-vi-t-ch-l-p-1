@@ -26,6 +26,7 @@ import com.hocchu.mobile.data.LessonProgressStore
 import com.hocchu.mobile.data.StudyContentModel
 import com.hocchu.mobile.data.LocalStudyContent
 import com.hocchu.mobile.classroom.ClassroomViewModel
+import com.hocchu.mobile.classroom.pendingCount
 import com.hocchu.mobile.family.StudentActivityModel
 
 private val destinations = listOf("Trang chủ", "Đọc chữ", "Tập viết", "Lớp học")
@@ -70,9 +71,9 @@ fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: Stri
         lessonProgress = restored
     }
     val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
-    DisposableEffect(lifecycleOwner, activities) {
+    DisposableEffect(lifecycleOwner, activities, classroom) {
         val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
-            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) activities?.retryNow()
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {activities?.retryNow();classroom?.refresh()}
             if (event == androidx.lifecycle.Lifecycle.Event.ON_PAUSE) speech?.stop()
         }
         lifecycleOwner.lifecycle.addObserver(observer)
@@ -124,7 +125,7 @@ fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: Stri
                     destinations.forEachIndexed { index, title ->
                         NavigationBarItem(selected = tab == index, onClick = { go(index) },
                             modifier = Modifier.testTag("destination-$index"),
-                            icon = { Icon(symbols[index], null) }, label = { Text(title, fontSize = 12.sp) },
+                            icon = { BadgedBox(badge={if(index==3)AssignmentCount(classroom?.state?.assignments?.pendingCount()?:0)}) {Icon(symbols[index], null)} }, label = { Text(title, fontSize = 12.sp) },
                             colors = NavigationBarItemDefaults.colors(selectedIconColor = SkyDark, selectedTextColor = SkyDark,
                                 indicatorColor = PaleBlue))
                     }
@@ -139,7 +140,7 @@ fun StudentApp(progressStore: LessonProgressStore? = null, preferencesName: Stri
                     destinations.forEachIndexed { index, title ->
                         NavigationRailItem(selected = tab == index && exercise.isEmpty(), onClick = { go(index) },
                             modifier = Modifier.testTag("destination-$index").weight(1f),
-                            icon = { Icon(symbols[index], null) },
+                            icon = { BadgedBox(badge={if(index==3)AssignmentCount(classroom?.state?.assignments?.pendingCount()?:0)}) {Icon(symbols[index], null)} },
                             label = { Text(title, fontSize = 12.sp) },
                             colors = NavigationRailItemDefaults.colors(
                                 selectedIconColor = SkyDark,

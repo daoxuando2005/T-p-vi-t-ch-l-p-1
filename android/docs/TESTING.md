@@ -15,7 +15,7 @@ Không ghi kết quả thực hiện, số test đã đạt, ngày chạy hay th
 | Hình học mẫu chữ | `CopybookFormTest`; duyệt hình đủ 29 chữ và các chữ đại diện |
 | Bảng viết/trạng thái/bố cục | `StudentExperienceTest` và kiểm tra thao tác viết theo thay đổi |
 | Xác thực/phiên/kết nối | `AuthModelsTest`, `AuthProtocolTest`, `LoginScreenTest` theo lớp bị ảnh hưởng |
-| Lớp học, bản nháp, nộp bài | `ClassroomProtocolTest`, `ClassroomScreenTest`; chạy live có chủ đích bằng `ClassroomLiveBackendTest` |
+| Lớp học, bản nháp, nộp bài | `AssignmentGroupTest`, `ClassroomProtocolTest`, `ClassroomScreenTest`; chạy live có chủ đích bằng `ClassroomLiveBackendTest` |
 | Luồng đăng nhập thật | Kiểm thử live có chủ đích, chỉ bật khi backend và tài khoản mẫu sẵn sàng |
 | Mạng/cấu hình release | Build và Lint release, kiểm tra HTTPS và tài nguyên mạng trong APK release |
 
@@ -93,6 +93,9 @@ có sẵn và chỉ dùng tài khoản mẫu phục vụ kiểm thử.
 - Lớp học phải hiển thị dữ liệu thật, giữ bản nháp khi gửi thất bại, chỉ báo đã nộp
   sau xác nhận của backend và trả được điểm/nhận xét của cô. Kiểm tra đủ chữ được
   giao trước khi gửi ảnh; không tạo điểm viết ngẫu nhiên.
+- Ba thẻ hoạt động phải giữ màu/tên, đếm đúng bài chưa nộp theo lớp và theo loại.
+  Kiểm tra lớp khác có bài, bài đã nộp, mục chưa có bài, Back và huy hiệu sau khi
+  gửi thành công/thất bại. Mở xem bài không được coi là đã hoàn thành bài.
 - Hành trình phải đi hết bài A, xử lý sai/đúng, lưu giữa chặng, ôn tập, mở Ă và
   kết thúc Y. Không nhảy bước hoặc đếm lại đáp án cũ.
 - Viết phải giữ công cụ và nét khi đổi bố cục, mở mẫu; kiểm tra hoàn tác, hủy/xác
