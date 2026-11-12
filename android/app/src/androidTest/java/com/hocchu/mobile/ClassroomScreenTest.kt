@@ -76,12 +76,21 @@ class ClassroomScreenTest {
                 model.connect(user) {};activity.setContent {VuiHocTheme {ClassroomScreen(model) {}}}
             }
             compose.waitUntil(10000) {!model.state.loading}
+            compose.onNodeWithTag("class-20").assertDoesNotExist()
+            compose.onNodeWithTag("class-code").assertDoesNotExist()
+            compose.onNodeWithTag("class-selector-toggle").performClick()
             compose.onNodeWithTag("class-pending-20",useUnmergedTree=true).assertContentDescriptionEquals("1 bài chưa nộp")
             compose.onNodeWithTag("group-pending-Writing",useUnmergedTree=true).assertExists()
             compose.onNodeWithTag("group-pending-Quiz",useUnmergedTree=true).assertDoesNotExist()
             java.io.File(compose.activity.filesDir,"classroom-groups-proof.png").outputStream().use {
                 compose.onRoot().captureToImage().asAndroidBitmap().compress(android.graphics.Bitmap.CompressFormat.PNG,100,it)
             }
+            compose.onNodeWithTag("class-20").performScrollTo().performClick()
+            compose.onNodeWithTag("class-20").assertDoesNotExist()
+            compose.onNodeWithTag("join-expand").performClick()
+            compose.onNodeWithTag("class-code").assertIsDisplayed()
+            compose.onNodeWithTag("class-selector-toggle").performClick()
+            compose.onNodeWithTag("class-code").assertDoesNotExist()
             compose.onNodeWithTag("class-20").performScrollTo().performClick()
             compose.onNodeWithTag("group-pending-Writing",useUnmergedTree=true).assertDoesNotExist()
             compose.onNodeWithTag("group-pending-Quiz",useUnmergedTree=true).assertContentDescriptionEquals("1 bài chưa nộp")

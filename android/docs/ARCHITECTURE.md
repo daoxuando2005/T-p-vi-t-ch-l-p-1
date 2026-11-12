@@ -83,8 +83,9 @@ trạng thái chờ/lỗi rõ ràng, không đặt yêu cầu mạng trực ti�
 - Header gọn, không khôi phục lời chào và các dòng phụ đã bỏ. Trang chủ không
   thêm lại “Tự luyện hoặc học theo…”, “Đến chữ…” hay nhãn “Chưa mở” cạnh mỗi chữ.
   Bài khóa vẫn phải có chỉ báo khóa và mô tả trạng thái cho trợ năng.
-- Tiêu đề lớp là “Lớp học của bé” trên header. Tên lớp và nút tham gia cùng hàng;
-  ô nhập mã mở khi bấm. Không lặp lại lời giới thiệu hoặc số hoạt động dưới tiêu đề.
+- Tiêu đề lớp là “Lớp học của bé” trên header. Tên lớp và nút tham gia cùng hàng
+  khi đủ chỗ; cỡ chữ lớn/màn hẹp được xếp dọc. Bấm tên lớp để xổ danh sách đã
+  tham gia; ô nhập mã cũng chỉ mở khi bấm. Không lặp lại lời giới thiệu hoặc số hoạt động dưới tiêu đề.
 - Ở chiều rộng dưới 840dp dùng điều hướng dưới; từ 840dp dùng navigation rail.
   Không khóa xoay màn hình để che lỗi bố cục. Kiểm tra riêng bàn phím và cỡ chữ lớn.
 - Giữ trạng thái tab, hoạt động, lựa chọn và nét viết bằng cơ chế saveable phù hợp.

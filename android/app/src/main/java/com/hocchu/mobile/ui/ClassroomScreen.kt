@@ -1,6 +1,8 @@
 package com.hocchu.mobile.ui
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -14,8 +16,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.activity.compose.BackHandler
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.hocchu.mobile.classroom.*
 import com.hocchu.mobile.data.AlphabetContent
 import java.time.LocalDateTime
@@ -34,52 +44,115 @@ fun ClassroomScreen(model: ClassroomViewModel?, speak: (String) -> Unit) {
         AssignmentScreen(state, model!!, speak)
         return
     }
-    var expanded by rememberSaveable { mutableStateOf(false) }
+    var expanded by rememberSaveable(state.classId) { mutableStateOf(false) }
+    var classesExpanded by rememberSaveable(state.classId) { mutableStateOf(false) }
+    var joiningRequested by rememberSaveable { mutableStateOf(false) }
     var code by rememberSaveable { mutableStateOf("") }
     var leaving by remember {mutableStateOf(false)}
     val focus = LocalFocusManager.current
     val selected = state.classes.find { it.id == state.classId }
-    BackHandler(group != null) { groupName = null }
+    LaunchedEffect(state.joining, state.notice, state.error) {
+        if(joiningRequested && !state.joining) {
+            if(state.notice != null) {expanded=false;code="";focus.clearFocus();joiningRequested=false}
+            else if(state.error != null) joiningRequested=false
+        }
+    }
+    BackHandler(classesExpanded || expanded || group != null) {
+        when { classesExpanded -> classesExpanded=false; expanded -> {expanded=false;focus.clearFocus()}; else -> groupName=null }
+    }
     if(leaving)AlertDialog(onDismissRequest={leaving=false},title={Text("Rời ${selected?.name?:"lớp học"}?")},
         text={Text("Bé sẽ không nhận bài mới của lớp. Bài đã nộp vẫn được giữ; bé có thể dùng mã lớp để tham gia lại.")},
         confirmButton={TextButton(onClick={leaving=false;model?.leave()}){Text("Rời lớp")}},dismissButton={TextButton(onClick={leaving=false}){Text("Ở lại")}})
     ScreenColumn {
-        Paper {
-            Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                Column(Modifier.weight(1f)) {
-                    Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                        Text(selected?.name ?: "Lớp của bé", style = MaterialTheme.typography.titleLarge,modifier=Modifier.weight(1f,false),
-                            maxLines=1,overflow=androidx.compose.ui.text.style.TextOverflow.Ellipsis)
-                        AssignmentCount(state.assignments.pendingCount(state.classId),Modifier.testTag("selected-class-pending"))
+        Surface(shape=RoundedCornerShape(26.dp),color=androidx.compose.ui.graphics.Color.White,
+            border=BorderStroke(1.dp,Outline),shadowElevation=2.dp) {
+          Column(Modifier.fillMaxWidth().padding(16.dp),verticalArrangement=Arrangement.spacedBy(12.dp)) {
+            val canSelect=model!=null && !state.joining && !state.submitting && !state.loading
+            val fontScale=LocalDensity.current.fontScale
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                val stacked=maxWidth<280.dp || fontScale>=1.35f
+                val classPicker: @Composable (Modifier)->Unit = { modifier ->
+                    Surface(onClick={classesExpanded=!classesExpanded;expanded=false;focus.clearFocus()},
+                        enabled=canSelect&&state.classes.isNotEmpty(),shape=RoundedCornerShape(16.dp),color=PaleBlue,
+                        border=BorderStroke(1.dp,Sky.copy(alpha=.35f)),modifier=modifier.heightIn(min=64.dp)
+                            .testTag("class-selector-toggle").semantics {
+                                role=Role.Button;stateDescription=if(classesExpanded) "Danh sách lớp đang mở" else "Danh sách lớp đã thu gọn"
+                            }) {
+                        Row(Modifier.padding(horizontal=12.dp,vertical=10.dp),verticalAlignment=Alignment.CenterVertically,
+                            horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                            Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(3.dp)) {
+                                Text(selected?.name?:"Lớp của bé",color=Ink,fontSize=19.sp,lineHeight=25.sp,
+                                    fontWeight=FontWeight.ExtraBold,maxLines=2,overflow=TextOverflow.Ellipsis)
+                                selected?.let {Text(it.teacher,color=Muted,fontSize=15.sp,lineHeight=21.sp,
+                                    fontWeight=FontWeight.SemiBold,maxLines=2,overflow=TextOverflow.Ellipsis)}
+                            }
+                            AssignmentCount(if(selected==null) 0 else state.assignments.pendingCount(state.classId),Modifier.testTag("selected-class-pending"))
+                            Icon(if(classesExpanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,null,tint=SkyDark,
+                                modifier=Modifier.size(22.dp))
+                        }
                     }
-                    selected?.let { Text(it.teacher, color = Muted) }
                 }
-                OutlinedButton(onClick = { expanded = !expanded }, enabled = model != null,
-                    modifier = Modifier.heightIn(min = 48.dp).testTag("join-expand")) { Text("Tham gia lớp") }
+                val joinButton: @Composable (Modifier)->Unit = { modifier ->
+                    OutlinedButton(onClick={expanded=!expanded;classesExpanded=false;focus.clearFocus()},enabled=canSelect,
+                        shape=RoundedCornerShape(16.dp),contentPadding=PaddingValues(horizontal=12.dp,vertical=10.dp),
+                        colors=ButtonDefaults.outlinedButtonColors(contentColor=SkyDark,
+                            containerColor=if(expanded) PaleBlue else androidx.compose.ui.graphics.Color.White),
+                        border=BorderStroke(1.dp,Sky.copy(alpha=.4f)),modifier=modifier.heightIn(min=48.dp).testTag("join-expand")
+                            .semantics {stateDescription=if(expanded) "Ô nhập mã lớp đang mở" else "Ô nhập mã lớp đã thu gọn"}) {
+                        Text("Tham gia lớp",fontSize=16.sp,fontWeight=FontWeight.Bold)
+                        Spacer(Modifier.width(4.dp))
+                        Icon(if(expanded) Icons.Rounded.ExpandLess else Icons.Rounded.ExpandMore,null,Modifier.size(18.dp))
+                    }
+                }
+                if(stacked) Column(verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                    classPicker(Modifier.fillMaxWidth());joinButton(Modifier.fillMaxWidth())
+                } else Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
+                    classPicker(Modifier.weight(1f));joinButton(Modifier)
+                }
             }
             androidx.compose.animation.AnimatedVisibility(expanded) {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                     OutlinedTextField(code, { code = it.take(20) }, label = { Text("Mã lớp từ cô giáo") },
                         enabled = !state.joining, singleLine = true, modifier = Modifier.fillMaxWidth().testTag("class-code"))
                     PlayButton(if(state.joining) "Đang tham gia…" else "Vào lớp", enabled = code.isNotBlank() && !state.joining,
-                        modifier = Modifier.testTag("class-join")) { focus.clearFocus(); model?.join(code) }
+                        modifier = Modifier.testTag("class-join")) { focus.clearFocus();joiningRequested=true;model?.join(code) }
                 }
             }
-            if(state.classes.size > 1) FlowRow(horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                state.classes.forEach { school ->
-                    FilterChip(selected = state.classId == school.id, onClick = { model?.chooseClass(school.id) },
-                        label = { Row(verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(8.dp)) {
-                            Text(school.name); AssignmentCount(state.assignments.pendingCount(school.id),Modifier.testTag("class-pending-${school.id}"))
-                        } }, modifier = Modifier.testTag("class-${school.id}"))
+            androidx.compose.animation.AnimatedVisibility(classesExpanded && state.classes.isNotEmpty()) {
+              Column(verticalArrangement=Arrangement.spacedBy(8.dp),modifier=Modifier.testTag("class-selector-list")) {
+                Column(Modifier.heightIn(max=280.dp).verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(8.dp)) {
+                  state.classes.forEach { school ->
+                    val chosen=state.classId==school.id
+                    Surface(onClick={model?.chooseClass(school.id);classesExpanded=false},enabled=canSelect,
+                        color=if(chosen) PaleBlue else androidx.compose.ui.graphics.Color.White,contentColor=Ink,
+                        shape=RoundedCornerShape(16.dp),border=BorderStroke(if(chosen) 2.dp else 1.dp,if(chosen) Sky else Outline),
+                        modifier=Modifier.fillMaxWidth().heightIn(min=64.dp).testTag("class-${school.id}")
+                            .semantics {stateDescription=if(chosen) "Lớp đang chọn" else "Chọn lớp này"}) {
+                        Row(Modifier.padding(12.dp),verticalAlignment=Alignment.CenterVertically,horizontalArrangement=Arrangement.spacedBy(10.dp)) {
+                            Column(Modifier.weight(1f),verticalArrangement=Arrangement.spacedBy(2.dp)) {
+                                Text(school.name,color=Ink,fontWeight=FontWeight.Bold,fontSize=18.sp,lineHeight=24.sp)
+                                Text(school.teacher,color=Muted,fontWeight=FontWeight.SemiBold,fontSize=15.sp,lineHeight=21.sp)
+                            }
+                            AssignmentCount(state.assignments.pendingCount(school.id),Modifier.testTag("class-pending-${school.id}"))
+                            Icon(if(chosen) Icons.Rounded.CheckCircle else Icons.Rounded.RadioButtonUnchecked,null,tint=SkyDark,modifier=Modifier.size(22.dp))
+                        }
+                    }
+                  }
                 }
+                Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
+                    TextButton(onClick={model?.refresh()},enabled=canSelect,modifier=Modifier.heightIn(min=48.dp)) {
+                        Icon(Icons.Rounded.Refresh,null,tint=SkyDark);Spacer(Modifier.width(6.dp));Text("Tải lại",color=SkyDark,fontWeight=FontWeight.Bold)
+                    }
+                    if(selected!=null) TextButton(onClick={classesExpanded=false;leaving=true},enabled=canSelect,modifier=Modifier.heightIn(min=48.dp)) {
+                        Text("Rời lớp",color=MaterialTheme.colorScheme.error,fontWeight=FontWeight.Bold)
+                    }
+                }
+              }
             }
-            Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
-            TextButton(onClick = { model?.refresh() }, enabled = model != null && !state.loading) {
-                Icon(Icons.Rounded.Refresh, null); Text("Tải lại")
+            if(state.classes.isEmpty())TextButton(onClick={model?.refresh()},enabled=canSelect,modifier=Modifier.heightIn(min=48.dp)) {
+                Icon(Icons.Rounded.Refresh,null);Spacer(Modifier.width(6.dp));Text("Tải lại",fontWeight=FontWeight.Bold)
             }
-            if(selected!=null) TextButton(onClick={leaving=true},enabled=!state.joining&&!state.submitting){Text("Rời lớp",color=MaterialTheme.colorScheme.error)}
-            }
+          }
         }
         if(state.loading) { LinearProgressIndicator(Modifier.fillMaxWidth()); Text("Đang tải lớp học…", color = Muted) }
         state.error?.let { ClassroomError(it) { model?.refresh() } }

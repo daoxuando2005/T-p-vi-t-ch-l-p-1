@@ -27,6 +27,14 @@ Lỗi HTTP, JSON hỏng hoặc `success=false` không được biến thành th�
 - Dùng dữ liệu server; không thay lỗi mạng bằng “Lớp 1A”, “Cô Mai” hoặc bài mẫu.
 - Tên lớp và nút tham gia cùng hàng. Ô nhập mã chỉ mở khi bấm; hỗ trợ nhiều lớp,
   chọn lớp, tải lại, trạng thái đang tải/lỗi và trường hợp chưa có lớp/bài tập.
+- Danh sách lớp đã tham gia thu gọn mặc định. Bấm tên lớp hiện tại để mở, chọn
+  một lớp thì đóng danh sách; chỉ mở một trong hai phần chọn lớp và nhập mã.
+  Mũi tên và mô tả trạng thái phải cho biết phần đang mở/đóng. Back đóng phần
+  đang mở trước khi quay lại nhóm bài tập. Giữ trạng thái khi phục hồi SavedState.
+- Tải lại/rời lớp nằm trong phần chọn lớp mở rộng; khi chưa có lớp vẫn có tải lại.
+  Cỡ chữ lớn hoặc màn hẹp cho phép tên lớp và nút tham gia xếp thành hai hàng.
+  Dùng màu xanh dương thay màu chọn tím mặc định; tên lớp/thẻ bài tập phải đậm,
+  tương phản rõ, cùng font và bảng màu với trang chủ. Không dùng màu để thay nhãn trạng thái.
 - Giữ ba thẻ: Tập viết chữ (xanh dương), Đố vui ghép chữ (xanh lá), Ghép câu (cam).
   Bấm thẻ xem bài thuộc mục đó trong lớp đang chọn; Back quay lại ba thẻ trước
   khi rời tab. Đổi lớp phải bỏ lựa chọn mục của lớp trước.
