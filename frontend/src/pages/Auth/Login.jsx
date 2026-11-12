@@ -1,121 +1,38 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate, Link, Navigate } from 'react-router-dom';
+import { BookOpen, GraduationCap, ShieldCheck, UserRound, LockKeyhole, Eye, EyeOff, ArrowRight, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-import { BookOpen, KeyRound, User, AlertCircle, Sparkles } from 'lucide-react';
 import { webHome } from '../../utils/webAccess';
-const Login = () => {
-    const { login, user, notice } = useAuth();
-    const navigate = useNavigate();
-    const [usernameOrEmail, setUsernameOrEmail] = useState('');
-    const [password, setPassword] = useState('');
-    const [error, setError] = useState('');
-    const [loading, setLoading] = useState(false);
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!usernameOrEmail || !password) {
-            setError('Vui lòng điền đầy đủ thông tin');
-            return;
-        }
-        setLoading(true);
-        setError('');
-        try {
-            const res = await login(usernameOrEmail, password);
-            navigate(webHome(res.user.roles) || '/login', { replace: true });
-        }
-        catch (err) {
-            setError(err.message || 'Tên đăng nhập hoặc mật khẩu không chính xác.');
-        }
-        finally {
-            setLoading(false);
-        }
-    };
-    const playClickSound = () => {
-        try {
-            const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-            const osc = audioCtx.createOscillator();
-            const gain = audioCtx.createGain();
-            osc.type = 'sine';
-            osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
-            osc.frequency.exponentialRampToValueAtTime(783.99, audioCtx.currentTime + 0.1); // G5
-            gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
-            gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
-            osc.connect(gain);
-            gain.connect(audioCtx.destination);
-            osc.start();
-            osc.stop(audioCtx.currentTime + 0.12);
-        }
-        catch (e) { }
-    };
-    const home = webHome(user?.roles);
-    if (home)
-        return <Navigate to={home} replace/>;
-    return (<div className="min-h-screen flex items-center justify-center p-4 bg-gradient-to-br from-sky-100 via-pink-100 to-amber-100" style={{ fontFamily: "'Nunito', sans-serif" }}>
-      <div className="w-full max-w-md">
+import VuiBrand from '../../components/VuiBrand';
+import TeacherDialog from '../../components/TeacherDialog';
+import '../../teacher.css';
+import '../../admin.css';
 
-        {/* Brand Header */}
-        <div className="text-center mb-8">
-          <div className="w-18 h-18 rounded-3xl bg-gradient-to-tr from-sky-450 to-blue-500 flex items-center justify-center shadow-xl shadow-blue-200/50 mx-auto mb-4 animate-float border-3 border-white">
-            <BookOpen className="w-9 h-9 text-white"/>
-          </div>
-          <h1 className="text-3xl sm:text-4xl font-black text-sky-850 tracking-tight flex items-center justify-center gap-1">
-            Học Chữ Tiếng Việt
-            <Sparkles className="w-6 h-6 text-amber-500 animate-spin-slow"/>
-          </h1>
-          <p className="text-slate-500 text-sm font-bold mt-2">Cổng giáo viên và quản trị viên</p>
-        </div>
-
-        {/* Card Panel (Bảng trắng bo tròn lớn) */}
-        <div className="bg-white/80 backdrop-blur-md rounded-[35px] border-4 border-sky-100 p-8 shadow-2xl relative overflow-hidden">
-          <div className="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-sky-400 via-pink-400 to-amber-400"></div>
-
-          <h2 className="text-xl sm:text-2xl font-black text-sky-800 mb-6">Đăng nhập tài khoản</h2>
-
-          {/* Sáng sủa tươi vui lỗi báo */}
-          {(error || notice) && (<div role="alert" className="mb-6 p-4 bg-rose-50 border-2 border-rose-200 rounded-2xl text-xs sm:text-sm font-black text-rose-600 flex items-center gap-3 animate-bounce-short">
-              <AlertCircle className="w-5 h-5 shrink-0 text-rose-500"/>
-              <span>{error || notice}</span>
-            </div>)}
-
-          <form onSubmit={handleSubmit} className="space-y-6" autoComplete="off">
-
-            {/* Username/Email Input */}
-            <div className="space-y-2">
-              <label className="block text-xs sm:text-sm font-black text-sky-700/80 uppercase tracking-wider">Tài khoản hoặc Email</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-4.5 flex items-center text-sky-400 pointer-events-none">
-                  <User className="w-5 h-5"/>
-                </span>
-                <input type="text" placeholder="Nhập tên đăng nhập của bé" value={usernameOrEmail} onChange={(e) => setUsernameOrEmail(e.target.value)} className="w-full pl-13 pr-4 py-4 bg-white border-3 border-sky-100 focus:border-sky-400 focus:outline-none rounded-2xl text-slate-700 font-extrabold text-sm placeholder:text-slate-400/80 placeholder:font-bold transition-all shadow-inner" autoComplete="off" required/>
-              </div>
-            </div>
-
-            {/* Password Input */}
-            <div className="space-y-2">
-              <label className="block text-xs sm:text-sm font-black text-sky-700/80 uppercase tracking-wider">Mật khẩu của bé</label>
-              <div className="relative">
-                <span className="absolute inset-y-0 left-0 pl-4.5 flex items-center text-sky-400 pointer-events-none">
-                  <KeyRound className="w-5 h-5"/>
-                </span>
-                <input type="password" placeholder="Nhập mật khẩu" value={password} onChange={(e) => setPassword(e.target.value)} className="w-full pl-13 pr-4 py-4 bg-white border-3 border-sky-100 focus:border-sky-400 focus:outline-none rounded-2xl text-slate-700 font-extrabold text-sm placeholder:text-slate-400/80 placeholder:font-bold transition-all shadow-inner" autoComplete="new-password" required/>
-              </div>
-            </div>
-
-            {/* Submit Button (To tròn nổi bật) */}
-            <button type="submit" onClick={playClickSound} disabled={loading} className="w-full py-4.5 px-6 rounded-2xl bg-gradient-to-r from-sky-400 to-blue-500 hover:from-sky-350 hover:to-blue-450 text-white font-black text-base border-2 border-white shadow-lg active:scale-[0.97] transition-all disabled:opacity-50 disabled:pointer-events-none mt-2 cursor-pointer">
-              {loading ? 'Bé chờ cô tí nhé...' : 'Bắt đầu học tập 🚀'}
-            </button>
-          </form>
-
-          {/* Footer controls */}
-          <div className="mt-8 text-center text-sm font-bold text-slate-500">
-            Chưa có tài khoản?{' '}
-            <Link to="/register" className="text-sky-500 font-black hover:underline ml-1">
-              Đăng ký ngay
-            </Link>
-          </div>
-
-        </div>
-      </div>
-    </div>);
-};
-export default Login;
+export default function Login() {
+  const { login, user, notice } = useAuth(); const navigate = useNavigate();
+  const [account, setAccount] = useState(''); const [password, setPassword] = useState(''); const [visible, setVisible] = useState(false);
+  const [error, setError] = useState(''); const [busy, setBusy] = useState(false); const [help, setHelp] = useState(false);
+  if (webHome(user?.roles)) return <Navigate to={webHome(user.roles)} replace/>;
+  async function submit(event) {
+    event.preventDefault(); if (busy) return; setError(''); setBusy(true);
+    try { const result = await login(account.trim(), password); navigate(webHome(result.user.roles) || '/login', { replace: true }); }
+    catch (failure) { setError(failure.message || 'Chưa đăng nhập được. Bạn thử lại nhé.'); }
+    finally { setBusy(false); }
+  }
+  return <div className="teacher-shell auth-page"><div className="auth-frame">
+    <section className="auth-story"><VuiBrand/><div className="auth-story-body"><span className="auth-eyebrow">MỖI NGÀY MỘT CHÚT TIẾN BỘ</span><h1>Cùng bé viết nên<br/><span>những điều hay.</span></h1><p>Một không gian để cô chuẩn bị bài học, nhà trường chăm chút học liệu và cùng gia đình dõi theo bé.</p>
+      <div className="auth-illustration" aria-hidden="true"><div className="auth-letter tile-blue">a</div><div className="auth-letter tile-green">ă</div><div className="auth-letter tile-orange">â</div><svg viewBox="0 0 280 140"><path d="M28 95Q80 25 140 82T252 48" fill="none" stroke="#8ed7fa" strokeWidth="3" strokeDasharray="7 9"/><path d="m240 32 16 18-23 7" fill="none" stroke="#006590" strokeWidth="3" strokeLinecap="round"/></svg><span className="auth-book"><BookOpen size={42}/></span></div>
+      <div className="auth-feature-list"><span><GraduationCap size={22}/> Bài học vừa sức, lời khen đúng lúc</span><span><ShieldCheck size={22}/> Tài khoản riêng, vai trò rõ ràng</span></div>
+    </div><p className="auth-story-foot">Vui Học · Tiếng Việt lớp 1</p></section>
+    <section className="auth-form-side"><div className="auth-login-card"><span className="auth-small-icon"><BookOpen size={24}/></span><h2>Chào mừng trở lại!</h2><p className="teacher-muted">Đăng nhập để mở không gian giáo viên hoặc quản trị viên.</p>
+      {(error || notice) && <div className="teacher-alert auth-error" role="alert" id="login-error"><AlertCircle size={20}/><span>{error || notice}</span></div>}
+      <form onSubmit={submit} className="teacher-stack" autoComplete="on">
+        <label htmlFor="login-account">Tên đăng nhập hoặc email<div className="auth-input"><UserRound size={20}/><input id="login-account" name="username" type="text" autoComplete="username" value={account} onChange={e => setAccount(e.target.value)} placeholder="Nhập tài khoản của bạn" required maxLength={100} disabled={busy} aria-describedby={error ? 'login-error' : undefined}/></div></label>
+        <label htmlFor="login-password">Mật khẩu<div className="auth-input"><LockKeyhole size={20}/><input id="login-password" name="password" type={visible ? 'text' : 'password'} autoComplete="current-password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Nhập mật khẩu" required disabled={busy}/><button type="button" className="teacher-icon" aria-label={visible ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'} aria-pressed={visible} onClick={() => setVisible(!visible)}>{visible ? <EyeOff size={20}/> : <Eye size={20}/>}</button></div></label>
+        <div className="auth-forgot"><button type="button" onClick={() => setHelp(true)}>Cần hỗ trợ đăng nhập?</button></div>
+        <button className="teacher-button primary auth-submit" disabled={busy}>{busy ? 'Đang đăng nhập…' : 'Đăng nhập'}{!busy && <ArrowRight size={20}/>}</button>
+      </form>
+      <p className="auth-register">Chưa có tài khoản? <Link to="/register">Đăng ký</Link></p><div className="auth-role-note"><ShieldCheck size={22}/><p>Quyền truy cập được xác định theo tài khoản, không cần chọn vai trò khi đăng nhập.</p></div>
+    </div><p className="auth-form-foot">Học từng chữ nhỏ, lớn lên mỗi ngày.</p></section>
+  </div>{help && <TeacherDialog title="Hỗ trợ đăng nhập" onClose={() => setHelp(false)}><p>Bạn kiểm tra tên đăng nhập hoặc email, mật khẩu và phím Caps Lock.</p><p>Nếu quên mật khẩu hoặc tài khoản bị khóa, liên hệ quản trị viên để đặt mật khẩu mới hoặc mở khóa. Không gửi mật khẩu qua phần trò chuyện soạn bài.</p><button className="teacher-button primary" onClick={() => setHelp(false)}>Đã hiểu</button></TeacherDialog>}</div>;
+}

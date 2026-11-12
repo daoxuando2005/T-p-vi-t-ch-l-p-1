@@ -9,7 +9,7 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/teacher/assistant")
-@PreAuthorize("hasRole('TEACHER')")
+@PreAuthorize("hasRole('TEACHER') and hasAuthority('PERM_ASSIGN_HOMEWORK')")
 public class TeacherAssistantController {
     private final TeacherAssistantService service;
     public TeacherAssistantController(TeacherAssistantService service){this.service=service;}

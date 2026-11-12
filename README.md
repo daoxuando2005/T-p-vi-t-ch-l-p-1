@@ -14,6 +14,11 @@ Website chỉ dành cho **giáo viên và admin**. Học sinh và phụ huynh d�
 các trang web tương ứng đã được bỏ. Biểu mẫu đăng ký/OTP chung trên web vẫn
 cho phép tạo tài khoản trước khi dùng app. Backend và dữ liệu dùng chung được giữ.
 
+Admin dùng giao diện React chung phong cách với giáo viên: tổng quan, tài khoản
+và phân quyền, học liệu 29 chữ, tra cứu lớp/liên kết gia đình và trạng thái cấu hình.
+Trang đăng nhập web hỗ trợ hiện/ẩn mật khẩu và tự vào đúng vai trò.
+Xem [hướng dẫn website và quản trị](frontend/README.md).
+
 ---
 
 ## 🛠️ Công nghệ sử dụng (Tech Stack)
@@ -21,7 +26,7 @@ cho phép tạo tài khoản trước khi dùng app. Backend và dữ liệu dù
 *   **Backend:** Java 17, Spring Boot 3 (Web, Security, Data JPA, Validation)
 *   **Database:** MySQL (Flyway migration quản lý schema tự động)
 *   **Xác thực:** JWT (JSON Web Token) + Xác thực OTP
-*   **Frontend:** React, JavaScript, Vite, Tailwind CSS, Axios, React Router, Recharts
+*   **Frontend:** React, JavaScript, Vite, Tailwind CSS, Axios, React Router; biểu đồ React/CSS kèm bảng số liệu
 *   **Build Tool:** Maven (Backend), npm (Frontend)
 
 ---
@@ -35,7 +40,7 @@ liên kết `parent1` với `student1` khi khởi động. Ưu tiên tài khoả
 
 | Vai trò | Tên đăng nhập | Email liên kết | Mô tả chức năng |
 | :--- | :--- | :--- | :--- |
-| **Quản trị viên** | `admin` | `admin@hocchu.com` | Quản lý người dùng, CRUD học liệu, xem thống kê |
+| **Quản trị viên** | `admin` | `admin@hocchu.com` | Quản lý tài khoản/quyền, học liệu, tra cứu lớp/gia đình và trạng thái hệ thống |
 | **Giáo viên** | `teacher1` | `mai.nguyen@hocchu.com` | Tạo lớp học, quản lý học sinh, giao bài tập, chấm điểm canvas |
 | **Học sinh** | `student1` | `an.nguyen@hocchu.com` | Học bảng chữ cái phát âm, luyện viết bảng ô ly, làm bài tập |
 | **Phụ huynh** | `parent1` | `binh.nguyen@hocchu.com` | Liên kết con, xem hoạt động hằng ngày và theo dõi tiến độ |

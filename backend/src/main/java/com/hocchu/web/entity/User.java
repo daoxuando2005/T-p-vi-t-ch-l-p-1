@@ -36,6 +36,10 @@ public class User {
 
     private Boolean enabled;
 
+    @Column(name = "session_version", nullable = false)
+    @Builder.Default
+    private int sessionVersion = 0;
+
     @Column(name = "otp_code", length = 6)
     private String otpCode;
 

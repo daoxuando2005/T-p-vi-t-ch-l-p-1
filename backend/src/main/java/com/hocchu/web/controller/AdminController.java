@@ -5,6 +5,7 @@ import com.hocchu.web.entity.AlphabetLesson;
 import com.hocchu.web.security.CurrentUser;
 import com.hocchu.web.security.UserPrincipal;
 import com.hocchu.web.service.AdminService;
+import com.hocchu.web.service.AdminOperationsService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
@@ -22,6 +23,7 @@ public class AdminController {
 
     @Autowired
     private AdminService adminService;
+    @Autowired private AdminOperationsService operations;
 
     // Lấy toàn bộ người dùng
     @GetMapping("/users")
@@ -33,17 +35,18 @@ public class AdminController {
     // Khóa/Mở khóa người dùng
     @PutMapping("/users/{userId}/toggle")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse> toggleUserStatus(@PathVariable Long userId) {
-        return ResponseEntity.ok(adminService.toggleUserStatus(userId));
+    public ResponseEntity<ApiResponse> toggleUserStatus(@CurrentUser UserPrincipal actor,@PathVariable Long userId) {
+        return ResponseEntity.ok(adminService.toggleUserStatus(actor.getId(),userId));
     }
 
     // Đổi vai trò / phân quyền người dùng
     @PutMapping("/users/{userId}/role")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<ApiResponse> changeUserRole(
+            @CurrentUser UserPrincipal actor,
             @PathVariable Long userId,
             @RequestParam String role) {
-        return ResponseEntity.ok(adminService.changeUserRole(userId, role));
+        return ResponseEntity.ok(adminService.changeUserRole(actor.getId(),userId, role));
     }
 
     // Phân quyền chi tiết (thêm/khóa quyền cụ thể cho từng tài khoản)
@@ -58,8 +61,8 @@ public class AdminController {
     // Xóa người dùng
     @DeleteMapping("/users/{userId}")
     @PreAuthorize("hasRole('ADMIN')")
-    public ResponseEntity<ApiResponse> deleteUser(@PathVariable Long userId) {
-        return ResponseEntity.ok(adminService.deleteUser(userId));
+    public ResponseEntity<ApiResponse> deleteUser(@CurrentUser UserPrincipal actor,@PathVariable Long userId) {
+        return ResponseEntity.ok(adminService.deleteUser(actor.getId(),userId));
     }
 
     @PutMapping("/users/{userId}/info")
@@ -72,13 +75,13 @@ public class AdminController {
 
     // Quản lý học liệu chữ cái
     @PostMapping("/alphabet")
-    @PreAuthorize("hasAnyRole('ADMIN') or (hasAuthority('PERM_EDIT_ALPHABET') and #lesson.id != null) or (hasAuthority('PERM_ADD_ALPHABET') and #lesson.id == null)")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and hasAuthority('PERM_EDIT_ALPHABET') and #lesson.id != null)")
     public ResponseEntity<AlphabetLesson> saveAlphabetLesson(@Valid @RequestBody AlphabetLesson lesson) {
         return ResponseEntity.ok(adminService.saveAlphabetLesson(lesson));
     }
 
     @PostMapping("/alphabet/upload-image")
-    @PreAuthorize("hasAnyRole('ADMIN') or hasAuthority('PERM_EDIT_ALPHABET')")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and hasAuthority('PERM_EDIT_ALPHABET'))")
     public ResponseEntity<ApiResponse> uploadAlphabetImage(
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
             @RequestParam("filename") String filename) {
@@ -86,7 +89,7 @@ public class AdminController {
     }
 
     @PostMapping("/alphabet/upload-audio")
-    @PreAuthorize("hasAnyRole('ADMIN') or hasAuthority('PERM_EDIT_ALPHABET')")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and hasAuthority('PERM_EDIT_ALPHABET'))")
     public ResponseEntity<ApiResponse> uploadAlphabetAudio(
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
             @RequestParam("filename") String filename) {
@@ -94,7 +97,7 @@ public class AdminController {
     }
 
     @PostMapping("/alphabet/upload-example-image")
-    @PreAuthorize("hasAnyRole('ADMIN') or hasAuthority('PERM_EDIT_ALPHABET')")
+    @PreAuthorize("hasRole('ADMIN') or (hasRole('TEACHER') and hasAuthority('PERM_EDIT_ALPHABET'))")
     public ResponseEntity<ApiResponse> uploadAlphabetExampleImage(
             @RequestParam("file") org.springframework.web.multipart.MultipartFile file,
             @RequestParam("filename") String filename) {
@@ -102,7 +105,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/alphabet/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN') or hasAuthority('PERM_ADD_ALPHABET')")
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteAlphabetLesson(@PathVariable Long id) {
         adminService.deleteAlphabetLesson(id);
         return ResponseEntity.noContent().build();
@@ -121,4 +124,22 @@ public class AdminController {
     public ResponseEntity<Map<String, Object>> getSystemStats() {
         return ResponseEntity.ok(adminService.getSystemStats());
     }
+
+    public record PasswordRequest(@jakarta.validation.constraints.NotBlank @jakarta.validation.constraints.Size(min=6,max=72) String password) {}
+    @PostMapping("/users/{id}/password") @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse resetPassword(@PathVariable Long id,@Valid @RequestBody PasswordRequest body){return adminService.resetPassword(id,body.password());}
+    @GetMapping("/classes") @PreAuthorize("hasRole('ADMIN')")
+    public List<Map<String,Object>> classes(){return operations.classes();}
+    @GetMapping("/classes/{id}") @PreAuthorize("hasRole('ADMIN')")
+    public Map<String,Object> classDetail(@PathVariable long id){return operations.classDetail(id);}
+    @GetMapping("/family-links") @PreAuthorize("hasRole('ADMIN')")
+    public List<Map<String,Object>> familyLinks(){return operations.familyLinks();}
+    @DeleteMapping("/family-links/{id}") @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse unlink(@PathVariable long id){return operations.unlink(id);}
+    @GetMapping("/settings") @PreAuthorize("hasRole('ADMIN')")
+    public Map<String,Object> settings(){return operations.settings();}
+    @GetMapping("/learning-content") @PreAuthorize("hasRole('ADMIN')")
+    public List<Map<String,Object>> learningContent(){return operations.learningContent();}
+    @PutMapping("/learning-content/{letter}") @PreAuthorize("hasRole('ADMIN')")
+    public ApiResponse curriculum(@PathVariable String letter,@RequestBody AdminOperationsService.Curriculum body){return operations.saveCurriculum(letter,body);}
 }

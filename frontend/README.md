@@ -36,6 +36,59 @@ npm test
 
 `src/main.jsx` là điểm vào; `src/App.jsx` khai báo tuyến theo vai trò.
 
+## Đăng nhập và khu vực admin
+
+`/login` dùng cùng thương hiệu, font và màu với giáo viên; hỗ trợ trình quản lý
+mật khẩu, dán mật khẩu, nút hiện/ẩn và trợ giúp đăng nhập. Không yêu cầu người
+dùng chọn vai trò. Backend xác định vai trò; học sinh/phụ huynh không vào web.
+Đăng ký/OTP tại `/register` giữ nghiệp vụ hiện có, không tự bỏ xác thực email.
+
+Admin có năm mục:
+
+| Đường dẫn | Chức năng |
+| --- | --- |
+| `/admin` | Tổng quan tài khoản, lớp, bài nộp và hoạt động bảy ngày theo giờ Việt Nam; biểu đồ kèm bảng số liệu |
+| `/admin/users` | Tìm/lọc/phân trang, tạo/sửa thông tin, đặt mật khẩu mới, khóa/mở khóa, đổi vai trò và cấp quyền giáo viên |
+| `/admin/lessons` | Xem/nghe, sửa ví dụ/media, tạm ẩn chữ; chỉnh đúng ba cặp từ/câu của mỗi hành trình |
+| `/admin/classes` | Tra cứu lớp, giáo viên, thành viên, số bài nộp; gỡ liên kết gia đình sai sau xác nhận |
+| `/admin/settings` | Trạng thái backend, cấu hình trợ lý và hướng dẫn thiết lập khóa riêng ở máy chủ |
+
+`WorkspaceLayout` và `VuiBrand` dùng chung giữa giáo viên/admin; giữ đường dẫn và
+quyền riêng. `teacher.css` chứa nền tảng giao diện, `admin.css` mở rộng admin và
+đăng nhập. Bảng tài khoản chuyển thành thẻ trên điện thoại, có menu dạng hộp thoại.
+Không tạo thống kê minh họa khi API lỗi. Dữ liệu học ngoại tuyến có thể đồng bộ muộn.
+
+Không tự khóa/xóa/đổi vai trò chính tài khoản đang đăng nhập; luôn giữ ít nhất
+một admin hoạt động. Tài khoản có lớp, thành viên, tiến độ, bài nộp hoặc liên kết
+không được xóa/đổi vai trò trực tiếp; dùng khóa để bảo toàn lịch sử. Quyền chi tiết
+chỉ dành cho giáo viên, không chấp nhận chuỗi quyền tùy ý. Sửa học liệu cần cả quyền xem.
+
+Backend dùng `users.session_version` và claim JWT `sv`. Khóa/mở khóa, đặt mật khẩu,
+đổi vai trò/quyền làm phiên cũ của tài khoản đó hết hiệu lực. JWT trước migration
+V16 không có claim này được hiểu là phiên bản 0; không tự đăng xuất toàn bộ người
+dùng khi triển khai. Đăng xuất thông thường chỉ xóa phiên tại client.
+Web xử lý HTTP 401 bằng quay lại đăng nhập; 403 là thiếu quyền.
+
+Học liệu giữ cố định 29 chữ, không thêm/xóa hoặc đổi ký tự. Chỉnh hành trình cần
+ba từ chứa chính xác chữ đang học viết thường, mỗi câu 2–12 thẻ; dấu `|` chia cụm
+từ trong biểu mẫu. Bài đang làm giữ nội dung trong phiên, tiến độ đã đạt không bị hạ.
+Admin tra cứu lớp, không mở thêm luồng giao/chấm bài thay giáo viên. Gỡ liên kết
+chỉ thu hồi quyền của phụ huynh đó và mã mời đang chờ, giữ tiến độ/bài làm của con.
+
+API mới dưới `/api/admin`: `/classes`, `/classes/{id}`, `/family-links`,
+`/family-links/{id}` (DELETE), `/settings`, `/learning-content` và
+`/learning-content/{letter}` (PUT). Đặt mật khẩu dùng POST `/users/{id}/password`.
+Mọi API này kiểm tra vai trò admin ở server. Khóa AI không được gửi về frontend;
+trạng thái đã cấu hình không chứng minh model/hạn mức đã được kiểm thử thực tế.
+
+Kiểm thử backend: `AdminWorkspaceTest`, `SessionVersionTest`; bài live
+`AdminWorkspaceLiveTest` dùng tài khoản/lớp tạm và chỉ dọn đúng ID đã tạo.
+Chạy từ `backend` khi server local đang mở:
+`mvn test -Dtest=AdminWorkspaceLiveTest,ParentTrackingLiveTest -DliveBackend=true`.
+Không dùng test để đổi mật khẩu, liên kết hoặc dữ liệu học của tài khoản thật.
+`npm run test:browser` kiểm tra cả thao tác admin/giáo viên và bố cục đăng nhập
+máy tính/điện thoại trong profile riêng với API giả lập; không thay thế bài API live.
+
 Để kiểm tra đăng nhập, khôi phục phiên và chuyển trang trong trình duyệt, chạy
 web local rồi `npm run test:browser` (Node.js 22.12 trở lên). Bài kiểm tra dùng Edge/Chrome đã cài, profile
 tạm và API giả lập, không dùng dữ liệu thật. Có thể đặt `BROWSER_PATH` và

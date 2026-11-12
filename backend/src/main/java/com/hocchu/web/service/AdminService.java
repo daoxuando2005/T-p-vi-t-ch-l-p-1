@@ -4,340 +4,148 @@ import com.hocchu.web.dto.*;
 import com.hocchu.web.entity.*;
 import com.hocchu.web.repository.*;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.time.LocalDateTime;
 import java.util.*;
-import java.util.stream.Collectors;
+import java.nio.charset.StandardCharsets;
 
 @Service
 public class AdminService {
+    public static final Set<String> PRIMARY_ROLES=Set.of("ROLE_ADMIN","ROLE_TEACHER","ROLE_PARENT","ROLE_STUDENT");
+    public static final Set<String> TEACHER_PERMISSIONS=Set.of("PERM_ASSIGN_HOMEWORK","PERM_MANAGE_CLASSES","PERM_VIEW_ALPHABET","PERM_EDIT_ALPHABET");
+    @Autowired private UserRepository userRepository;
+    @Autowired private RoleRepository roleRepository;
+    @Autowired private AlphabetLessonRepository alphabetLessonRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private JdbcTemplate jdbc;
+    @Autowired private MediaStorageService mediaStorage;
+    @Autowired private AdminOperationsService operations;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private ClazzRepository clazzRepository;
-
-    @Autowired
-    private AlphabetLessonRepository alphabetLessonRepository;
-
-    @Autowired
-    private FeedbackReportRepository feedbackReportRepository;
-
-    @Autowired
-    private WritingPracticeRepository writingPracticeRepository;
-
-    @Autowired
-    private com.hocchu.web.repository.NotificationRepository notificationRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
+    @Transactional(readOnly=true)
     public List<UserProfileResponse> getAllUsers() {
-        return userRepository.findAll().stream()
-                .map(u -> UserProfileResponse.builder()
-                        .id(u.getId())
-                        .username(u.getUsername())
-                        .email(u.getEmail())
-                        .fullName(u.getFullName())
-                        .phoneNumber(u.getPhoneNumber())
-                        .enabled(u.getEnabled() != null && u.getEnabled())
-                        .roles(u.getRoles().stream().map(Role::getName).collect(Collectors.toList()))
-                        .build())
-                .collect(Collectors.toList());
+        return userRepository.findAll().stream().map(u->UserProfileResponse.builder().id(u.getId())
+            .username(u.getUsername()).email(u.getEmail()).fullName(u.getFullName()).phoneNumber(u.getPhoneNumber())
+            .enabled(Boolean.TRUE.equals(u.getEnabled())).roles(u.getRoles().stream().map(Role::getName).sorted().toList()).build()).toList();
     }
-
+    private User user(Long id) {return userRepository.findForAdminUpdate(id).orElseThrow(()->new IllegalArgumentException("Không tìm thấy tài khoản."));}
+    private static boolean admin(User u){return u.getRoles().stream().anyMatch(r->r.getName().equals("ROLE_ADMIN"));}
+    private void lockAdministrators() {
+        jdbc.queryForList("SELECT id FROM users WHERE id IN (SELECT ur.user_id FROM user_roles ur JOIN roles r ON r.id=ur.role_id WHERE r.name='ROLE_ADMIN') ORDER BY id FOR UPDATE");
+    }
+    private void protectAdministrator(Long actorId,User target) {
+        if(Objects.equals(actorId,target.getId()))throw new IllegalArgumentException("Không thể tự khóa, xóa hoặc đổi vai trò tài khoản đang đăng nhập.");
+        if(admin(target)&&Boolean.TRUE.equals(target.getEnabled())) {
+            long active=jdbc.queryForObject("SELECT COUNT(DISTINCT u.id) FROM users u JOIN user_roles ur ON ur.user_id=u.id JOIN roles r ON r.id=ur.role_id WHERE r.name='ROLE_ADMIN' AND u.enabled=TRUE",Long.class);
+            if(active<=1)throw new IllegalArgumentException("Phải giữ ít nhất một quản trị viên đang hoạt động.");
+        }
+    }
     @Transactional
-    public ApiResponse toggleUserStatus(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-        
-        // Tránh khoá chính mình (Admin)
-        if ("admin".equals(user.getUsername())) {
-            return new ApiResponse(false, "Không thể khóa tài khoản Admin tối cao!");
-        }
-
-        user.setEnabled(!user.getEnabled());
-        userRepository.save(user);
-
-        String status = user.getEnabled() ? "mở khóa" : "tạm khóa";
-
-        // Gửi thông báo đến Quả chuông hệ thống của người dùng
-        try {
-            com.hocchu.web.entity.Notification notification = com.hocchu.web.entity.Notification.builder()
-                    .user(user)
-                    .title(user.getEnabled() ? "🔓 Thông Báo Mở Khóa Tài Khoản" : "🔒 Thông Báo Tạm Khóa Tài Khoản")
-                    .content("Tài khoản của bạn đã được Quản trị viên hệ thống " + status + ".")
-                    .type("SYSTEM")
-                    .isRead(false)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-            notificationRepository.save(notification);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return new ApiResponse(true, "Đã " + status + " tài khoản '" + user.getUsername() + "' thành công");
+    public ApiResponse toggleUserStatus(Long actorId,Long id) {
+        lockAdministrators();User target=user(id);
+        if(Boolean.TRUE.equals(target.getEnabled()))protectAdministrator(actorId,target);
+        target.setEnabled(!Boolean.TRUE.equals(target.getEnabled()));target.setSessionVersion(target.getSessionVersion()+1);
+        userRepository.save(target);return new ApiResponse(true,target.getEnabled()?"Đã mở khóa. Người dùng đăng nhập lại để tiếp tục.":"Đã khóa tài khoản và ngừng hiệu lực các phiên cũ.");
     }
-
+    public static String roleName(String input) {
+        if(input==null)throw new IllegalArgumentException("Chọn vai trò tài khoản.");
+        String role=input.trim().toUpperCase(Locale.ROOT);if(!role.startsWith("ROLE_"))role="ROLE_"+role;
+        if(!PRIMARY_ROLES.contains(role))throw new IllegalArgumentException("Vai trò chưa hợp lệ.");return role;
+    }
+    public static List<String> permissionsFor(String role,List<String> requested) {
+        if(!role.equals("ROLE_TEACHER")) {
+            if(requested!=null&&!requested.isEmpty())throw new IllegalArgumentException("Chỉ cấp quyền quản lý chi tiết cho giáo viên.");
+            return role.equals("ROLE_PARENT")?List.of("PERM_PARENT_TRACKING"):List.of();
+        }
+        List<String> values=requested==null?List.of("PERM_ASSIGN_HOMEWORK","PERM_MANAGE_CLASSES","PERM_VIEW_ALPHABET","PERM_EDIT_ALPHABET"):requested;
+        if(values.stream().anyMatch(Objects::isNull)||!TEACHER_PERMISSIONS.containsAll(values)||new HashSet<>(values).size()!=values.size())throw new IllegalArgumentException("Quyền giáo viên chưa hợp lệ.");
+        if(values.contains("PERM_EDIT_ALPHABET")&&!values.contains("PERM_VIEW_ALPHABET"))throw new IllegalArgumentException("Cần quyền xem học liệu trước khi cấp quyền chỉnh sửa.");
+        return List.copyOf(values);
+    }
+    private Set<Role> roles(String role,List<String> permissions) {
+        Set<Role> result=new HashSet<>();var names=new ArrayList<>(permissions);names.add(role);
+        for(String name:names)result.add(roleRepository.findByName(name).orElseThrow(()->new IllegalStateException("Thiếu cấu hình vai trò hệ thống.")));
+        return result;
+    }
     @Transactional
-    public ApiResponse changeUserRole(Long userId, String newRole) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-
-        if ("admin".equals(user.getUsername())) {
-            return new ApiResponse(false, "Tài khoản Admin tối cao giữ quyền Quản trị viên hệ thống!");
-        }
-
-        // Giữ lại các quyền hành động chi tiết (PERM_...), chỉ thay đổi Vai trò chính (ROLE_...)
-        Set<Role> updatedRoles = user.getRoles().stream()
-                .filter(r -> !r.getName().startsWith("ROLE_"))
-                .collect(Collectors.toSet());
-
-        Role newRoleEntity = roleRepository.findByName(newRole)
-                .orElseGet(() -> roleRepository.save(new Role(null, newRole)));
-        updatedRoles.add(newRoleEntity);
-
-        user.setRoles(updatedRoles);
-        userRepository.save(user);
-
-        // Gửi thông báo đến Quả chuông hệ thống của người dùng
-        try {
-            com.hocchu.web.entity.Notification notification = com.hocchu.web.entity.Notification.builder()
-                    .user(user)
-                    .title("🛡️ Thông Báo Cập Nhật Vai Trò Tài Khoản")
-                    .content("Vai trò tài khoản của bạn vừa được Quản trị viên cập nhật thành: " + newRole)
-                    .type("SYSTEM")
-                    .isRead(false)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-            notificationRepository.save(notification);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return new ApiResponse(true, "Đã cập nhật vai trò tài khoản '" + user.getUsername() + "' thành " + newRole);
+    public ApiResponse changeUserRole(Long actorId,Long id,String requested) {
+        String role=roleName(requested);lockAdministrators();User target=user(id);
+        if(target.getRoles().stream().anyMatch(r->r.getName().equals(role)))return new ApiResponse(true,"Tài khoản đang có vai trò này.");
+        protectAdministrator(actorId,target);
+        if(hasDomainData(id))throw new IllegalArgumentException("Tài khoản đã có dữ liệu lớp/học tập/gia đình. Giữ vai trò hiện tại và tạo tài khoản khác để bảo toàn lịch sử.");
+        target.setRoles(roles(role,permissionsFor(role,null)));target.setSessionVersion(target.getSessionVersion()+1);userRepository.save(target);
+        return new ApiResponse(true,"Đã đổi vai trò. Người dùng cần đăng nhập lại.");
     }
-
+    public static void validatePassword(String password) {
+        if(password==null||password.length()<6||password.getBytes(StandardCharsets.UTF_8).length>72)
+            throw new IllegalArgumentException("Mật khẩu cần ít nhất 6 ký tự và tối đa 72 byte UTF-8.");
+    }
     @Transactional
-    public ApiResponse updateUserInfo(Long userId, Map<String, String> payload) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-
-        String fullName = payload.get("fullName");
-        String email = payload.get("email");
-        String newPassword = payload.get("newPassword");
-
-        if (fullName != null && !fullName.isBlank()) {
-            user.setFullName(fullName.trim());
+    public ApiResponse updateUserInfo(Long id,Map<String,String> payload) {
+        if(payload==null)throw new IllegalArgumentException("Nhập thông tin tài khoản cần cập nhật.");
+        User target=user(id);String name=payload.get("fullName"),email=payload.get("email"),phone=payload.get("phoneNumber"),password=payload.get("newPassword");
+        if(name!=null&&(name.isBlank()||name.trim().length()>100))throw new IllegalArgumentException("Họ tên cần từ 1 đến 100 ký tự.");
+        if(email!=null) {
+            email=email.trim();if(email.length()>100||!email.matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$"))throw new IllegalArgumentException("Email chưa hợp lệ.");
+            var existing=userRepository.findByEmail(email);if(existing.isPresent()&&!existing.get().getId().equals(id))throw new IllegalArgumentException("Email đã được tài khoản khác sử dụng.");
         }
-        if (email != null && !email.isBlank()) {
-            user.setEmail(email.trim());
-        }
-        if (newPassword != null && !newPassword.isBlank()) {
-            if (newPassword.length() < 6) {
-                return new ApiResponse(false, "Mật khẩu mới phải có ít nhất 6 ký tự!");
-            }
-            user.setPassword(passwordEncoder.encode(newPassword));
-        }
-
-        userRepository.save(user);
-        return new ApiResponse(true, "Đã cập nhật thông tin tài khoản '" + user.getUsername() + "' thành công!");
+        if(phone!=null&&phone.trim().length()>20)throw new IllegalArgumentException("Số điện thoại tối đa 20 ký tự.");
+        if(password!=null&&!password.isEmpty()){validatePassword(password);target.setPassword(passwordEncoder.encode(password));target.setSessionVersion(target.getSessionVersion()+1);}
+        if(name!=null)target.setFullName(name.trim());if(email!=null)target.setEmail(email);if(phone!=null)target.setPhoneNumber(phone.trim());
+        userRepository.save(target);return new ApiResponse(true,"Đã cập nhật tài khoản.");
     }
-
     @Transactional
-    public ApiResponse updateUserPermissions(Long userId, List<String> permissions) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-
-        if ("admin".equals(user.getUsername())) {
-            return new ApiResponse(false, "Tài khoản Admin tối cao luôn có toàn bộ quyền hệ thống!");
-        }
-
-        // Tìm vai trò chính hiện tại của user (ROLE_TEACHER, ROLE_PARENT, ROLE_STUDENT...)
-        String primaryRoleName = user.getRoles().stream()
-                .map(Role::getName)
-                .filter(name -> name.startsWith("ROLE_"))
-                .findFirst()
-                .orElse("ROLE_STUDENT");
-
-        // Đặc biệt: Tài khoản Học Sinh chỉ dùng quyền học tập mặc định, không được cấp thêm các quyền khác!
-        if ("ROLE_STUDENT".equals(primaryRoleName)) {
-            return new ApiResponse(false, "Tài khoản Học sinh chỉ có quyền học tập & làm bài mặc định, không thể cấp thêm các quyền quản lý!");
-        }
-
-        Set<Role> roles = new HashSet<>();
-        
-        // Đảm bảo luôn giữ Vai trò chính
-        Role primaryRole = roleRepository.findByName(primaryRoleName)
-                .orElseGet(() -> roleRepository.save(new Role(null, primaryRoleName)));
-        roles.add(primaryRole);
-
-        // Thêm tất cả các quyền được tick chọn
-        for (String permName : permissions) {
-            Role role = roleRepository.findByName(permName)
-                    .orElseGet(() -> roleRepository.save(new Role(null, permName)));
-            roles.add(role);
-        }
-
-        user.setRoles(roles);
-        userRepository.save(user);
-
-        // Gửi thông báo đến Quả chuông hệ thống của người dùng
-        try {
-            Map<String, String> permLabels = Map.of(
-                "PERM_ASSIGN_HOMEWORK", "📝 Quyền Giao Bài Tập",
-                "PERM_VIEW_ALPHABET", "📚 Quyền Xem Học Liệu Chữ Cái",
-                "PERM_EDIT_ALPHABET", "✏️ Quyền Sửa Học Liệu Chữ Cái",
-                "PERM_ADD_ALPHABET", "➕ Quyền Thêm/Xóa Chữ Cái Mới",
-                "PERM_MANAGE_CLASSES", "🏫 Quyền Quản Lý Lớp Học",
-                "PERM_PARENT_TRACKING", "👨‍👩‍👧 Quyền Theo Dõi Tiến Độ Con"
-            );
-
-            List<String> grantedTitles = permissions.stream()
-                    .map(p -> permLabels.getOrDefault(p, p))
-                    .collect(Collectors.toList());
-
-            String permsSummary = grantedTitles.isEmpty() 
-                    ? "Quyền sử dụng cơ bản." 
-                    : String.join(", ", grantedTitles);
-
-            com.hocchu.web.entity.Notification notification = com.hocchu.web.entity.Notification.builder()
-                    .user(user)
-                    .title("🔑 Thông Báo Cập Nhật Phân Quyền Chi Tiết")
-                    .content("Quản trị viên vừa cập nhật danh sách các quyền hành động của bạn: " + permsSummary)
-                    .type("SYSTEM")
-                    .isRead(false)
-                    .createdAt(LocalDateTime.now())
-                    .build();
-            notificationRepository.save(notification);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return new ApiResponse(true, "Cập nhật phân quyền thành công cho tài khoản '" + user.getUsername() + "'!");
+    public ApiResponse resetPassword(Long id,String password) {
+        validatePassword(password);User target=user(id);target.setPassword(passwordEncoder.encode(password));target.setSessionVersion(target.getSessionVersion()+1);
+        userRepository.save(target);return new ApiResponse(true,"Đã đặt mật khẩu mới. Các phiên đăng nhập cũ hết hiệu lực.");
     }
-
     @Transactional
-    public ApiResponse deleteUser(Long userId) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("Không tìm thấy người dùng"));
-
-        if ("admin".equals(user.getUsername())) {
-            return new ApiResponse(false, "Không thể xóa tài khoản Admin tối cao!");
-        }
-
-        userRepository.delete(user);
-        return new ApiResponse(true, "Đã xóa tài khoản '" + user.getUsername() + "' thành công");
+    public ApiResponse updateUserPermissions(Long id,List<String> permissions) {
+        User target=user(id);if(!target.getRoles().stream().anyMatch(r->r.getName().equals("ROLE_TEACHER"))||admin(target))
+            throw new IllegalArgumentException("Chỉ điều chỉnh các quyền chi tiết của tài khoản giáo viên.");
+        if(permissions==null)throw new IllegalArgumentException("Chọn danh sách quyền giáo viên.");
+        target.setRoles(roles("ROLE_TEACHER",permissionsFor("ROLE_TEACHER",permissions)));target.setSessionVersion(target.getSessionVersion()+1);
+        userRepository.save(target);return new ApiResponse(true,"Đã lưu quyền. Giáo viên cần đăng nhập lại để cập nhật menu.");
     }
-
-    // CRUD Bảng chữ cái
+    private boolean hasDomainData(Long id) {
+        return jdbc.queryForObject("SELECT (EXISTS(SELECT 1 FROM classes WHERE teacher_id=?) OR EXISTS(SELECT 1 FROM class_members WHERE student_id=?) OR EXISTS(SELECT 1 FROM submissions WHERE student_id=?) OR EXISTS(SELECT 1 FROM writing_practices WHERE student_id=?) OR EXISTS(SELECT 1 FROM learning_events WHERE student_id=?) OR EXISTS(SELECT 1 FROM learning_progress WHERE student_id=?) OR EXISTS(SELECT 1 FROM parent_student_links WHERE parent_id=? OR student_id=?) OR EXISTS(SELECT 1 FROM messages WHERE sender_id=? OR receiver_id=?) OR EXISTS(SELECT 1 FROM feedback_reports WHERE user_id=?) OR EXISTS(SELECT 1 FROM parent_link_invites WHERE student_id=?))",Boolean.class,id,id,id,id,id,id,id,id,id,id,id,id);
+    }
     @Transactional
-    public AlphabetLesson saveAlphabetLesson(AlphabetLesson lesson) {
-        return alphabetLessonRepository.save(lesson);
+    public ApiResponse deleteUser(Long actorId,Long id) {
+        lockAdministrators();User target=user(id);protectAdministrator(actorId,target);
+        if(hasDomainData(id))throw new IllegalArgumentException("Tài khoản đã có dữ liệu liên quan. Hãy khóa tài khoản thay vì xóa để giữ lịch sử.");
+        userRepository.delete(target);return new ApiResponse(true,"Đã xóa tài khoản chưa có dữ liệu học tập liên quan.");
     }
-
-    @Transactional
-    public void deleteAlphabetLesson(Long id) {
-        alphabetLessonRepository.deleteById(id);
-    }
-
-    @Autowired
-    private MediaStorageService mediaStorage;
-
-    public ApiResponse uploadAlphabetImage(org.springframework.web.multipart.MultipartFile file,String filename) {
-        return mediaStorage.store(file,"alphabet",filename);
-    }
-    public ApiResponse uploadAlphabetAudio(org.springframework.web.multipart.MultipartFile file,String filename) {
-        return mediaStorage.store(file,"audio",filename);
-    }
-    public ApiResponse uploadAlphabetExampleImage(org.springframework.web.multipart.MultipartFile file,String filename) {
-        return mediaStorage.store(file,"example_images",filename);
-    }
-
-    // Thống kê hệ thống
-    public Map<String, Object> getSystemStats() {
-        long totalUsers = userRepository.count();
-        long totalClasses = clazzRepository.count();
-        long totalPractices = writingPracticeRepository.count();
-        long totalFeedbacks = feedbackReportRepository.count();
-
-        // Đếm theo role
-        long studentCount = userRepository.findAll().stream().filter(u -> u.getRoles().stream().anyMatch(r -> "ROLE_STUDENT".equals(r.getName()))).count();
-        long teacherCount = userRepository.findAll().stream().filter(u -> u.getRoles().stream().anyMatch(r -> "ROLE_TEACHER".equals(r.getName()))).count();
-        long parentCount = userRepository.findAll().stream().filter(u -> u.getRoles().stream().anyMatch(r -> "ROLE_PARENT".equals(r.getName()))).count();
-
-        Map<String, Object> stats = new HashMap<>();
-        stats.put("totalUsers", totalUsers);
-        stats.put("totalClasses", totalClasses);
-        stats.put("totalPractices", totalPractices);
-        stats.put("totalFeedbacks", totalFeedbacks);
-        stats.put("studentCount", studentCount);
-        stats.put("teacherCount", teacherCount);
-        stats.put("parentCount", parentCount);
-        return stats;
-    }
-
     @Transactional
     public ApiResponse createUser(AdminCreateUserRequest request) {
-        if (userRepository.existsByUsername(request.getUsername())) {
-            return new ApiResponse(false, "Tên đăng nhập '" + request.getUsername() + "' đã tồn tại!");
-        }
-        if (userRepository.existsByEmail(request.getEmail())) {
-            return new ApiResponse(false, "Email '" + request.getEmail() + "' đã được sử dụng!");
-        }
-
-        User user = new User();
-        user.setUsername(request.getUsername());
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
-        user.setFullName(request.getFullName());
-        user.setEmail(request.getEmail());
-        user.setEnabled(true);
-
-        Set<Role> roles = new HashSet<>();
-        String roleName = "ROLE_" + request.getRole().toUpperCase();
-        Role primaryRole = roleRepository.findByName(roleName)
-                .orElseGet(() -> roleRepository.save(new Role(null, roleName)));
-        roles.add(primaryRole);
-
-        if (request.getPermissions() != null) {
-            for (String perm : request.getPermissions()) {
-                Role role = roleRepository.findByName(perm)
-                        .orElseGet(() -> roleRepository.save(new Role(null, perm)));
-                roles.add(role);
-            }
-        } else {
-            if ("TEACHER".equals(request.getRole().toUpperCase())) {
-                List<String> defaultTeacherPerms = List.of(
-                        "PERM_ASSIGN_HOMEWORK", "PERM_MANAGE_CLASSES",
-                        "PERM_VIEW_ALPHABET", "PERM_EDIT_ALPHABET"
-                );
-                for (String perm : defaultTeacherPerms) {
-                    Role role = roleRepository.findByName(perm)
-                            .orElseGet(() -> roleRepository.save(new Role(null, perm)));
-                    roles.add(role);
-                }
-            } else if ("PARENT".equals(request.getRole().toUpperCase())) {
-                List<String> defaultParentPerms = List.of(
-                        "PERM_PARENT_TRACKING"
-                );
-                for (String perm : defaultParentPerms) {
-                    Role role = roleRepository.findByName(perm)
-                            .orElseGet(() -> roleRepository.save(new Role(null, perm)));
-                    roles.add(role);
-                }
-            }
-        }
-
-        user.setRoles(roles);
-        userRepository.save(user);
-
-        return new ApiResponse(true, "Tạo người dùng '" + request.getUsername() + "' thành công!");
+        String role=roleName(request.getRole());List<String> permissions=permissionsFor(role,request.getPermissions());validatePassword(request.getPassword());
+        String username=request.getUsername().trim(),email=request.getEmail().trim();
+        if(!username.matches("[a-zA-Z0-9_.-]{3,20}"))throw new IllegalArgumentException("Tên đăng nhập dùng 3–20 chữ, số, dấu chấm, gạch dưới hoặc gạch ngang.");
+        if(userRepository.existsByUsername(username))throw new IllegalArgumentException("Tên đăng nhập đã tồn tại.");
+        if(userRepository.existsByEmail(email))throw new IllegalArgumentException("Email đã được sử dụng.");
+        User target=User.builder().username(username).email(email).fullName(request.getFullName().trim())
+            .enabled(true).password(passwordEncoder.encode(request.getPassword())).roles(roles(role,permissions)).build();
+        userRepository.save(target);return new ApiResponse(true,"Đã tạo tài khoản. Người dùng có thể đăng nhập ngay.");
     }
+    @Transactional
+    public AlphabetLesson saveAlphabetLesson(AlphabetLesson lesson) {
+        if(lesson==null)throw new IllegalArgumentException("Chọn học liệu cần sửa.");
+        if(lesson.getId()==null)throw new IllegalArgumentException("Bảng chữ đã cố định 29 chữ; chọn chữ hiện có để sửa.");
+        AlphabetLesson saved=alphabetLessonRepository.findById(lesson.getId()).orElseThrow(()->new IllegalArgumentException("Không tìm thấy chữ."));
+        if(!Objects.equals(saved.getLetter(),lesson.getLetter())||!LearningTrackingService.LETTERS.contains(lesson.getLetter().toUpperCase(Locale.ROOT)))
+            throw new IllegalArgumentException("Không đổi ký tự của bảng 29 chữ.");
+        if(lesson.getExampleWord()==null||lesson.getExampleWord().isBlank()||lesson.getExampleWord().length()>100||lesson.getPronunciationGuide()!=null&&lesson.getPronunciationGuide().length()>250)
+            throw new IllegalArgumentException("Kiểm tra từ ví dụ và hướng dẫn đọc.");
+        for(String url:List.of(Objects.toString(lesson.getAudioUrl(),""),Objects.toString(lesson.getImageUrl(),""),Objects.toString(lesson.getExampleAudioUrl(),"")))
+            if(url.length()>255||(!url.isBlank()&&!(url.startsWith("/")||url.matches("https?://.*")||url.matches("[\\p{L}\\p{N}_.-]+"))))throw new IllegalArgumentException("Đường dẫn học liệu chưa hợp lệ.");
+        saved.setExampleWord(lesson.getExampleWord().trim());saved.setPronunciationGuide(lesson.getPronunciationGuide());saved.setImageUrl(lesson.getImageUrl());
+        saved.setAudioUrl(lesson.getAudioUrl());saved.setExampleAudioUrl(lesson.getExampleAudioUrl());saved.setIsHidden(Boolean.TRUE.equals(lesson.getIsHidden()));
+        return alphabetLessonRepository.save(saved);
+    }
+    public void deleteAlphabetLesson(Long id){throw new IllegalArgumentException("Không xóa chữ khỏi hành trình 29 chữ. Có thể tạm ẩn khi cập nhật học liệu.");}
+    public ApiResponse uploadAlphabetImage(org.springframework.web.multipart.MultipartFile file,String name){return mediaStorage.store(file,"alphabet",name);}
+    public ApiResponse uploadAlphabetAudio(org.springframework.web.multipart.MultipartFile file,String name){return mediaStorage.store(file,"audio",name);}
+    public ApiResponse uploadAlphabetExampleImage(org.springframework.web.multipart.MultipartFile file,String name){return mediaStorage.store(file,"example_images",name);}
+    public Map<String,Object> getSystemStats(){return operations.overview();}
 }

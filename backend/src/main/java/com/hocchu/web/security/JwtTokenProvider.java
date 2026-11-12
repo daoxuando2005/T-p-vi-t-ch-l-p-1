@@ -35,6 +35,7 @@ public class JwtTokenProvider {
 
         return Jwts.builder()
                 .setSubject(Long.toString(userPrincipal.getId()))
+                .claim("sv", userPrincipal.getSessionVersion())
                 .setIssuedAt(new Date())
                 .setExpiration(expiryDate)
                 .signWith(getSigningKey(), SignatureAlgorithm.HS512)
@@ -67,5 +68,11 @@ public class JwtTokenProvider {
             log.error("Chuỗi Claims trong JWT trống");
         }
         return false;
+    }
+
+    public int getSessionVersion(String token) {
+        Object version = Jwts.parserBuilder().setSigningKey(getSigningKey()).build()
+                .parseClaimsJws(token).getBody().get("sv");
+        return version == null ? 0 : ((Number) version).intValue();
     }
 }

@@ -14,13 +14,14 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/teacher")
-@PreAuthorize("hasRole('TEACHER') or hasAuthority('PERM_ASSIGN_HOMEWORK') or hasAuthority('PERM_MANAGE_CLASSES')")
+@PreAuthorize("hasRole('TEACHER')")
 public class TeacherController {
 
     @Autowired
     private TeacherService teacherService;
 
     @PostMapping("/class")
+    @PreAuthorize("hasRole('TEACHER') and hasAuthority('PERM_MANAGE_CLASSES')")
     public ResponseEntity<ClassResponse> createClass(
             @CurrentUser UserPrincipal currentUser,
             @RequestParam String className,
@@ -41,6 +42,7 @@ public class TeacherController {
     }
 
     @PostMapping("/class/{classId}/students")
+    @PreAuthorize("hasRole('TEACHER') and hasAuthority('PERM_MANAGE_CLASSES')")
     public ResponseEntity<ApiResponse> addStudentToClass(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable Long classId,
@@ -53,6 +55,7 @@ public class TeacherController {
     }
 
     @DeleteMapping("/class/{classId}/students/{studentId}")
+    @PreAuthorize("hasRole('TEACHER') and hasAuthority('PERM_MANAGE_CLASSES')")
     public ResponseEntity<ApiResponse> removeStudentFromClass(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable Long classId,
@@ -61,6 +64,7 @@ public class TeacherController {
     }
 
     @PostMapping("/assignments")
+    @PreAuthorize("hasRole('TEACHER') and hasAuthority('PERM_ASSIGN_HOMEWORK')")
     public ResponseEntity<AssignmentResponse> createAssignment(
             @CurrentUser UserPrincipal currentUser,
             @Valid @RequestBody AssignmentRequest request) {
@@ -68,6 +72,7 @@ public class TeacherController {
     }
 
     @GetMapping("/class/{classId}/assignments")
+    @PreAuthorize("hasRole('TEACHER') and hasAuthority('PERM_ASSIGN_HOMEWORK')")
     public ResponseEntity<List<AssignmentResponse>> getClassAssignments(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable Long classId) {
@@ -75,6 +80,7 @@ public class TeacherController {
     }
 
     @GetMapping("/assignments/{assignmentId}/submissions")
+    @PreAuthorize("hasRole('TEACHER') and hasAuthority('PERM_ASSIGN_HOMEWORK')")
     public ResponseEntity<List<SubmissionResponse>> getAssignmentSubmissions(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable Long assignmentId) {
@@ -82,6 +88,7 @@ public class TeacherController {
     }
 
     @PostMapping("/submissions/{submissionId}/grade")
+    @PreAuthorize("hasRole('TEACHER') and hasAuthority('PERM_ASSIGN_HOMEWORK')")
     public ResponseEntity<ApiResponse> gradeSubmission(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable Long submissionId,
@@ -90,6 +97,7 @@ public class TeacherController {
     }
 
     @PutMapping("/assignments/{assignmentId}")
+    @PreAuthorize("hasRole('TEACHER') and hasAuthority('PERM_ASSIGN_HOMEWORK')")
     public ResponseEntity<AssignmentResponse> updateAssignment(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable Long assignmentId,
@@ -98,6 +106,7 @@ public class TeacherController {
     }
 
     @DeleteMapping("/assignments/{assignmentId}")
+    @PreAuthorize("hasRole('TEACHER') and hasAuthority('PERM_ASSIGN_HOMEWORK')")
     public ResponseEntity<ApiResponse> deleteAssignment(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable Long assignmentId) {
@@ -110,6 +119,7 @@ public class TeacherController {
     }
 
     @PutMapping("/class/{classId}")
+    @PreAuthorize("hasRole('TEACHER') and hasAuthority('PERM_MANAGE_CLASSES')")
     public ResponseEntity<ClassResponse> updateClass(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable Long classId,
@@ -119,6 +129,7 @@ public class TeacherController {
     }
 
     @DeleteMapping("/class/{classId}")
+    @PreAuthorize("hasRole('TEACHER') and hasAuthority('PERM_MANAGE_CLASSES')")
     public ResponseEntity<ApiResponse> deleteClass(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable Long classId) {
@@ -128,11 +139,13 @@ public class TeacherController {
     @Autowired private com.hocchu.web.service.MediaStorageService media;
 
     @PostMapping("/upload-image")
+    @PreAuthorize("hasRole('TEACHER') and hasAuthority('PERM_ASSIGN_HOMEWORK')")
     public ResponseEntity<ApiResponse> uploadQuizImage(@RequestParam("file") org.springframework.web.multipart.MultipartFile file,@RequestParam("filename") String filename) {
         var result=media.store(file,"example_images",filename);
         return result.getSuccess()?ResponseEntity.ok(result):ResponseEntity.badRequest().body(result);
     }
     @PostMapping("/upload-audio")
+    @PreAuthorize("hasRole('TEACHER') and hasAuthority('PERM_ASSIGN_HOMEWORK')")
     public ResponseEntity<ApiResponse> uploadQuizAudio(@RequestParam("file") org.springframework.web.multipart.MultipartFile file,@RequestParam("filename") String filename) {
         var result=media.store(file,"audio",filename);
         return result.getSuccess()?ResponseEntity.ok(result):ResponseEntity.badRequest().body(result);

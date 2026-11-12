@@ -8,6 +8,11 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [notice, setNotice] = useState(null);
     useEffect(() => {
+        const expired = () => { localStorage.removeItem('token'); setToken(null); setUser(null); setNotice('Phiên đăng nhập đã hết hiệu lực. Bạn đăng nhập lại để tiếp tục.'); };
+        window.addEventListener('vuihoc:session-expired', expired);
+        return () => window.removeEventListener('vuihoc:session-expired', expired);
+    }, []);
+    useEffect(() => {
         // Khôi phục trạng thái đăng nhập khi tải trang
         const storedToken = localStorage.getItem('token');
         if (storedToken) {
@@ -94,7 +99,8 @@ export const AuthProvider = ({ children }) => {
         const checkRole = role.startsWith('ROLE_') ? role : `ROLE_${role}`;
         return user.roles.includes(checkRole);
     };
-    return (<AuthContext.Provider value={{ user, token, loading, notice, login, register, verifyOtp, logout, hasRole }}>
+    const refreshUser = async () => { const reply = await api.get('/auth/me'); setUser(reply.data); };
+    return (<AuthContext.Provider value={{ user, token, loading, notice, login, register, verifyOtp, logout, hasRole, refreshUser }}>
       {children}
     </AuthContext.Provider>);
 };

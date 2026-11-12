@@ -23,7 +23,7 @@ public class StudentController {
     private StudentService studentService;
 
     @GetMapping("/alphabet")
-    @PreAuthorize("hasAnyRole('STUDENT', 'TEACHER', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('STUDENT', 'ADMIN') or (hasRole('TEACHER') and hasAuthority('PERM_VIEW_ALPHABET'))")
     public ResponseEntity<List<AlphabetLesson>> getAlphabetLessons() {
         return ResponseEntity.ok(studentService.getAlphabetLessons());
     }

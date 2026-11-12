@@ -1,0 +1,41 @@
+import { useEffect, useState } from 'react';
+import { GraduationCap, HeartHandshake, RefreshCw, Search, Unlink, Users } from 'lucide-react';
+import api from '../../services/api';
+import TeacherDialog from '../../components/TeacherDialog';
+import { teacherError, groupLabel } from '../../utils/teacherAssignments';
+
+export default function AdminClasses() {
+  const [classes, setClasses] = useState([]); const [links, setLinks] = useState([]); const [tab, setTab] = useState('classes'); const [query, setQuery] = useState('');
+  const [revision, setRevision] = useState(0); const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [notice, setNotice] = useState('');
+  const [selected, setSelected] = useState(null); const [detail, setDetail] = useState(null); const [detailLoading, setDetailLoading] = useState(false); const [detailError, setDetailError] = useState(''); const [confirm, setConfirm] = useState(null); const [busy, setBusy] = useState(false);
+  useEffect(() => { const abort = new AbortController(); setLoading(true); setError('');
+    Promise.all([api.get('/admin/classes', { signal: abort.signal }), api.get('/admin/family-links', { signal: abort.signal })]).then(([a, b]) => { setClasses(a.data); setLinks(b.data); })
+      .catch(e => { if (!abort.signal.aborted) setError(teacherError(e)); }).finally(() => { if (!abort.signal.aborted) setLoading(false); }); return () => abort.abort();
+  }, [revision]);
+  useEffect(() => { setDetail(null); setDetailError(''); if (!selected) return; const abort = new AbortController(); setDetailLoading(true);
+    api.get(`/admin/classes/${selected.id}`, { signal: abort.signal }).then(r => setDetail(r.data)).catch(e => { if (!abort.signal.aborted) setDetailError(teacherError(e)); }).finally(() => { if (!abort.signal.aborted) setDetailLoading(false); }); return () => abort.abort();
+  }, [selected]);
+  async function unlink() {
+    setBusy(true); setDetailError('');
+    try { const reply = await api.delete(`/admin/family-links/${confirm.id}`); if (!reply.data.success) throw new Error(reply.data.message); setNotice(reply.data.message); setConfirm(null); setRevision(n => n + 1); }
+    catch (e) { setDetailError(teacherError(e)); } finally { setBusy(false); }
+  }
+  const matches = values => values.some(value => String(value || '').toLocaleLowerCase('vi').includes(query.trim().toLocaleLowerCase('vi')));
+  const shownClasses = classes.filter(c => matches([c.name, c.teacherName, c.teacherUsername, c.inviteCode]));
+  const shownLinks = links.filter(l => matches([l.parentName, l.parentUsername, l.studentName, l.studentUsername]));
+  return <>
+    <div className="teacher-page-head"><div><span className="admin-eyebrow">NHÀ TRƯỜNG & GIA ĐÌNH</span><h1>Lớp học & gia đình</h1><p className="teacher-muted">Tra cứu đúng lớp, đúng người phụ trách và hỗ trợ kết nối gia đình.</p></div><button className="teacher-button" onClick={() => setRevision(n => n + 1)} disabled={loading}><RefreshCw size={18}/> Cập nhật</button></div>
+    {error && <p className="teacher-alert" role="alert">{error}</p>}{notice && <p className="teacher-success" role="status">{notice}</p>}
+    <div className="teacher-tabs admin-area-tabs"><button aria-pressed={tab === 'classes'} onClick={() => { setTab('classes'); setQuery(''); }}><GraduationCap size={19}/> Lớp học ({classes.length})</button><button aria-pressed={tab === 'family'} onClick={() => { setTab('family'); setQuery(''); }}><HeartHandshake size={19}/> Liên kết gia đình ({links.length})</button></div>
+    <section className="teacher-card"><label className="admin-search">{tab === 'classes' ? 'Tìm lớp hoặc giáo viên' : 'Tìm phụ huynh hoặc học sinh'}<div className="admin-search-input"><Search size={19}/><input value={query} onChange={e => setQuery(e.target.value)} placeholder={tab === 'classes' ? 'Tên lớp, giáo viên hoặc mã lớp…' : 'Tên hoặc tài khoản của phụ huynh, học sinh…'}/></div></label>
+      {loading ? <p role="status" className="teacher-loading">Đang tải dữ liệu…</p> : tab === 'classes' ? !shownClasses.length ? <div className="teacher-empty"><GraduationCap size={40}/><h3>Chưa tìm thấy lớp phù hợp</h3><p>Lớp do giáo viên tạo sẽ xuất hiện tại đây.</p></div> : <div className="admin-class-grid">{shownClasses.map(c => <article className="admin-class-card" key={c.id}><span className="admin-small-icon"><GraduationCap size={26}/></span><h3>{c.name}</h3><p className="teacher-muted">{c.teacherName || c.teacherUsername} · @{c.teacherUsername}</p><span className="teacher-chip">Mã lớp: {c.inviteCode}</span><dl><div><dt>Học sinh</dt><dd>{c.studentCount}</dd></div><div><dt>Bài đã giao</dt><dd>{c.assignmentCount}</dd></div><div><dt>Bài nộp</dt><dd>{c.submissionCount}</dd></div></dl><button className="teacher-button" onClick={() => setSelected(c)}>Xem lớp học</button></article>)}</div>
+      : !shownLinks.length ? <div className="teacher-empty"><HeartHandshake size={40}/><h3>Chưa tìm thấy liên kết</h3><p>Phụ huynh liên kết bằng mã do tài khoản học sinh cung cấp.</p></div> : <><p className="teacher-muted" style={{ marginTop: 18 }}>Chỉ gỡ khi đã xác minh liên kết bị sai. Gia đình cần mã mới từ học sinh để liên kết lại; tiến độ và bài nộp được giữ nguyên.</p><div className="teacher-table-scroll"><table className="teacher-table"><thead><tr><th>Phụ huynh</th><th>Học sinh</th><th>Trạng thái</th><th>Hỗ trợ</th></tr></thead><tbody>{shownLinks.map(link => <tr key={link.id}><td><strong>{link.parentName}</strong><small className="admin-block">@{link.parentUsername}</small></td><td><strong>{link.studentName}</strong><small className="admin-block">@{link.studentUsername}</small></td><td><span className={`admin-status ${link.status === 'APPROVED' ? 'active' : 'pending'}`}><i/>{link.status === 'APPROVED' ? 'Đã liên kết' : 'Đang chờ'}</span></td><td><button className="teacher-button" onClick={() => { setDetailError(''); setConfirm(link); }}><Unlink size={16}/> Gỡ liên kết</button></td></tr>)}</tbody></table></div></>}
+    </section>
+    {selected && <TeacherDialog title={selected.name} wide onClose={() => setSelected(null)}>{detailLoading ? <p role="status">Đang tải chi tiết lớp…</p> : detailError ? <p className="teacher-alert" role="alert">{detailError}</p> : detail && <>
+      <p>Giáo viên phụ trách: <strong>{detail.teacherName || detail.teacherUsername}</strong></p><p className="teacher-muted">Admin tra cứu để hỗ trợ; giáo viên tiếp tục giao bài và chấm bài trong không gian của mình.</p><h3 className="admin-section-title"><Users size={20}/> Học sinh ({detail.students.length})</h3>
+      {!detail.students.length ? <p className="teacher-muted">Lớp chưa có học sinh.</p> : <div className="teacher-table-scroll"><table className="teacher-table"><thead><tr><th>Học sinh</th><th>Tài khoản</th><th>Bài đã nộp</th></tr></thead><tbody>{detail.students.map(s => <tr key={s.id}><td>{s.fullName || s.username}</td><td>@{s.username}</td><td>{s.submittedCount}</td></tr>)}</tbody></table></div>}
+      <h3 className="admin-section-title">Bài tập đã giao ({detail.assignments.length})</h3>{!detail.assignments.length ? <p className="teacher-muted">Chưa có bài được giao.</p> : <div className="admin-assignment-list">{detail.assignments.map(a => <div key={a.id}><strong>{a.title}</strong><span>{groupLabel(a.contentType)} · {a.submissionCount} bài nộp</span></div>)}</div>}
+    </>}</TeacherDialog>}
+    {confirm && <TeacherDialog title="Gỡ liên kết gia đình?" busy={busy} onClose={() => setConfirm(null)}><p>Gỡ liên kết giữa <strong>{confirm.parentName}</strong> và <strong>{confirm.studentName}</strong>?</p><p className="teacher-muted">Phụ huynh này sẽ mất quyền xem báo cáo của học sinh. Bài học và tiến độ vẫn được giữ. Mã mời đang chờ của học sinh cũng hết hiệu lực.</p>{detailError && <p className="teacher-alert" role="alert">{detailError}</p>}<div className="teacher-form-actions"><button className="teacher-button" disabled={busy} onClick={() => setConfirm(null)}>Giữ liên kết</button><button className="teacher-button danger" disabled={busy} onClick={unlink}>{busy ? 'Đang gỡ…' : 'Xác nhận gỡ'}</button></div></TeacherDialog>}
+  </>;
+}

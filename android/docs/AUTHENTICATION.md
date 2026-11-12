@@ -27,7 +27,10 @@ Không dùng việc giải mã JWT ở client như bằng chứng token hợp l�
   hết hạn, sai vai trò hoặc cấu hình không hợp lệ phải đưa về đăng nhập phù hợp.
 - Đăng xuất phải hủy yêu cầu đang chờ, xóa phiên trên máy và giữ tiến độ học.
   Tuần tự hóa thao tác ghi/xóa để yêu cầu cũ không khôi phục phiên sau đăng xuất.
-- Không gọi đăng xuất cục bộ là thu hồi JWT trên mọi thiết bị: backend chưa có API này.
+- Đăng xuất cục bộ chỉ xóa phiên trên thiết bị. Các thao tác admin khóa/mở khóa,
+  đặt mật khẩu mới, đổi vai trò/quyền tăng `session_version`; backend từ chối JWT
+  phiên bản cũ bằng 401. Không xóa tiến độ/outbox khi xử lý phiên hết hiệu lực.
+  JWT cũ không có claim `sv` được hiểu là 0, giữ tương thích khi áp dụng V16.
 - Chỉ hiển thị lỗi đã ánh xạ an toàn; không đổ response body, stack trace hoặc token ra UI/log.
 
 ## Bảo vệ phiên

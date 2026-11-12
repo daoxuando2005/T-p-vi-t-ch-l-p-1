@@ -3,10 +3,12 @@ import { BookOpen, Volume2, Pencil, RefreshCw, EyeOff, Check } from 'lucide-reac
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import TeacherDialog from '../../components/TeacherDialog';
+import AdminCurriculumEditor from '../../components/AdminCurriculumEditor';
 import { LETTERS, mediaUrl, teacherError } from '../../utils/teacherAssignments';
 
-export default function TeacherAlphabetManagement() {
-  const { user } = useAuth(); const canEdit = user?.roles?.includes('PERM_EDIT_ALPHABET');
+export default function TeacherAlphabetManagement({ admin = false }) {
+  const { user } = useAuth(); const canEdit = user?.roles?.includes('ROLE_ADMIN') || user?.roles?.includes('PERM_EDIT_ALPHABET');
+  const canView = user?.roles?.includes('ROLE_ADMIN') || user?.roles?.includes('PERM_VIEW_ALPHABET');
   const [lessons, setLessons] = useState([]); const [selectedLetter, setSelectedLetter] = useState('A');
   const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [notice, setNotice] = useState('');
   const [edit, setEdit] = useState(null); const [busy, setBusy] = useState(false); const [imageFailed, setImageFailed] = useState(false);
@@ -18,7 +20,7 @@ export default function TeacherAlphabetManagement() {
     catch (e) { setError(teacherError(e)); } finally { setLoading(false); }
   }
   const stopAudio = useCallback(() => { voiceSequence.current++; audio.current?.pause(); window.speechSynthesis?.cancel(); }, []);
-  useEffect(() => { load(); return stopAudio; }, [stopAudio]);
+  useEffect(() => { if (canView) load(); return stopAudio; }, [stopAudio, canView]);
   useEffect(() => { setImageFailed(false); stopAudio(); }, [selectedLetter, stopAudio]);
   function fallback(text, sequence) {
     if (sequence !== voiceSequence.current) return;
@@ -53,6 +55,7 @@ export default function TeacherAlphabetManagement() {
     try { const reply = await api.post('/admin/alphabet', edit); setLessons(old => old.map(l => l.id === reply.data.id ? reply.data : l)); setEdit(null); setNotice('Đã cập nhật học liệu dùng chung. App sẽ nhận nội dung khi cập nhật học liệu.'); }
     catch (e) { setError(teacherError(e)); } finally { setBusy(false); }
   }
+  if (!canView) return <div className="teacher-empty"><BookOpen size={40}/><h1>Học liệu 29 chữ</h1><p>Tài khoản chưa có quyền xem học liệu. Bạn liên hệ quản trị viên để cập nhật quyền.</p></div>;
   return <>
     <div className="teacher-page-head"><div><h1>Học liệu 29 chữ cái</h1><p className="teacher-muted">Cùng một bảng chữ với app học sinh: nghe mẫu, làm quen từ và luyện viết.</p></div><button className="teacher-button" onClick={load} disabled={loading}><RefreshCw size={18}/> Tải lại</button></div>
     {error && <p className="teacher-alert" role="alert">{error}</p>}{notice && <p className="teacher-success" role="status">{notice}</p>}
@@ -68,6 +71,7 @@ export default function TeacherAlphabetManagement() {
           <div className="teacher-row"><button className="teacher-button primary" onClick={() => listen(selected.audioUrl, selected.pronunciationGuide || selectedLetter)}><Volume2 size={18}/> Nghe chữ</button><button className="teacher-button green" onClick={() => listen(selected.exampleAudioUrl, selected.exampleWord || selectedLetter)}><Volume2 size={18}/> Nghe từ ví dụ</button>{canEdit && <button className="teacher-button" onClick={() => { setError(''); setEdit({ ...selected }); }}><Pencil size={17}/> Chỉnh học liệu</button>}</div>
         </>}
       </section></div>
+    {admin && <AdminCurriculumEditor key={selectedLetter} letter={selectedLetter}/>}
     {edit && <TeacherDialog title={`Chỉnh học liệu chữ ${edit.letter}`} onClose={() => setEdit(null)} busy={busy}><form onSubmit={save} className="teacher-stack">
       <p className="teacher-muted">Đây là học liệu dùng chung. Cô kiểm tra kỹ từ ví dụ và phát âm trước khi lưu.</p>{error && <p className="teacher-alert" role="alert">{error}</p>}
       <label>Từ ví dụ<input value={edit.exampleWord || ''} maxLength={100} required onChange={e => setEdit({ ...edit, exampleWord: e.target.value })} disabled={busy}/></label>

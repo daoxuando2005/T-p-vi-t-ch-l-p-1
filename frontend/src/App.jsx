@@ -12,6 +12,9 @@ import TeacherAssignments from './pages/Teacher/Assignments';
 import TeacherAlphabetManagement from './pages/Teacher/AlphabetManagement';
 // Admin Pages
 import AdminDashboard from './pages/Admin/Dashboard';
+import AdminUsers from './pages/Admin/Users';
+import AdminClasses from './pages/Admin/Classes';
+import AdminSettings from './pages/Admin/Settings';
 const App = () => {
     return (<Router>
       <AuthProvider>
@@ -50,14 +53,16 @@ const App = () => {
             </ProtectedRoute>}/>
           <Route path="/admin/users" element={<ProtectedRoute allowedRole="ADMIN">
               <Layout>
-                <AdminDashboard />
+                <AdminUsers />
               </Layout>
             </ProtectedRoute>}/>
           <Route path="/admin/lessons" element={<ProtectedRoute allowedRole="ADMIN">
               <Layout>
-                <AdminDashboard />
+                <TeacherAlphabetManagement admin />
               </Layout>
             </ProtectedRoute>}/>
+          <Route path="/admin/classes" element={<ProtectedRoute allowedRole="ADMIN"><Layout><AdminClasses /></Layout></ProtectedRoute>}/>
+          <Route path="/admin/settings" element={<ProtectedRoute allowedRole="ADMIN"><Layout><AdminSettings /></Layout></ProtectedRoute>}/>
 
           {/* Fallback Redirect */}
           <Route path="*" element={<Navigate to="/login" replace/>}/>

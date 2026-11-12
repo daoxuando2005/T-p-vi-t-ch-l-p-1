@@ -62,9 +62,10 @@ public class SecurityConfig {
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(errors -> errors.authenticationEntryPoint((request, response, failure) ->
-                response.setStatus((request.getRequestURI().startsWith(request.getContextPath() + "/api/student/") || request.getRequestURI().startsWith(request.getContextPath() + "/api/parent/")) ? 401 : 403)))
+                response.setStatus(401)))
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**").permitAll()
+                .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
+                .requestMatchers("/api/auth/signin", "/api/auth/signup", "/api/auth/verify-otp").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .anyRequest().authenticated()
             );

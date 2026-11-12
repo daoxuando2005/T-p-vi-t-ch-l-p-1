@@ -25,6 +25,7 @@ public class UserPrincipal implements UserDetails {
     private String email;
     private String fullName;
     private boolean enabled;
+    private int sessionVersion;
     private Collection<? extends GrantedAuthority> authorities;
 
     public static UserPrincipal create(User user) {
@@ -39,6 +40,7 @@ public class UserPrincipal implements UserDetails {
                 user.getEmail(),
                 user.getFullName(),
                 user.getEnabled() != null && user.getEnabled(),
+                user.getSessionVersion(),
                 authorities
         );
     }

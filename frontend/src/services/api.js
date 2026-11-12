@@ -18,3 +18,10 @@ api.interceptors.request.use((config) => {
 });
 export default api;
 export { API_BASE_URL };
+api.interceptors.response.use(response => response, error => {
+    const stored = localStorage.getItem('token');
+    if (error.response?.status === 401 && stored && error.config?.headers?.Authorization === `Bearer ${stored}` && !error.config?.url?.startsWith('/auth/signin')) {
+        window.dispatchEvent(new Event('vuihoc:session-expired'));
+    }
+    return Promise.reject(error);
+});

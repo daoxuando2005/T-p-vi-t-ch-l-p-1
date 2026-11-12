@@ -23,6 +23,7 @@ public class AdminCreateUserRequest {
 
     @NotBlank(message = "Email không được để trống")
     @Email(message = "Email không đúng định dạng")
+    @Size(max = 100)
     private String email;
 
     @NotBlank(message = "Vai trò không được để trống")

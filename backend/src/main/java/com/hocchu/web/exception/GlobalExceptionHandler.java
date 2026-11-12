@@ -15,6 +15,14 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(org.springframework.security.authentication.AccountStatusException.class)
+    public ResponseEntity<ApiResponse> disabledAccount(org.springframework.security.authentication.AccountStatusException ex) {
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new ApiResponse(false,"Tài khoản hiện bị khóa hoặc chưa kích hoạt. Bạn liên hệ quản trị viên để được hỗ trợ."));
+    }
+    @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+    public ResponseEntity<ApiResponse> conflictingData(org.springframework.dao.DataIntegrityViolationException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(new ApiResponse(false,"Dữ liệu đã tồn tại hoặc đang được sử dụng. Hãy tải lại và kiểm tra trước khi lưu."));
+    }
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseEntity<ApiResponse> invalidContent(IllegalArgumentException ex) {
         return ResponseEntity.badRequest().body(new ApiResponse(false,ex.getMessage()));

@@ -4,6 +4,7 @@ import { existsSync } from 'node:fs';
 import { mkdtemp, rm, writeFile } from 'node:fs/promises';
 import { createServer } from 'node:net';
 import path from 'node:path';
+import { adminFixture, resetAdminFixture, adminReply } from './adminBrowserFixtures.mjs';
 
 // Opt-in browser check with an isolated profile and mocked APIs; never touches real accounts.
 const origin = new URL(process.env.WEB_TEST_URL || 'http://127.0.0.1:5173').origin;
@@ -31,6 +32,7 @@ let aiConfigured = false;
 let assignmentRows = [];
 let createdPayloads = [];
 let gradePayload = null;
+let adminFixtures = false;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function until(check) {
   const end = Date.now() + 15000;
@@ -109,6 +111,7 @@ try {
           if (/\/assignments\/\d+\/submissions$/.test(url.pathname)) result = [{ id: 811, studentId: 922, studentName: 'Bé Mây', score: 7, autoScore: 7, gradeSource: 'AUTO', submissionData: '{"sentences":[[0,1,2],[0,1,2],[0,1,2]]}', feedback: 'Đã đối chiếu', submittedAt: '2026-01-10T09:00:00' }];
           if (url.pathname === '/api/teacher/submissions/811/grade') { gradePayload = JSON.parse(request.postData); result = { success: true }; }
         }
+        if (adminFixtures) result = adminReply(request, url) ?? result;
         body = JSON.stringify(result);
       }
       await send('Fetch.fulfillRequest', { requestId, responseCode: request.method === 'OPTIONS' ? 204 : 200,
@@ -121,6 +124,16 @@ try {
   await send('Fetch.enable', { patterns: [{ urlPattern: 'http*' }] });
   await navigate('/login'); await pathname('/login');
   await until(() => evaluate('!!document.querySelector("form input[type=password]")'));
+  await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+  await writeFile('node_modules/.tmp/login-desktop.png', Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
+  await evaluate(`document.querySelector('button[aria-label="Hiện mật khẩu"]').click()`);
+  assert.equal(await evaluate('document.querySelector("#login-password").type'), 'text');
+  await evaluate(`document.querySelector('button[aria-label="Ẩn mật khẩu"]').click()`);
+  assert.equal(await evaluate('document.querySelector("#login-password").getAttribute("autocomplete")'), 'current-password');
+  await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
+  await writeFile('node_modules/.tmp/login-mobile.png', Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
+  await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
   assert.equal(await evaluate('document.body.textContent.includes("Android")'), false);
   await navigate('/register'); await pathname('/register');
   await until(() => evaluate('!!document.querySelector("form input[type=password]")'));
@@ -187,10 +200,68 @@ try {
   await evaluate('window.scrollTo(0,0)');
   assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, 'Teacher page must fit a phone');
   await writeFile('node_modules/.tmp/teacher-mobile.png', Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
+  teacherFixtures = false; adminFixtures = true; resetAdminFixture();
+  await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+  await reset(['ROLE_ADMIN']); await signIn(); await pathname('/admin');
+  await until(() => evaluate('document.body.textContent.includes("128")'));
+  await writeFile('node_modules/.tmp/admin-desktop.png', Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
+  await navigate('/admin/users?new=1'); await until(() => evaluate('!!document.querySelector("dialog[open] form")'));
+  await fill('dialog input[maxlength="50"]', 'Cô Hương'); await fill('dialog input[maxlength="20"]', 'teacher-new');
+  await fill('dialog input[type=email]', 'teacher-new@example.invalid'); await fill('dialog input[autocomplete="new-password"]', 'fixture-password');
+  await fill('dialog select', 'TEACHER');
+  assert.equal(await evaluate('document.querySelectorAll("dialog input[type=checkbox]:checked").length'), 4);
+  await evaluate('document.querySelector("dialog form").requestSubmit()');
+  await until(() => evaluate('!document.querySelector("dialog[open]")')); assert.equal(adminFixture.created, 1);
+  await fill('.admin-search input', 'Cô Mai');
+  await until(() => evaluate('document.querySelectorAll(".admin-user-table tbody tr").length === 1'));
+  await clickText('.admin-user-table button', 'Chi tiết'); await until(() => evaluate('!!document.querySelector("dialog form")'));
+  await fill('dialog .teacher-field-grid label:first-child input', 'Cô Mai đã cập nhật');
+  await evaluate('document.querySelector("dialog form").requestSubmit()'); await until(() => evaluate('!document.querySelector("dialog[open]")'));
+  assert.equal(adminFixture.users.find(u => u.id === 902).fullName, 'Cô Mai đã cập nhật');
+  await clickText('.admin-user-table button', 'Chi tiết'); await clickText('dialog button', 'Quyền giáo viên');
+  await until(() => evaluate('!!document.querySelector("dialog .admin-permissions")'));
+  await evaluate('document.querySelector("dialog input[type=checkbox]").click()');
+  await evaluate('document.querySelector("dialog form").requestSubmit()'); await until(() => evaluate('!document.querySelector("dialog[open]")'));
+  assert.equal(adminFixture.users.find(u => u.id === 902).roles.includes('PERM_MANAGE_CLASSES'), false);
+  await clickText('.admin-user-table button', 'Chi tiết'); await clickText('dialog button', 'Đặt mật khẩu mới');
+  await fill('dialog input[autocomplete="new-password"]', 'changed-fixture-password');
+  await evaluate('document.querySelector("dialog form").requestSubmit()'); await until(() => evaluate('!document.querySelector("dialog[open]")'));
+  assert.ok(requests.includes('/api/admin/users/902/password'));
+  await clickText('.admin-user-table button', 'Chi tiết'); await clickText('dialog button', 'Khóa tài khoản');
+  await evaluate('document.querySelector("dialog form").requestSubmit()'); await until(() => evaluate('!document.querySelector("dialog[open]")'));
+  assert.equal(adminFixture.users.find(u => u.id === 902).enabled, false);
+  await fill('.admin-search input', '');
+  await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, 'Admin table must scroll inside its card');
+  await writeFile('node_modules/.tmp/admin-users-mobile.png', Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
+  await evaluate(`document.querySelector('button[aria-label="Mở menu"]').click()`);
+  assert.equal(await evaluate('!!document.querySelector(".teacher-menu-dialog[open]")'), true);
+  await evaluate(`document.querySelector('button[aria-label="Đóng menu"]').click()`);
+  await navigate('/admin/classes'); await until(() => evaluate('document.body.textContent.includes("Lớp Hoa Hướng Dương")'));
+  await clickText('.admin-class-card button', 'Xem lớp học'); await until(() => evaluate('document.querySelector("dialog[open]")?.textContent.includes("Bé Mây")'));
+  await evaluate('document.querySelector("dialog .teacher-dialog-head button").click()');
+  await clickText('.admin-area-tabs button', 'Liên kết gia đình (1)'); await clickText('table button', 'Gỡ liên kết');
+  assert.equal(adminFixture.unlinked, 0); await clickText('dialog button', 'Giữ liên kết');
+  await clickText('table button', 'Gỡ liên kết'); await clickText('dialog button', 'Xác nhận gỡ');
+  await until(() => Promise.resolve(adminFixture.unlinked === 1));
+  await navigate('/admin/lessons'); await until(() => evaluate('!!document.querySelector(".admin-practice-grid")'));
+  await clickText('.admin-curriculum button', 'Chỉnh nội dung hành trình');
+  await fill('dialog fieldset:first-of-type input', 'cha');
+  await evaluate('document.querySelector("dialog form").requestSubmit()'); await until(() => Promise.resolve(adminFixture.curriculumSaved === 1));
+  await until(() => evaluate('!document.querySelector("dialog[open]")'));
+  await clickText('.teacher-row button', 'Chỉnh học liệu'); await fill('dialog input[maxlength="100"]', 'cha');
+  await evaluate('document.querySelector("dialog form").requestSubmit()'); await until(() => evaluate('!document.querySelector("dialog[open]")'));
+  assert.equal(adminFixture.lessons[0].exampleWord, 'cha');
+  await navigate('/admin/settings'); await until(() => evaluate('document.body.textContent.includes("Chưa cấu hình dịch vụ AI")'));
+  assert.equal(await evaluate('!!document.querySelector("input[type=password]")'), false, 'API keys stay on the backend');
+  await navigate('/admin'); await until(() => evaluate('document.body.textContent.includes("128")'));
+  assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
+  await writeFile('node_modules/.tmp/admin-mobile.png', Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
+  adminFixtures = false;
   await reset([]);
   for (const route of ['/student', '/student/practice', '/parent', '/parent/assignments']) { await navigate(route); await pathname('/login'); }
   assert.deepEqual(errors, [], 'Browser JavaScript/interception errors');
-  console.log('Browser checks passed: role routes, three assignment editors, grading, AI draft review, desktop and phone layout.');
+  console.log('Browser checks passed: login, teacher flows, admin accounts/permissions, classes/family support, learning content, settings and responsive layouts.');
 } finally {
   // Close the isolated browser's children before removing its temporary profile.
   if (socket?.readyState === WebSocket.OPEN) await send('Browser.close').catch(() => {});
