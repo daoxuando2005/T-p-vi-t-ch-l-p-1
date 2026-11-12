@@ -12,16 +12,17 @@ buộc dưới đây khi thay đổi chức năng liên quan. Không ghi kết q
   Android gọi API backend, không kết nối MySQL trực tiếp.
 - Website chỉ có khu vực giáo viên và admin; học sinh và phụ huynh sử dụng
   Android. Không khôi phục các trang web cũ khi thêm chức năng cho app.
-- Xác thực, tham gia lớp, nhận bài và nộp bài dùng backend thật. Bài viết chờ
-  giáo viên chấm; trắc nghiệm được backend tính điểm, nhận xét tải lại từ server.
+- Xác thực, tham gia lớp, nhận bài và nộp bài dùng backend thật. Backend tính
+  điểm ba loại bài; cô có thể xem và sửa điểm, app tải lại nguồn điểm/nhận xét.
 - Học liệu 29 chữ tải từ backend và lưu cache theo tài khoản; nội dung đóng gói
   là phương án dự phòng. Học liệu do dự án biên soạn, chưa theo bộ sách cụ thể.
 - Tiến độ hành trình được khôi phục và gộp với server khi mở phiên học sinh,
   không hạ chặng đã đạt. Bản nháp bài tập và nét tự luyện vẫn lưu trên thiết bị.
   Hoạt động thực có outbox để phụ huynh theo dõi khi kết nối trở lại.
 - Đăng ký/OTP trên Android được hoãn; dùng tài khoản đã có hoặc admin tạo.
-  Chưa có nhận dạng phát âm hoặc chấm nét viết tự động. Không trình bày lượt
-  luyện viết là điểm đánh giá chữ viết.
+  Có chấm độ bám mẫu chữ theo [HANDWRITING.md](HANDWRITING.md); lượt luyện không
+  phải điểm năng lực. Đọc chữ dùng nghe mẫu và tự đọc theo, không thu micro
+  hoặc nhận dạng giọng nói.
 
 ## Nền tảng xây dựng
 
@@ -64,6 +65,7 @@ Các đường dẫn sau nằm trong `app/src/main/java/com/hocchu/mobile/`.
 | `classroom/SubmissionReview.kt`, `ui/SubmissionReviewScreen.kt` | Đọc và hiển thị bài đã nộp cho học sinh/phụ huynh |
 | `ui/LearningMedia.kt` | Tải ảnh/phát âm thanh công khai có giới hạn, TTS dự phòng |
 | `ui/WritingScreen.kt`, `CopybookForm.kt`, `CopybookPaper.kt` | Nét vẽ, hình học mẫu chữ và giấy ô li |
+| `assessment/TraceScoring.kt`, `ui/InkAssessment.kt` | Đánh giá hình học nét viết ngoài main thread |
 | `ui/ExerciseScreens.kt` | Đố vui, ghép câu và phản hồi |
 | `ui/DesignSystem.kt`, `JourneyDecoration.kt`, `Speech.kt` | Giao diện dùng chung, trang trí và vòng đời TTS |
 

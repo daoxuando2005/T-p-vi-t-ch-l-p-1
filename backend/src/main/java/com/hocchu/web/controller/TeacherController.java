@@ -93,7 +93,7 @@ public class TeacherController {
     public ResponseEntity<AssignmentResponse> updateAssignment(
             @CurrentUser UserPrincipal currentUser,
             @PathVariable Long assignmentId,
-            @RequestBody AssignmentRequest request) {
+            @Valid @RequestBody AssignmentRequest request) {
         return ResponseEntity.ok(teacherService.updateAssignment(currentUser.getId(), assignmentId, request));
     }
 

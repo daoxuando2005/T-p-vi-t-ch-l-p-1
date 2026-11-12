@@ -57,6 +57,9 @@ Không ghi kết quả thực hiện ở đây.
   `Asia/Ho_Chi_Minh`, bao gồm đầu ngày và loại trừ đầu ngày kế tiếp.
 - Hôm nay hiển thị lượt đọc, lượt viết, câu luyện tập, bài đã nộp và dòng hoạt
   động có giờ. Nộp bài/điểm/nhận xét lấy từ dữ liệu thật của backend.
+- Xem bài nộp phân biệt điểm tự động với điểm cô chấm; khi cô sửa điểm, giữ
+  điểm tự động ban đầu và nhận xét độ bám mẫu từng chữ nếu server cung cấp.
+  Không suy diễn lượt nghe/đọc theo thành điểm phát âm trong báo cáo phụ huynh.
 - Tiến độ hiển thị chặng của đủ 29 chữ và số hoạt động trong bảy ngày đến ngày
   được chọn. Tiến độ chữ là tổng đã ghi nhận, không phải ảnh chụp lịch sử từng ngày.
 - Không tự tạo điểm viết, số phút học, kết quả nhận dạng giọng nói hay ngày học

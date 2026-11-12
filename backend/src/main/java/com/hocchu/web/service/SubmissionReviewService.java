@@ -13,7 +13,7 @@ public class SubmissionReviewService {
     @Autowired private SubmissionRepository submissions;
     @Autowired private LearningTrackingService tracking;
     public record Detail(Long id,Long studentId,String title,String type,String instructions,String assignmentContent,
-        String submissionData,Float score,String feedback,LocalDateTime submittedAt) {}
+        String submissionData,Float score,String feedback,LocalDateTime submittedAt,Float autoScore,String gradeSource,String assessmentData) {}
     @Transactional(readOnly=true)
     public Detail student(Long studentId,Long assignmentId) {
         return detail(submissions.findFirstByAssignmentIdAndStudentIdOrderByIdDesc(assignmentId,studentId)
@@ -29,6 +29,6 @@ public class SubmissionReviewService {
     private static Detail detail(Submission s) {
         var a=s.getAssignment();
         return new Detail(s.getId(),s.getStudent().getId(),a.getTitle(),a.getContentType(),a.getDescription(),a.getContentData(),
-            s.getSubmissionData(),s.getScore(),s.getFeedback(),s.getSubmittedAt());
+            s.getSubmissionData(),s.getScore(),s.getFeedback(),s.getSubmittedAt(),s.getAutoScore(),s.getGradeSource(),s.getAssessmentData());
     }
 }

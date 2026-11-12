@@ -104,7 +104,7 @@ internal fun rememberMediaSpeech(fallback:(String)->Unit):(String,String)->Unit 
                     media.setDataSource(ByteAudio(bytes))
                     media.setOnPreparedListener {if(player===it)it.start()}
                     media.setOnCompletionListener {it.release();if(player===it)player=null}
-                    media.setOnErrorListener {p,_,_->p.release();if(player===p)player=null;currentFallback(text);true}
+                    media.setOnErrorListener {p,_,_->if(player===p){p.release();player=null;currentFallback(text)};true}
                     media.prepareAsync()
                 }catch(e:CancellationException){throw e}catch(_:Exception){player?.release();player=null
                     Toast.makeText(context,"Chưa phát được âm thanh, đang dùng giọng đọc của máy.",Toast.LENGTH_SHORT).show();currentFallback(text)}

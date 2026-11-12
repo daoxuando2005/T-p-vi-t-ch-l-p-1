@@ -20,6 +20,9 @@ import com.hocchu.mobile.classroom.*
 import com.hocchu.mobile.data.AlphabetContent
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import androidx.compose.ui.platform.LocalContext
+import com.hocchu.mobile.assessment.TraceRating
+import kotlinx.coroutines.*
 
 @Composable
 fun ClassroomScreen(model: ClassroomViewModel?, speak: (String) -> Unit) {
@@ -145,6 +148,27 @@ private fun AssignmentScreen(state: ClassroomState, model: ClassroomViewModel, s
                 }
                 is AssignmentContent.Writing -> AssignmentWriting(content, state.draft, !state.submitting,
                     model::letter, model::drawing, speak)
+                is AssignmentContent.Sentence -> Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()),
+                    verticalArrangement=Arrangement.spacedBy(14.dp)) {
+                    content.questions.forEachIndexed { i,q->Paper {
+                        Text("Câu ${i+1}: ${q.prompt}",style=MaterialTheme.typography.titleMedium)
+                        TextButton(onClick={speak(q.words.joinToString(" "))}) {Icon(Icons.AutoMirrored.Rounded.VolumeUp,null);Text("Nghe câu mẫu")}
+                        val chosen=state.draft.sentences.getOrElse(i) {emptyList()}
+                        FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                            chosen.forEachIndexed {position,tile->WordChip(q.words[tile],selected=true,enabled=!state.submitting) {
+                                model.sentence(i,chosen.filterIndexed {n,_->n!=position})
+                            }}
+                        }
+                        if(chosen.isEmpty())Text("Chạm các thẻ từ bên dưới để xếp câu",color=Muted)
+                        val order=remember(assignment.id,i,q.words) {q.words.indices.shuffled(kotlin.random.Random(assignment.id.toInt()+i))}
+                        FlowRow(horizontalArrangement=Arrangement.spacedBy(6.dp),verticalArrangement=Arrangement.spacedBy(6.dp)) {
+                            order.forEach {tile->WordChip(q.words[tile],Modifier.testTag("sentence-$i-$tile"),enabled=!state.submitting&&tile !in chosen) {
+                                model.sentence(i,chosen+tile)
+                            }}
+                        }
+                        TextButton(onClick={model.sentence(i,emptyList())},enabled=!state.submitting&&chosen.isNotEmpty()){Text("Xếp lại")}
+                    }}
+                }
                 AssignmentContent.Unsupported -> Text("Nội dung bài chưa được hỗ trợ.")
             }
         }
@@ -167,10 +191,20 @@ private fun AssignmentWriting(content: AssignmentContent.Writing, draft: Assignm
     var active by remember(letter) { mutableStateOf(emptyList<Offset>()) }
     var pen by rememberSaveable { mutableIntStateOf(1) }
     var clear by remember { mutableStateOf(false) }
+    var rating by remember(letter,saved){mutableStateOf<TraceRating?>(null)}
+    var checking by remember {mutableStateOf(false)}
+    var gradeError by remember {mutableStateOf<String?>(null)}
+    val resources=LocalContext.current.resources;val scope=rememberCoroutineScope()
     Column(Modifier.fillMaxSize(), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        rating?.let {Text("Bám mẫu: ${it.score}/100 · ${it.feedback}",color=SkyDark)}
+        gradeError?.let {Text(it,color=MaterialTheme.colorScheme.error)}
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             TextButton(onClick = { changeLetter(index - 1) }, enabled = enabled && index > 0) { Text("Trước") }
             Text("Chữ $letter · ${index + 1}/${content.letters.size}")
+            TextButton(enabled=enabled&&ink.isNotEmpty()&&!checking,onClick={
+                checking=true;gradeError=null;scope.launch {try {rating=withContext(Dispatchers.Default){assessInk(resources,letter.lowercase(),ink)}}
+                    catch(e:CancellationException){throw e}catch(_:Exception){gradeError="Chưa kiểm tra được nét, bé thử lại nhé."}finally{checking=false}}
+            }){Text(if(checking)"Đang chấm…" else "Kiểm tra nét")}
             TextButton(onClick = { changeLetter(index + 1) }, enabled = enabled && index < content.letters.lastIndex) { Text("Tiếp") }
         }
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {

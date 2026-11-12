@@ -3,6 +3,8 @@ package com.hocchu.mobile
 import android.app.Application
 import android.view.ViewGroup
 import androidx.activity.compose.setContent
+import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.ui.test.*
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -19,7 +21,43 @@ import org.junit.Test
 import java.util.UUID
 
 class ClassroomScreenTest {
-    @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
+    @Test fun allThreeSentenceRowsMustUseAllTilesBeforeSubmitting() {
+        val user=AuthSession("https://sentence-ui-${UUID.randomUUID()}.test/","fixture.token.value",
+            UserAccount(7009,"fixture","Bé thử",setOf("ROLE_STUDENT")),System.currentTimeMillis()+600000)
+        val content="""{"sentences":[{"words":["Bé","yêu","mẹ."]},{"words":["Ba","đọc","sách."]},{"words":["Bé","đi","học."]}]}"""
+        var posted=false
+        val api=ClassroomApi(AuthTransport {url,_,_,body-> when {
+            url.endsWith("class/joined")->HttpReply(200,"""[{"id":12,"name":"Lớp ghép câu"}]""")
+            url.endsWith("assignments")->HttpReply(200,JSONArray().put(JSONObject().put("id",19).put("classId",12).put("title","Ghép câu của bé")
+                .put("contentType","SENTENCE").put("contentData",content).put("isSubmitted",posted)).toString())
+            url.endsWith("/submit")-> {val rows=JSONObject(JSONObject(body!!).getString("submissionData")).getJSONArray("sentences")
+                assertEquals(3,rows.length());for(i in 0..2)assertEquals(listOf(0,1,2),(0..2).map {rows.getJSONArray(i).getInt(it)})
+                posted=true;HttpReply(200,"""{"success":true}""")}
+            else->error("Unexpected request")
+        }})
+        val model=ClassroomViewModel(compose.activity.application as Application,api)
+        try {
+            compose.activityRule.scenario.onActivity {activity->
+                activity.enableEdgeToEdge();activity.findViewById<ViewGroup>(android.R.id.content).removeAllViews();model.connect(user) {}
+                activity.setContent {VuiHocTheme {ClassroomScreen(model) {}}}
+            }
+            compose.waitUntil(10000) {!model.state.loading}
+            compose.onNodeWithTag("assignment-group-Sentence").performScrollTo().performClick()
+            compose.onNodeWithTag("assignment-19").performScrollTo().performClick()
+            compose.waitUntil(10000) {!model.state.opening}
+            for(i in 0..2) {
+                compose.onNodeWithTag("submit-assignment").assertIsNotEnabled()
+                for(tile in 0..2)compose.onNodeWithTag("sentence-$i-$tile").performScrollTo().performClick()
+            }
+            compose.onNodeWithTag("submit-assignment").assertIsEnabled().performClick()
+            compose.onNodeWithTag("confirm-submit").performClick()
+            compose.waitUntil(10000) {posted&&!model.state.submitting&&model.state.selectedId==null}
+        }finally {
+            compose.runOnIdle {model.connect(null) {}}
+            compose.activity.deleteSharedPreferences(accountPreferences(user.server,user.account.id)+".classroom")
+        }
+    }
     @Test fun groupAndClassBadgesOnlyCountUnsubmittedWorkInThatClass() {
         val user=AuthSession("https://class-badges-${UUID.randomUUID()}.test/","fixture.token.value",
             UserAccount(7003,"fixture","Bé thử",setOf("ROLE_STUDENT")),System.currentTimeMillis()+600000)
@@ -34,7 +72,7 @@ class ClassroomScreenTest {
         val model=ClassroomViewModel(compose.activity.application as Application,api)
         try {
             compose.activityRule.scenario.onActivity {activity->
-                activity.findViewById<ViewGroup>(android.R.id.content).removeAllViews()
+                activity.enableEdgeToEdge();activity.findViewById<ViewGroup>(android.R.id.content).removeAllViews()
                 model.connect(user) {};activity.setContent {VuiHocTheme {ClassroomScreen(model) {}}}
             }
             compose.waitUntil(10000) {!model.state.loading}
@@ -68,7 +106,7 @@ class ClassroomScreenTest {
         val model = ClassroomViewModel(app,api)
         try {
             compose.activityRule.scenario.onActivity { activity ->
-                activity.findViewById<ViewGroup>(android.R.id.content).removeAllViews()
+                activity.enableEdgeToEdge();activity.findViewById<ViewGroup>(android.R.id.content).removeAllViews()
                 model.connect(user) {}
                 activity.setContent { VuiHocTheme { ClassroomScreen(model) {} } }
             }
@@ -120,7 +158,7 @@ class ClassroomScreenTest {
         val model = ClassroomViewModel(app, api)
         try {
             compose.activityRule.scenario.onActivity { activity ->
-                activity.findViewById<ViewGroup>(android.R.id.content).removeAllViews()
+                activity.enableEdgeToEdge();activity.findViewById<ViewGroup>(android.R.id.content).removeAllViews()
                 model.connect(user) {}
                 activity.setContent { VuiHocTheme { ClassroomScreen(model) {} } }
             }

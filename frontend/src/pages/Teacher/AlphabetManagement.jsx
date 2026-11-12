@@ -1,313 +1,80 @@
-import React, { useState, useEffect } from 'react';
-import api from '../../services/api';
-import { BookOpen, X, ShieldAlert, Check, AlertCircle, Volume2, Eye } from 'lucide-react';
-import { sortVietnameseAlphabet } from '../../utils/alphabetSort';
-import { getExampleEmoji } from '../../utils/getExampleEmoji';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { BookOpen, Volume2, Pencil, RefreshCw, EyeOff, Check } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
-const VIETNAMESE_ALPHABET = [
-    'a', 'ă', 'â', 'b', 'c', 'd', 'đ', 'e', 'ê', 'g', 'h', 'i', 'k', 'l', 'm',
-    'n', 'o', 'ô', 'ơ', 'p', 'q', 'r', 's', 't', 'u', 'ư', 'v', 'x', 'y'
-];
-const pronunciationMap = {
-    'a': 'a', 'ă': 'á', 'â': 'ớ', 'b': 'bờ', 'c': 'cờ', 'd': 'dờ', 'đ': 'đờ',
-    'e': 'e', 'ê': 'ê', 'g': 'gờ', 'h': 'hờ', 'i': 'i', 'k': 'cờ', 'l': 'lờ',
-    'm': 'mờ', 'n': 'nờ', 'o': 'o', 'ô': 'ô', 'ơ': 'ờ', 'p': 'pờ', 'q': 'quờ',
-    'r': 'rờ', 's': 'sờ', 't': 'tờ', 'u': 'u', 'ư': 'ừ', 'v': 'vờ', 'x': 'sờ', 'y': 'y'
-};
-const speakLetterTTS = (letter) => {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const textToSpeak = pronunciationMap[letter.toLowerCase()] || letter.toLowerCase();
-        const utterance = new SpeechSynthesisUtterance(textToSpeak);
-        utterance.lang = 'vi-VN';
-        utterance.rate = 0.65;
-        window.speechSynthesis.speak(utterance);
-    }
-};
-const speakWordTTS = (word) => {
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.cancel();
-        const utterance = new SpeechSynthesisUtterance(word.toLowerCase());
-        utterance.lang = 'vi-VN';
-        utterance.rate = 0.70;
-        window.speechSynthesis.speak(utterance);
-    }
-};
-const TeacherAlphabetManagement = () => {
-    const { user } = useAuth();
-    const [lessons, setLessons] = useState([]);
-    const [loading, setLoading] = useState(true);
-    // Modal Xem Chi Tiết
-    const [showDetailModal, setShowDetailModal] = useState(false);
-    const [selectedChar, setSelectedChar] = useState('');
-    // Toast notifications state
-    const [toast, setToast] = useState(null);
-    useEffect(() => {
-        if (toast) {
-            const timer = setTimeout(() => setToast(null), 3000);
-            return () => clearTimeout(timer);
-        }
-    }, [toast]);
-    const fetchLessons = async () => {
-        setLoading(true);
-        try {
-            const res = await api.get('/student/alphabet');
-            setLessons(sortVietnameseAlphabet(res.data));
-        }
-        catch (err) {
-            console.error(err);
-        }
-        finally {
-            setLoading(false);
-        }
-    };
-    useEffect(() => {
-        fetchLessons();
-    }, []);
-    const handleOpenDetailModal = (char) => {
-        setSelectedChar(char);
-        setShowDetailModal(true);
-    };
-    const hasAlphabetPerm = user?.roles?.includes('PERM_VIEW_ALPHABET') || user?.roles?.includes('ROLE_TEACHER') || user?.roles?.includes('ROLE_ADMIN');
-    const playLetterAudio = (char, audioUrl) => {
-        if (audioUrl) {
-            const audio = new Audio(audioUrl);
-            audio.play().catch((err) => {
-                console.warn('Lỗi phát âm thanh chữ cái, chuyển sang TTS:', err);
-                speakLetterTTS(char);
-            });
-        }
-        else {
-            speakLetterTTS(char);
-        }
-    };
-    const playExampleAudio = (exampleWord, exampleAudioUrl) => {
-        if (exampleAudioUrl) {
-            const audio = new Audio(exampleAudioUrl);
-            audio.play().catch((err) => {
-                console.warn('Lỗi phát âm thanh từ ví dụ, chuyển sang TTS:', err);
-                speakWordTTS(exampleWord || 'Từ ví dụ');
-            });
-        }
-        else {
-            speakWordTTS(exampleWord || 'Từ ví dụ');
-        }
-    };
-    if (!hasAlphabetPerm) {
-        return (<div className="bg-white border-2 border-rose-200 rounded-3xl p-8 max-w-2xl mx-auto my-12 text-center space-y-4 shadow-lg">
-        <div className="w-16 h-16 rounded-full bg-rose-100 text-rose-600 flex items-center justify-center mx-auto">
-          <ShieldAlert className="w-8 h-8"/>
-        </div>
-        <h2 className="text-xl font-black text-slate-800">Chưa Được Cấp Quyền</h2>
-        <p className="text-xs text-slate-600 font-medium leading-relaxed">
-          Tài khoản của bạn chưa được Admin cấp quyền xem học liệu chữ cái. Vui lòng liên hệ Admin hệ thống để mở quyền này.
-        </p>
-      </div>);
-    }
-    if (loading) {
-        return (<div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <div className="w-12 h-12 border-4 border-emerald-200 border-t-emerald-600 rounded-full animate-spin"></div>
-        <p className="text-sm font-bold text-emerald-800">Đang tải danh sách chữ cái...</p>
-      </div>);
-    }
-    const selectedLesson = lessons.find(l => l.letter.toLowerCase() === selectedChar.toLowerCase());
-    return (<div className="space-y-6 max-w-7xl mx-auto pb-12">
-      {/* Header section */}
-      <div className="bg-white border-2 border-sky-100 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b-2 border-sky-50">
-          <div>
-            <h2 className="text-xl sm:text-2xl font-black text-slate-800 flex items-center gap-2">
-              <BookOpen className="w-7 h-7 text-emerald-600"/> Bảng Chữ Cái Tiếng Việt
-            </h2>
-            <p className="text-xs font-bold text-slate-500 mt-1">
-              Bấm vào bất kỳ ô chữ nào bên dưới để <strong>Xem thông tin chi tiết & Nghe phát âm mẫu</strong>.
-            </p>
+import api from '../../services/api';
+import TeacherDialog from '../../components/TeacherDialog';
+import { LETTERS, mediaUrl, teacherError } from '../../utils/teacherAssignments';
+
+export default function TeacherAlphabetManagement() {
+  const { user } = useAuth(); const canEdit = user?.roles?.includes('PERM_EDIT_ALPHABET');
+  const [lessons, setLessons] = useState([]); const [selectedLetter, setSelectedLetter] = useState('A');
+  const [loading, setLoading] = useState(true); const [error, setError] = useState(''); const [notice, setNotice] = useState('');
+  const [edit, setEdit] = useState(null); const [busy, setBusy] = useState(false); const [imageFailed, setImageFailed] = useState(false);
+  const audio = useRef(null); const voiceSequence = useRef(0); const editRef = useRef(null); editRef.current = edit;
+  const selected = lessons.find(l => l.letter.toLocaleUpperCase('vi') === selectedLetter);
+  async function load() {
+    setLoading(true); setError('');
+    try { const reply = await api.get('/student/alphabet'); setLessons(Array.isArray(reply.data) ? reply.data : []); }
+    catch (e) { setError(teacherError(e)); } finally { setLoading(false); }
+  }
+  const stopAudio = useCallback(() => { voiceSequence.current++; audio.current?.pause(); window.speechSynthesis?.cancel(); }, []);
+  useEffect(() => { load(); return stopAudio; }, [stopAudio]);
+  useEffect(() => { setImageFailed(false); stopAudio(); }, [selectedLetter, stopAudio]);
+  function fallback(text, sequence) {
+    if (sequence !== voiceSequence.current) return;
+    if (!window.speechSynthesis) { setError('Trình duyệt chưa hỗ trợ đọc mẫu. Cô có thể tải file âm thanh cho học liệu.'); return; }
+    window.speechSynthesis.cancel(); const utterance = new SpeechSynthesisUtterance(text); utterance.lang = 'vi-VN'; utterance.rate = .8;
+    utterance.onerror = event => { if (sequence === voiceSequence.current && !['canceled', 'interrupted'].includes(event.error)) setError('Chưa phát được giọng đọc. Cô kiểm tra âm lượng hoặc bổ sung file âm thanh.'); }; window.speechSynthesis.speak(utterance);
+  }
+  function listen(source, text) {
+    const sequence = ++voiceSequence.current;
+    audio.current?.pause(); window.speechSynthesis?.cancel();
+    if (!source) { fallback(text, sequence); return; }
+    const player = new Audio(mediaUrl(source, 'audio')); audio.current = player;
+    let failed = false;
+    const recover = () => { if (!failed && sequence === voiceSequence.current) { failed = true; player.pause(); fallback(text, sequence); } };
+    player.onerror = recover; player.play().catch(recover);
+  }
+  async function upload(field, file) {
+    if (file.size > 8 * 1024 * 1024) { setError('Tệp tối đa 8 MB.'); return; }
+    const image = field === 'imageUrl'; const extension = file.name.split('.').pop().toLowerCase();
+    const allowed = image ? ['png', 'jpg', 'jpeg', 'webp'] : ['mp3', 'wav', 'ogg', 'm4a', 'mp4', 'webm', 'mpeg'];
+    if (!allowed.includes(extension)) { setError('Định dạng tệp chưa phù hợp.'); return; }
+    const id = edit.id; setBusy(true); setError('');
+    try {
+      const body = new FormData(); body.append('file', file); body.append('filename', `alphabet_${crypto.randomUUID()}.${extension}`);
+      const reply = await api.post(image ? '/admin/alphabet/upload-example-image' : '/admin/alphabet/upload-audio', body, { headers: { 'Content-Type': undefined } });
+      if (!reply.data.success) throw new Error(reply.data.message || 'Chưa lưu được tệp.');
+      if (editRef.current?.id === id) setEdit(old => ({ ...old, [field]: reply.data.message }));
+    } catch (e) { setError(teacherError(e)); } finally { setBusy(false); }
+  }
+  async function save(event) {
+    event.preventDefault(); setBusy(true); setError('');
+    try { const reply = await api.post('/admin/alphabet', edit); setLessons(old => old.map(l => l.id === reply.data.id ? reply.data : l)); setEdit(null); setNotice('Đã cập nhật học liệu dùng chung. App sẽ nhận nội dung khi cập nhật học liệu.'); }
+    catch (e) { setError(teacherError(e)); } finally { setBusy(false); }
+  }
+  return <>
+    <div className="teacher-page-head"><div><h1>Học liệu 29 chữ cái</h1><p className="teacher-muted">Cùng một bảng chữ với app học sinh: nghe mẫu, làm quen từ và luyện viết.</p></div><button className="teacher-button" onClick={load} disabled={loading}><RefreshCw size={18}/> Tải lại</button></div>
+    {error && <p className="teacher-alert" role="alert">{error}</p>}{notice && <p className="teacher-success" role="status">{notice}</p>}
+    {loading && <p className="teacher-loading" role="status">Đang tải học liệu…</p>}
+    <div className="teacher-two-column"><section className="teacher-card"><h2>Chọn chữ khám phá</h2><div className="teacher-letter-grid">{LETTERS.map(letter => <button key={letter} aria-pressed={selectedLetter === letter} onClick={() => setSelectedLetter(letter)}>{letter}</button>)}</div><p className="teacher-muted" style={{ marginTop: 20 }}>Học liệu này dùng ở màn Đọc chữ. Bài tập cô giao được soạn riêng trong Bài tập & chấm bài.</p></section>
+      <section className="teacher-card"><div className="teacher-row teacher-spread"><h2>Chữ {selectedLetter}</h2>{selected?.isHidden ? <span className="teacher-chip"><EyeOff size={15}/> Đang ẩn</span> : selected && <span className="teacher-chip quiz"><Check size={15}/> Đang sử dụng</span>}</div>
+        {!selected ? <div className="teacher-empty"><BookOpen size={40}/><p>Chưa nhận được học liệu cho chữ này. Cô thử tải lại nhé.</p></div> : <>
+          <div style={{ textAlign: 'center', padding: '20px 0' }}><div style={{ color: '#006590', fontSize: 90, fontWeight: 800 }}>{selectedLetter} {selectedLetter.toLocaleLowerCase('vi')}</div>
+            {selected.imageUrl && !imageFailed && <img style={{ maxHeight: 200, maxWidth: '100%', margin: '0 auto 16px', objectFit: 'contain' }} src={mediaUrl(selected.imageUrl)} alt={selected.exampleWord || `Ví dụ chữ ${selectedLetter}`} onError={() => setImageFailed(true)}/>}
+            {imageFailed && <p className="teacher-muted">Ảnh minh họa chưa tải được.</p>}<h3 style={{ fontSize: 25 }}>{selected.exampleWord || 'Chưa có từ ví dụ'}</h3>
           </div>
-        </div>
-
-        {/* Grid Display of 29 Vietnamese Letters */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-5 pt-2">
-          {VIETNAMESE_ALPHABET
-            .map((char) => {
-            const displayChar = `${char.toUpperCase()}${char.toLowerCase()}`;
-            const fileName = `${char.toLowerCase()}.png`;
-            const imgUrl = `/alphabet/${fileName}`;
-            const foundLesson = lessons.find(l => l.letter.toLowerCase() === char.toLowerCase());
-            const emoji = getExampleEmoji(foundLesson?.exampleWord, char); //'🌟';
-            return (<div key={char} onClick={() => handleOpenDetailModal(char)} className="bg-white border-2 border-sky-200 hover:border-emerald-500 rounded-2xl p-3 shadow-sm hover:shadow-xl transition-all flex flex-col items-center justify-between text-center space-y-3 relative group cursor-pointer">
-                  {/* Badge Tên file */}
-                  <div className="w-full flex items-center justify-between text-[10px] font-black text-slate-500 border-b border-sky-100 pb-1.5">
-                    <span className="uppercase">Học Liệu Chữ</span>
-                    <span className="font-mono text-emerald-700 font-bold">{fileName}</span>
-                  </div>
-
-                  {/* Preview Ảnh Vuông Đồng Nhất */}
-                  <div className="relative w-24 h-24 rounded-xl border-2 border-sky-300 overflow-hidden bg-white flex items-center justify-center p-1 shadow-inner group-hover:border-emerald-500 transition-colors">
-                    
-                    {/* Phần Emoji / Chữ dự phòng (Nằm dưới) */}
-                    <div className="absolute inset-0 flex flex-col items-center justify-center bg-sky-50/20 group-hover:bg-emerald-50/20 transition-colors">
-                      <div className="relative w-16 h-16 flex items-center justify-center">
-                        {/* Fallback Emoji (nằm dưới) */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <span className="text-2xl leading-none">{emoji}</span>
-                          <span className="text-xs font-black text-slate-800 font-mali leading-none mt-0.5">
-                            {displayChar}
-                          </span>
-                        </div>
-
-                        {/* Custom Image */}
-                        {foundLesson?.imageUrl && (<img src={foundLesson.imageUrl.startsWith('http') || foundLesson.imageUrl.startsWith('/') ? foundLesson.imageUrl : `/example_images/${foundLesson.imageUrl}`} alt={foundLesson.exampleWord} className="absolute inset-0 w-full h-full object-contain rounded-lg border border-slate-100 bg-white z-10" onError={(e) => {
-                        e.target.style.display = 'none';
-                    }}/>)}
-                      </div>
-                    </div>
-
-                    {/* Ảnh nét viết mẫu đè lên trên cùng */}
-                    <img src={imgUrl} alt={displayChar} className="absolute inset-0 w-full h-full object-fill crisp-letter-img pointer-events-none rounded-lg z-20 bg-white" onError={(e) => {
-                    e.target.style.display = 'none';
-                }}/>
-                  </div>
-
-                  {/* Hover view details button */}
-                  <div className="w-full pt-1 border-t border-sky-50 flex items-center justify-center gap-1.5 text-xs font-black text-sky-700 group-hover:text-emerald-600">
-                    <Eye className="w-3.5 h-3.5"/>
-                    <span>Xem chữ {displayChar}</span>
-                  </div>
-                </div>);
-        })}
-        </div>
-      </div>
-
-      {/* MODAL: XEM CHI TIẾT CHỮ CÁI */}
-      {showDetailModal && (<div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-4 animate-fade-in">
-          <div className="bg-white border-4 border-emerald-200 rounded-[32px] p-6 sm:p-8 max-w-4xl w-full shadow-2xl space-y-6 relative max-h-[90vh] overflow-y-auto">
-            <button onClick={() => setShowDetailModal(false)} className="absolute top-5 right-5 p-2 rounded-full bg-slate-100 text-slate-500 hover:bg-rose-100 hover:text-rose-600 transition-colors">
-              <X className="w-5 h-5"/>
-            </button>
-
-            <div className="flex items-center gap-3 border-b-2 border-emerald-50 pb-4">
-              <div className="w-16 h-12 rounded-2xl bg-gradient-to-tr from-emerald-400 to-teal-600 flex items-center justify-center text-white font-black text-2xl shadow-md uppercase tracking-wider">
-                {selectedChar.toUpperCase()}{selectedChar.toLowerCase()}
-              </div>
-              <div>
-                <h3 className="text-lg font-black text-slate-800">
-                  Chi Tiết Học Liệu Chữ Cái {selectedChar.toUpperCase()}{selectedChar.toLowerCase()}
-                </h3>
-                <p className="text-xs font-bold text-emerald-600">
-                  Xem thông tin âm thanh, hình ảnh phát âm mẫu
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                
-                {/* Ô CỘT TRÁI: PHẦN 1 - HỌC CHỮ CÁI */}
-                <div className="bg-sky-50/40 border-2 border-sky-100 p-5 rounded-[24px] space-y-4">
-                  <div className="flex items-center gap-2 border-b border-sky-200 pb-2">
-                    <span className="text-base">🅰️</span>
-                    <h4 className="text-sm font-black text-sky-850">PHẦN 1: HỌC CHỮ CÁI</h4>
-                  </div>
-
-                  <div>
-                    <span className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Tên Chữ</span>
-                    <div className="w-full bg-white border-2 border-sky-100 rounded-xl px-3 py-2 text-sm font-black text-slate-900">
-                      {selectedChar.toUpperCase()}{selectedChar.toLowerCase()}
-                    </div>
-                  </div>
-
-                  {selectedLesson?.pronunciationGuide && (<div>
-                      <span className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Hướng Dẫn Phát Âm</span>
-                      <div className="w-full bg-white border-2 border-sky-100 rounded-xl px-3 py-2 text-xs font-bold text-slate-700">
-                        {selectedLesson.pronunciationGuide}
-                      </div>
-                    </div>)}
-
-                  {/* Âm thanh phát âm mẫu */}
-                  <div className="bg-white border border-sky-200 rounded-2xl p-4 space-y-3 shadow-sm">
-                    <span className="text-[11px] font-black text-sky-850 block">🎙️ Phát Âm Chữ Cái</span>
-                    <button type="button" onClick={() => playLetterAudio(selectedChar, selectedLesson?.audioUrl)} className="px-4 py-2.5 bg-sky-600 hover:bg-sky-500 text-white rounded-xl text-xs font-black flex items-center gap-2 active:scale-95 transition-all shadow-md cursor-pointer">
-                      <Volume2 className="w-4 h-4"/> Nghe phát âm chữ cái
-                    </button>
-                  </div>
-
-                  {/* Nét chữ mẫu */}
-                  <div className="bg-white border border-sky-200 rounded-2xl p-4 space-y-3 shadow-sm">
-                    <span className="text-[11px] font-black text-slate-700 block">📷 Ảnh Nét Chữ Mẫu</span>
-                    <div className="w-24 h-24 rounded-xl border-2 border-emerald-400 bg-white overflow-hidden flex items-center justify-center p-1 shadow-inner relative mx-auto">
-                      <div className="absolute inset-0 flex items-center justify-center text-2xl font-black text-slate-800 font-mali">
-                        {selectedChar.toLowerCase()}
-                      </div>
-                      <img src={`/alphabet/${selectedChar.toLowerCase()}.png`} alt={selectedChar} className="absolute inset-0 w-full h-full object-fill crisp-letter-img bg-white z-10 p-1" onError={(e) => {
-                e.target.style.display = 'none';
-            }}/>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Ô CỘT PHẢI: PHẦN 2 - TỪ VÍ DỤ MINH HỌA */}
-                <div className="bg-amber-50/40 border-2 border-amber-100 p-5 rounded-[24px] space-y-4">
-                  <div className="flex items-center gap-2 border-b border-amber-200 pb-2">
-                    <span className="text-base">🎈</span>
-                    <h4 className="text-sm font-black text-amber-900">PHẦN 2: TỪ VÍ DỤ MINH HỌA</h4>
-                  </div>
-
-                  <div>
-                    <span className="block text-xs font-black text-slate-500 uppercase tracking-wider mb-1">Từ Ví Dụ Minh Họa</span>
-                    <div className="w-full bg-white border-2 border-amber-100 rounded-xl px-3 py-2 text-sm font-black text-slate-900">
-                      {selectedLesson?.exampleWord || `Chữ ${selectedChar}`}
-                    </div>
-                  </div>
-
-                  {/* Âm thanh từ ví dụ */}
-                  <div className="bg-white border border-amber-200 rounded-2xl p-4 space-y-3 shadow-sm">
-                    <span className="text-[11px] font-black text-amber-900 block">🎙️ Phát Âm Từ Ví Dụ</span>
-                    <button type="button" onClick={() => playExampleAudio(selectedLesson?.exampleWord, selectedLesson?.exampleAudioUrl)} className="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-white rounded-xl text-xs font-black flex items-center gap-2 active:scale-95 transition-all shadow-md cursor-pointer">
-                      <Volume2 className="w-4 h-4"/> Nghe phát âm từ ví dụ
-                    </button>
-                  </div>
-
-                  {/* Ảnh từ ví dụ */}
-                  <div className="bg-white border border-amber-200 rounded-2xl p-4 space-y-3 shadow-sm">
-                    <span className="text-[11px] font-black text-amber-900 block">🖼️ Ảnh Minh Họa Cho Từ Ví Dụ</span>
-                    <div className="w-24 h-24 rounded-xl border-2 border-amber-200 bg-white overflow-hidden flex items-center justify-center p-1 shadow-inner relative mx-auto">
-                      <div className="absolute inset-0 flex items-center justify-center text-3xl bg-amber-50/10">
-                        {getExampleEmoji(selectedLesson?.exampleWord, selectedChar)}
-                      </div>
-
-                      {selectedLesson?.imageUrl && (<img src={selectedLesson.imageUrl.startsWith('http') || selectedLesson.imageUrl.startsWith('/') ? selectedLesson.imageUrl : `/example_images/${selectedLesson.imageUrl}`} alt="Example word preview" className="absolute inset-0 w-full h-full object-contain bg-white z-10 p-1" onError={(e) => {
-                    e.target.style.display = 'none';
-                }}/>)}
-                    </div>
-                  </div>
-                </div>
-
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-sky-100">
-                <button type="button" onClick={() => setShowDetailModal(false)} className="px-6 py-2.5 rounded-xl bg-slate-100 text-slate-700 font-extrabold text-xs hover:bg-slate-200 transition-colors cursor-pointer">
-                  Đóng
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>)}
-
-      {/* Floating Toast Notification */}
-      {toast && (<div className="fixed bottom-6 right-6 z-[9999] flex items-center gap-3 px-5 py-4 rounded-2xl shadow-xl border animate-fade-in bg-white border-sky-100 max-w-sm">
-          <div className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 ${toast.type === 'success' ? 'bg-emerald-100 text-emerald-600' : 'bg-rose-100 text-rose-600'}`}>
-            {toast.type === 'success' ? (<Check className="w-4.5 h-4.5"/>) : (<AlertCircle className="w-4.5 h-4.5"/>)}
-          </div>
-          <div className="space-y-0.5">
-            <h4 className="text-xs font-black text-slate-800">
-              {toast.type === 'success' ? 'Thành công' : 'Có lỗi xảy ra'}
-            </h4>
-            <p className="text-[11px] font-bold text-slate-500">{toast.message}</p>
-          </div>
-          <button onClick={() => setToast(null)} className="p-1 rounded-full text-slate-400 hover:bg-slate-50 transition-colors cursor-pointer self-start">
-            <X className="w-3.5 h-3.5"/>
-          </button>
-        </div>)}
-    </div>);
-};
-export default TeacherAlphabetManagement;
+          {selected.pronunciationGuide && <p className="teacher-muted">{selected.pronunciationGuide}</p>}
+          <div className="teacher-row"><button className="teacher-button primary" onClick={() => listen(selected.audioUrl, selected.pronunciationGuide || selectedLetter)}><Volume2 size={18}/> Nghe chữ</button><button className="teacher-button green" onClick={() => listen(selected.exampleAudioUrl, selected.exampleWord || selectedLetter)}><Volume2 size={18}/> Nghe từ ví dụ</button>{canEdit && <button className="teacher-button" onClick={() => { setError(''); setEdit({ ...selected }); }}><Pencil size={17}/> Chỉnh học liệu</button>}</div>
+        </>}
+      </section></div>
+    {edit && <TeacherDialog title={`Chỉnh học liệu chữ ${edit.letter}`} onClose={() => setEdit(null)} busy={busy}><form onSubmit={save} className="teacher-stack">
+      <p className="teacher-muted">Đây là học liệu dùng chung. Cô kiểm tra kỹ từ ví dụ và phát âm trước khi lưu.</p>{error && <p className="teacher-alert" role="alert">{error}</p>}
+      <label>Từ ví dụ<input value={edit.exampleWord || ''} maxLength={100} required onChange={e => setEdit({ ...edit, exampleWord: e.target.value })} disabled={busy}/></label>
+      <label>Hướng dẫn đọc<textarea value={edit.pronunciationGuide || ''} maxLength={250} onChange={e => setEdit({ ...edit, pronunciationGuide: e.target.value })} disabled={busy}/></label>
+      <label className="teacher-inline-check"><input type="checkbox" checked={!!edit.isHidden} onChange={e => setEdit({ ...edit, isHidden: e.target.checked })} disabled={busy}/> Tạm ẩn chữ khi đang cập nhật</label>
+      {[['imageUrl', 'Ảnh từ ví dụ'], ['audioUrl', 'Âm thanh đọc chữ'], ['exampleAudioUrl', 'Âm thanh từ ví dụ']].map(([field, label]) => <div className="teacher-form-section" key={field}><label>{label}<input type="file" accept={field === 'imageUrl' ? 'image/png,image/jpeg,image/webp' : 'audio/*'} disabled={busy} onChange={e => { const file = e.target.files?.[0]; if (file) upload(field, file); e.target.value = ''; }}/></label>{edit[field] && <div style={{ marginTop: 12 }}>{field === 'imageUrl' ? <img src={mediaUrl(edit[field])} className="teacher-question-image" alt="Ảnh đang chọn"/> : <audio controls src={mediaUrl(edit[field], 'audio')}/>}<button type="button" className="teacher-button" style={{ marginTop: 8 }} onClick={() => setEdit({ ...edit, [field]: '' })} disabled={busy}>Bỏ tệp này</button></div>}</div>)}
+      <div className="teacher-form-actions"><button type="button" className="teacher-button" onClick={() => setEdit(null)} disabled={busy}>Hủy</button><button className="teacher-button primary" disabled={busy}>{busy ? 'Đang lưu…' : 'Lưu học liệu'}</button></div>
+    </form></TeacherDialog>}
+  </>;
+}

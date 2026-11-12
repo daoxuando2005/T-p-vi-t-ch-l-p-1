@@ -10,16 +10,21 @@ import java.time.LocalDateTime;
 public class AssignmentRequest {
 
     @NotBlank(message = "Tiêu đề bài tập không được để trống")
+    @jakarta.validation.constraints.Size(max=160,message="Tiêu đề tối đa 160 ký tự")
     private String title;
 
+    @jakarta.validation.constraints.Size(max=2000,message="Hướng dẫn tối đa 2000 ký tự")
     private String description;
 
     @NotBlank(message = "Loại bài tập (contentType) không được để trống")
-    private String contentType; // 'QUIZ' hoặc 'WRITING'
+    private String contentType; // WRITING, QUIZ, SENTENCE
 
-    private String contentData; // Lưu cấu trúc câu hỏi JSON hoặc chữ cái mẫu
+    @NotBlank(message="Nội dung bài tập không được để trống")
+    @jakarta.validation.constraints.Size(max=200000,message="Nội dung bài tập quá dài")
+    private String contentData;
 
     private LocalDateTime dueDate;
 
+    @jakarta.validation.constraints.Positive(message="Lớp học chưa hợp lệ")
     private Long classId;
 }

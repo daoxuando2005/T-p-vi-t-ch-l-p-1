@@ -4,6 +4,8 @@ import android.content.SharedPreferences
 import android.graphics.Bitmap
 import android.view.ViewGroup
 import androidx.activity.compose.setContent
+import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
@@ -21,11 +23,12 @@ import org.junit.Test
 
 /** Isolated preferences: tests must never erase or advance the child's real journey. */
 class LetterJourneyTest {
-    @get:Rule val compose = createAndroidComposeRule<MainActivity>()
+    @get:Rule val compose = createAndroidComposeRule<ComponentActivity>()
     private lateinit var prefs: SharedPreferences
     private lateinit var store: LessonProgressStore
     private lateinit var prefsName: String
     @Before fun prepare() {
+        compose.activityRule.scenario.onActivity {it.enableEdgeToEdge()}
         prefsName = "journey-test-${UUID.randomUUID()}"
         prefs = compose.activity.getSharedPreferences(prefsName, 0)
         store = LessonProgressStore(prefs)
@@ -43,6 +46,7 @@ class LetterJourneyTest {
         compose.onNodeWithTag("journey-letter-$index").performClick()
     }
     private fun click(text: String) {
+        compose.waitUntil(10000) {compose.onAllNodesWithText(text,substring=false).fetchSemanticsNodes().isNotEmpty()}
         val node = compose.onNodeWithText(text, substring = false)
         if (compose.onAllNodes(hasText(text, substring = false) and hasAnyAncestor(hasScrollAction()))
                 .fetchSemanticsNodes().isNotEmpty()) node.performScrollTo()

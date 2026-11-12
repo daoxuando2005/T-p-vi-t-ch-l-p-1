@@ -11,7 +11,7 @@ O, Ô, Ơ, P, Q, R, S, T, U, Ư, V, X, Y. Không dùng bảng 26 chữ tiếng A
 
 | Chặng | Điều kiện tiếp tục |
 | --- | --- |
-| Đọc | Nghe mẫu rồi xác nhận đã đọc theo; chưa nhận dạng giọng nói |
+| Đọc | Nghe mẫu rồi xác nhận đã đọc theo; không thu micro |
 | Viết | Hoàn thành 2 lượt luyện có nét; được viết thêm sau đó |
 | Điền từ | Hoàn thành 3 từ/cụm từ, chọn đúng và tiếp tục từng câu |
 | Ghép câu | Hoàn thành 3 câu mẫu bằng các thẻ từ |
@@ -19,6 +19,8 @@ O, Ô, Ơ, P, Q, R, S, T, U, Ư, V, X, Y. Không dùng bảng 26 chữ tiếng A
 
 Không coi lượt luyện viết hoặc xác nhận đọc theo là điểm đánh giá năng lực.
 Không tăng tiến độ vì chỉ mở màn hình, chọn sai đáp án hoặc lặp sự kiện cũ.
+Điểm bám mẫu viết là phản hồi luyện tập, không thay bộ đếm hai lượt hoặc đánh
+dấu thành thạo tự động. Không suy diễn xác nhận đọc theo thành kết quả phát âm.
 
 ## Quy tắc mở khóa và ôn tập
 

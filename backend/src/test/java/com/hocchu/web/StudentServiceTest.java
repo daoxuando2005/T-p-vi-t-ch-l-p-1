@@ -38,6 +38,7 @@ public class StudentServiceTest {
     @Mock
     private NotificationRepository notificationRepository;
 
+    @org.mockito.Spy private com.hocchu.web.service.HandwritingAssessment handwriting = new com.hocchu.web.service.HandwritingAssessment();
     @InjectMocks
     private StudentService studentService;
 
@@ -86,11 +87,11 @@ public class StudentServiceTest {
         request.setSubmissionData("anything");
         assertThrows(org.springframework.security.access.AccessDeniedException.class,
                 () -> studentService.submitAssignment(1L, 2L, request));
-        verifyNoInteractions(submissionRepository, notificationRepository);
+        verify(submissionRepository,never()).save(any());verifyNoInteractions(notificationRepository);
     }
 
     @Test
-    void writingIsStoredForTeacherWithoutInventedScore() {
+    void writingUsesActualGeometryAndRetainsEvidence() {
         prepare(assignment("WRITING", "A"));
         SubmissionRequest request = new SubmissionRequest();
         request.setSubmissionData("[{\"letter\":\"A\",\"image\":\""+png()+"\"}]");
@@ -98,9 +99,11 @@ public class StudentServiceTest {
         assertTrue(response.getSuccess());
         var saved = org.mockito.ArgumentCaptor.forClass(Submission.class);
         verify(submissionRepository).save(saved.capture());
-        assertNull(saved.getValue().getScore());
+        assertNotNull(saved.getValue().getScore());
+        assertEquals("AUTO",saved.getValue().getGradeSource());
+        assertTrue(saved.getValue().getScore()<3.5f);
         assertEquals(request.getSubmissionData(), saved.getValue().getSubmissionData());
-        assertTrue(saved.getValue().getFeedback().contains("Chờ giáo viên"));
+        assertTrue(saved.getValue().getFeedback().contains("bám mẫu"));
     }
 
     @Test
@@ -109,7 +112,7 @@ public class StudentServiceTest {
         SubmissionRequest request = new SubmissionRequest();
         request.setSubmissionData("{\"answers\":[]}");
         assertFalse(studentService.submitAssignment(1L, 2L, request).getSuccess());
-        verifyNoInteractions(submissionRepository, notificationRepository);
+        verify(submissionRepository,never()).save(any());verifyNoInteractions(notificationRepository);
     }
 
     @Test
@@ -118,7 +121,7 @@ public class StudentServiceTest {
         SubmissionRequest request = new SubmissionRequest();
         request.setSubmissionData("[{\"letter\":\"A\",\"image\":\"not-an-image\"}]");
         assertFalse(studentService.submitAssignment(1L, 2L, request).getSuccess());
-        verifyNoInteractions(submissionRepository, notificationRepository);
+        verify(submissionRepository,never()).save(any());verifyNoInteractions(notificationRepository);
     }
 
     private Assignment assignment(String type, String data) {
@@ -133,7 +136,7 @@ public class StudentServiceTest {
     @Test void submittedWritingMustCoverExactlyTheAssignedLetters() {
         prepare(assignment("WRITING","{\"letters\":[\"A\",\"Ă\"]}"));var request=new SubmissionRequest();
         request.setSubmissionData("[{\"letter\":\"A\",\"image\":\""+png()+"\"}]");
-        assertFalse(studentService.submitAssignment(1L,2L,request).getSuccess());verifyNoInteractions(submissionRepository,notificationRepository);
+        assertFalse(studentService.submitAssignment(1L,2L,request).getSuccess());verify(submissionRepository,never()).save(any());verifyNoInteractions(notificationRepository);
     }
     @Test void retryDoesNotOverwriteTeachersGradeOrDeleteHistory() {
         prepare(assignment("WRITING","A"));var request=new SubmissionRequest();request.setSubmissionData("[{\"letter\":\"A\",\"image\":\""+png()+"\"}]");

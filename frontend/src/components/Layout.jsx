@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { BookOpen, LogOut, Home, ClipboardList, Shield, X, GraduationCap } from 'lucide-react';
+import TeacherLayout from './TeacherLayout';
 const Layout = ({ children }) => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
@@ -13,6 +14,7 @@ const Layout = ({ children }) => {
     };
     if (!user)
         return null;
+    if(user.roles.includes('ROLE_TEACHER') && !user.roles.includes('ROLE_ADMIN')) return <TeacherLayout>{children}</TeacherLayout>;
     const getMenuItems = () => {
         const hasPerm = (perm) => user.roles.includes(perm) || user.roles.includes('ROLE_ADMIN');
         if (user.roles.includes('ROLE_TEACHER') && !user.roles.includes('ROLE_ADMIN')) {

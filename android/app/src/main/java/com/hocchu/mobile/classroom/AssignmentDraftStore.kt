@@ -20,7 +20,9 @@ class AssignmentDraftStore(private val prefs: SharedPreferences) {
                         require(it.x.isFinite() && it.y.isFinite() && it.x in 0f..1f && it.y in 0f..1f) }
                 }, o.getInt("pen").coerceIn(0, 2)) }
         }
-        AssignmentDraft(answers, strokes, json.optInt("letterIndex").coerceAtLeast(0))
+        val sentenceData=json.optJSONArray("sentences")?:JSONArray()
+        val sentences=(0 until sentenceData.length()).map {i->val row=sentenceData.getJSONArray(i);(0 until row.length()).map {row.getInt(it)}}
+        AssignmentDraft(answers, strokes, json.optInt("letterIndex").coerceAtLeast(0),sentences)
     } catch (_: Exception) { AssignmentDraft() } }
     fun save(assignment: SchoolAssignment, draft: AssignmentDraft) {
         val drawings = JSONObject()
@@ -32,7 +34,8 @@ class AssignmentDraftStore(private val prefs: SharedPreferences) {
             })
         }
         val data = JSONObject().put("content", assignment.fingerprint).put("answers", JSONArray(draft.answers))
-            .put("drawings", drawings).put("letterIndex", draft.letterIndex).toString()
+            .put("drawings", drawings).put("letterIndex", draft.letterIndex)
+            .put("sentences",JSONArray().apply {draft.sentences.forEach {put(JSONArray(it))}}).toString()
         if (!prefs.edit().putString("assignment.${assignment.id}", data).commit()) throw ClassroomFailure("Chưa lưu được bài đang làm trên máy.")
     }
     fun clear(id: Long) {

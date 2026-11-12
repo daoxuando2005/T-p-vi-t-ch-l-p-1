@@ -46,6 +46,27 @@ class ClassroomProtocolTest {
         assertThrows(ClassroomFailure::class.java) { ClassroomApi(AuthTransport { _, _, _, _ -> HttpReply(403, "") }).classes(user) }
     }
 
+    @Test fun sentenceDraftKeepsRepeatedTilesAndServerReviewKeepsGradeProvenance() {
+        val item=assignment("SENTENCE","""{"sentences":[{"words":["bé","và","bé","học."]}]}""")
+        val content=item.content as AssignmentContent.Sentence
+        assertFalse(AssignmentDraft(sentences=listOf(listOf(0,1,0,3))).ready(content))
+        assertFalse(AssignmentDraft(sentences=listOf(listOf(0,1,2))).ready(content))
+        val draft=AssignmentDraft(sentences=listOf(listOf(2,1,0,3)))
+        assertTrue(draft.ready(content))
+        val name="sentence-fixture-${UUID.randomUUID()}"
+        try {
+            val store=AssignmentDraftStore(app.getSharedPreferences(name,0))
+            store.save(item,draft);assertEquals(draft,store.load(item))
+            assertEquals(listOf(2,1,0,3),(0..3).map {JSONObject(submissionData(item,draft)).getJSONArray("sentences").getJSONArray(0).getInt(it)})
+            val review=parseSubmissionReview(JSONObject().put("id",8).put("studentId",701).put("title","Ghép câu").put("type","SENTENCE")
+                .put("assignmentContent",item.rawContent).put("submissionData",submissionData(item,draft))
+                .put("score",8.5).put("autoScore",10).put("gradeSource","TEACHER").toString())
+            assertEquals("bé và bé học.",review.answers.single().selected)
+            assertEquals(review.answers.single().expected,review.answers.single().selected)
+            assertEquals(10.0,review.autoScore!!,0.0);assertEquals("TEACHER",review.gradeSource)
+        } finally {app.deleteSharedPreferences(name)}
+    }
+
     @Test fun draftSurvivesReloadIsIsolatedAndRejectsChangedAssignmentContent() {
         val user = student()
         val names = listOf(accountPreferences(user.server, 701) + ".classroom", accountPreferences(user.server, 702) + ".classroom")

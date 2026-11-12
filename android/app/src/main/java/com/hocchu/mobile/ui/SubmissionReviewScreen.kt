@@ -25,8 +25,15 @@ internal fun SubmissionReviewDialog(state:ReviewState,close:()->Unit,retry:()->U
                 state.review?.let {review->Column(Modifier.weight(1f).widthIn(max=880.dp).fillMaxWidth().verticalScroll(rememberScrollState()),verticalArrangement=Arrangement.spacedBy(14.dp)) {
                     Text(review.title,style=MaterialTheme.typography.headlineSmall)
                     if(review.instructions.isNotBlank())Text(review.instructions)
-                    Text(if(review.score==null)"Đang chờ cô chấm bài" else "Điểm: ${review.score}/10",color=SkyDark)
-                    if(review.feedback.isNotBlank())Paper {Text("Nhận xét của cô",style=MaterialTheme.typography.titleMedium);Text(review.feedback)}
+                    Text(if(review.score==null)"Đang chờ cô chấm bài" else when(review.gradeSource) {
+                        "AUTO"->"Điểm tự động: ${review.score}/10";"TEACHER"->"Điểm cô chấm: ${review.score}/10";else->"Điểm: ${review.score}/10"
+                    },color=SkyDark)
+                    if(review.gradeSource=="TEACHER"&&review.autoScore!=null)Text("Điểm tự động ban đầu: ${review.autoScore}/10",color=Muted)
+                    review.writingRatings.forEach {r->Paper {
+                        Text("Chữ ${r.letter}: bám mẫu ${r.score}/100",style=MaterialTheme.typography.titleMedium)
+                        Text(r.feedback);Text("Phủ mẫu ${r.coverage}/100 · Trong vùng mẫu ${r.precision}/100",style=MaterialTheme.typography.bodySmall,color=Muted)
+                    }}
+                    if(review.feedback.isNotBlank())Paper {Text(if(review.gradeSource=="AUTO")"Nhận xét tự động" else "Nhận xét của cô",style=MaterialTheme.typography.titleMedium);Text(review.feedback)}
                     Text("Nộp lúc: ${review.submittedAt.replace('T',' ')}",style=MaterialTheme.typography.bodySmall,color=Muted)
                     review.answers.forEachIndexed {i,answer->Paper {
                         Text("Câu ${i+1}: ${answer.question}",style=MaterialTheme.typography.titleMedium)

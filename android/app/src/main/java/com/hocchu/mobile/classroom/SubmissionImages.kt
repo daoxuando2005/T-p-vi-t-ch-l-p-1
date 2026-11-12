@@ -14,6 +14,7 @@ internal fun submissionData(assignment: SchoolAssignment, draft: AssignmentDraft
     require(draft.ready(assignment.content))
     return when(val content = assignment.content) {
         is AssignmentContent.Quiz -> JSONObject().put("answers", JSONArray(draft.answers)).toString()
+        is AssignmentContent.Sentence -> JSONObject().put("sentences",JSONArray().apply {draft.sentences.forEach {put(JSONArray(it))}}).toString()
         is AssignmentContent.Writing -> JSONArray().apply {
             content.letters.forEach { letter -> put(JSONObject().put("letter", letter)
                 .put("image", renderWritingImage(draft.drawings.getValue(letter)))) }

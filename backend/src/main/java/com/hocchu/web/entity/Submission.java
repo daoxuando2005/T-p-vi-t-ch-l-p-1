@@ -30,6 +30,9 @@ public class Submission {
     private String submissionData; // Lưu chuỗi JSON câu trả lời trắc nghiệm hoặc ảnh vẽ base64
 
     private Float score;
+    @Column(name="auto_score") private Float autoScore;
+    @Column(name="grade_source",length=20) private String gradeSource;
+    @Lob @Column(name="assessment_data",columnDefinition="LONGTEXT") private String assessmentData;
 
     @Column(columnDefinition = "TEXT")
     private String feedback;

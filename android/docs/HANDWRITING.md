@@ -52,8 +52,28 @@ có dấu về cùng chiều cao thân chữ không dấu. Chiều rộng và đ
   Có thể dùng TTS khi âm thanh bật; không chặn thao tác nếu không có giọng đọc.
 - Nút tiếp tục phải theo đúng ngữ cảnh: lượt viết/học tiếp trong hành trình,
   hoặc chữ kế tiếp khi tự luyện. Không làm mất tiến độ đã xác nhận.
-- Chưa có thuật toán chấm đúng nét, nhận dạng chữ hay hoạt ảnh viết từng nét.
-  Không tạo phần trăm/điểm giả hoặc coi có nét vẽ là viết đúng mẫu.
+- Khi hoàn thành, chấm độ bám mẫu ngoài main thread rồi hiển thị kết quả và
+  hướng dẫn. Chỉ dùng kết quả nếu bản nét/chữ vẫn khớp lần yêu cầu; sửa/xóa nét
+  không được nhận điểm trả về muộn của bản trước.
+
+## Đánh giá tự động
+
+- `TraceScoring` và `HandwritingAssessment` dùng cùng hình học HP001 và hệ ô li.
+  Chuẩn hóa về 256 × 256 pixel, tách mực tối khỏi nền, cho sai số 5 pixel.
+- Độ phủ là phần mẫu nằm gần mực; độ chính xác vị trí là phần mực nằm gần mẫu.
+  Điểm 0–100 lấy trung bình điều hòa hai giá trị, hạn chế tô kín bảng để lấy điểm.
+  Thành phần rời của mẫu có từ 5 pixel và được phủ dưới 45% được coi là thiếu;
+  khi thiếu thành phần, giảm một nửa điểm để xét dấu phụ/chấm i.
+- Đây là phép so hình học với mẫu chữ đang luyện, không phải OCR, đánh giá
+  thứ tự/hướng từng nét, lực bút hoặc chứng nhận viết đúng theo sư phạm.
+  Không dùng điểm này để tự thay đổi điều kiện mở khóa hành trình.
+- Tự luyện hiển thị thang 100. Bài lớp học gửi PNG mực thật, backend chấm lại
+  từng chữ, lấy trung bình và đổi sang thang 10; không nhận điểm do client gửi.
+- Backend giữ `autoScore`, `gradeSource=AUTO`, dữ liệu độ phủ/vị trí/thiếu nét
+  trong `assessmentData`. Cô chấm lại thì `gradeSource=TEACHER`, giữ điểm tự động
+  ban đầu và ảnh bài làm. Bài cũ không có dữ liệu đánh giá không được tạo điểm giả.
+- Giữ đồng nhất font ở Android và backend. Khi đổi hình học, cập nhật fixture
+  đối chiếu và kiểm tra cả chữ dấu, chữ có đuôi, mẫu trắng, nét lệch và tô kín.
 
 ## Nguồn và giới hạn
 

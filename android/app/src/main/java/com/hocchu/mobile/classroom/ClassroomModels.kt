@@ -6,9 +6,11 @@ import org.json.JSONObject
 
 data class SchoolClass(val id: Long, val name: String, val teacher: String)
 data class QuizQuestion(val text: String, val options: List<String>, val spoken: String,val imageUrl:String="",val audioUrl:String="")
+data class SentenceQuestion(val prompt: String, val words: List<String>)
 sealed interface AssignmentContent {
     data class Quiz(val questions: List<QuizQuestion>) : AssignmentContent
     data class Writing(val letters: List<String>) : AssignmentContent
+    data class Sentence(val questions: List<SentenceQuestion>) : AssignmentContent
     data object Unsupported : AssignmentContent
 }
 data class SchoolAssignment(val id: Long, val classId: Long, val className: String, val title: String,
@@ -21,12 +23,17 @@ data class SchoolAssignment(val id: Long, val classId: Long, val className: Stri
 data class DraftPoint(val x: Float, val y: Float)
 data class DraftStroke(val points: List<DraftPoint>, val pen: Int)
 data class AssignmentDraft(val answers: List<String> = emptyList(),
-    val drawings: Map<String, List<DraftStroke>> = emptyMap(), val letterIndex: Int = 0) {
+    val drawings: Map<String, List<DraftStroke>> = emptyMap(), val letterIndex: Int = 0,
+    val sentences: List<List<Int>> = emptyList()) {
     fun ready(content: AssignmentContent): Boolean = when(content) {
         is AssignmentContent.Quiz -> answers.size == content.questions.size &&
             answers.indices.all { answers[it] in content.questions[it].options }
         is AssignmentContent.Writing -> content.letters.all { letter ->
             drawings[letter].orEmpty().any { it.points.isNotEmpty() } }
+        is AssignmentContent.Sentence -> sentences.size==content.questions.size && sentences.indices.all { i->
+            val tokens=sentences[i];val size=content.questions[i].words.size
+            tokens.size==size&&tokens.toSet().size==size&&tokens.all {it in 0 until size}
+        }
         AssignmentContent.Unsupported -> false
     }
 }
@@ -55,6 +62,14 @@ internal object ClassroomJson {
     }
     fun content(type: String, raw: String): AssignmentContent = try {
         when(type.uppercase()) {
+            "SENTENCE" -> {
+                val items=JSONObject(raw).getJSONArray("sentences");require(items.length() in 1..20)
+                AssignmentContent.Sentence((0 until items.length()).map { i->
+                    val item=items.getJSONObject(i);val tokens=item.getJSONArray("words");require(tokens.length() in 2..12)
+                    SentenceQuestion(text(item,"prompt").ifBlank {"Ghép các từ thành câu"},
+                        (0 until tokens.length()).map {tokens.getString(it).also {word->require(word.isNotBlank()&&word.length<=80)}})
+                })
+            }
             "QUIZ" -> {
                 val a = JSONArray(raw)
                 require(a.length() in 1..100)

@@ -15,6 +15,10 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ApiResponse> invalidContent(IllegalArgumentException ex) {
+        return ResponseEntity.badRequest().body(new ApiResponse(false,ex.getMessage()));
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, String>> handleValidationExceptions(MethodArgumentNotValidException ex) {

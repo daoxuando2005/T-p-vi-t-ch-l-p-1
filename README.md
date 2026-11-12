@@ -123,7 +123,9 @@ và sao lưu cùng dữ liệu ứng dụng. Backend đọc thêm tài sản cũ
 *   Học sinh mở app Android, vào mục **Tập viết**, chọn một chữ cái.
 *   Bảng ô ly chuẩn tập viết sẽ hiện ra cùng chữ cái mẫu mờ nhạt nằm phía sau.
 *   Dùng ngón tay hoặc bút trên điện thoại/tablet Android để luyện theo chữ mẫu.
-*   Lượt tập viết ghi nhận việc luyện tập, chưa nhận dạng hoặc chấm độ chính xác nét chữ. Bài viết được giao chờ giáo viên chấm.
+*   Hoàn thành lượt viết để xem điểm bám mẫu, độ phủ và gợi ý sửa nét. Phép so hình học chưa đánh giá thứ tự nét hoặc thay thế nhận xét của cô.
+*   Bài cô giao được backend chấm lại từ ảnh thật. Cô xem bài, sửa điểm/nhận xét; hệ thống giữ điểm tự động ban đầu.
+*   Ở màn Đọc chữ, bé nghe mẫu rồi tự đọc theo; không thu âm hoặc nhận dạng giọng nói.
 
 ### 3. Liên kết Phụ huynh & Xem biểu đồ học tập của con
 *   Đăng nhập tài khoản học sinh trong app, mở **Hồ sơ → Liên kết phụ huynh** để lấy mã dùng một lần có hiệu lực 30 phút.
@@ -131,3 +133,10 @@ và sao lưu cùng dữ liệu ứng dụng. Backend đọc thêm tài sản cũ
 *   Chọn con và ngày ở **Hôm nay** để xem lượt đọc, viết, câu luyện tập, bài đã nộp và dòng hoạt động. **Tiến độ** hiển thị 29 chữ và hoạt động bảy ngày.
 
 Chat đã được gỡ khỏi Android, website và backend. Hệ thống không mở endpoint WebSocket; các migration cũ và lịch sử dữ liệu được giữ nguyên.
+
+### 4. Website giáo viên và trợ lý soạn bài
+
+Website dùng React/JavaScript, màu và font thống nhất với app học sinh. Cô quản lý
+lớp, học sinh, học liệu 29 chữ và giao đủ Tập viết chữ, Đố vui ghép chữ, Ghép câu.
+Xem [hướng dẫn website](frontend/README.md) để chạy, kiểm thử và cấu hình trợ lý AI.
+Trợ lý chỉ tạo bản nháp để cô duyệt; chưa có API key thì soạn thủ công/kho mẫu vẫn dùng được.

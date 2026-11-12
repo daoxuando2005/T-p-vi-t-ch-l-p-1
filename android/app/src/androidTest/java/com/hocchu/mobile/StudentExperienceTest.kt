@@ -5,6 +5,8 @@ import android.content.res.Configuration
 import android.graphics.Bitmap
 import android.view.ViewGroup
 import androidx.activity.compose.setContent
+import androidx.activity.ComponentActivity
+import androidx.activity.enableEdgeToEdge
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.test.*
@@ -22,10 +24,12 @@ import org.junit.runner.RunWith
 @RunWith(AndroidJUnit4::class)
 class StudentExperienceTest {
     @get:Rule
-    val compose = createAndroidComposeRule<MainActivity>()
+    val compose = createAndroidComposeRule<ComponentActivity>()
 
     @Before fun showStudentFixture() {
         compose.activityRule.scenario.onActivity { activity ->
+            activity.enableEdgeToEdge()
+            activity.deleteSharedPreferences("test.student.ui")
             activity.findViewById<ViewGroup>(android.R.id.content).removeAllViews()
             activity.setContent { VuiHocTheme { StudentApp(preferencesName = "test.student.ui") } }
         }
@@ -98,13 +102,14 @@ class StudentExperienceTest {
         compose.onNodeWithTag("destination-1").performClick()
         compose.onNodeWithText("Tập viết chữ C").performScrollTo().performClick()
         drawLetter("c")
-        compose.onNodeWithText("Con viết xong").performClick()
+        finishWriting()
         compose.onNodeWithText("Bé đã rất chăm chỉ!").assertIsDisplayed()
+        compose.onNodeWithText("Độ bám mẫu",substring=true).assertExists()
         capture("writing-completion.png", dialog = true)
         compose.onNodeWithText("Viết lại").performClick()
         compose.onNodeWithText("Con viết xong").assertIsNotEnabled()
         drawLetter("c")
-        compose.onNodeWithText("Con viết xong").performClick()
+        finishWriting()
         compose.onNodeWithText("Tiếp tục").performClick()
         compose.onNodeWithContentDescription("Bảng ô ly tập viết chữ d").assertIsDisplayed()
         compose.onNodeWithText("Con viết xong").assertIsNotEnabled()
@@ -119,7 +124,7 @@ class StudentExperienceTest {
         compose.onNodeWithTag("letter-picker").performScrollToIndex(28)
         compose.onNodeWithText("Y", substring = false).performClick()
         drawLetter("y")
-        compose.onNodeWithText("Con viết xong").performClick()
+        finishWriting()
         compose.onNodeWithText("Luyện từ chữ A").performClick()
         compose.onNodeWithContentDescription("Bảng ô ly tập viết chữ a").assertIsDisplayed()
         compose.onNodeWithText("Con viết xong").assertIsNotEnabled()
@@ -129,6 +134,11 @@ class StudentExperienceTest {
         compose.onNodeWithContentDescription("Bảng ô ly tập viết chữ $letter").performTouchInput {
             swipe(Offset(width * .25f, height * .3f), Offset(width * .7f, height * .7f))
         }
+    }
+
+    private fun finishWriting() {
+        compose.onNodeWithText("Con viết xong").performClick()
+        compose.waitUntil(10000) {compose.onAllNodesWithText("Độ bám mẫu",substring=true).fetchSemanticsNodes().isNotEmpty()}
     }
 
     @Test

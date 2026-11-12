@@ -20,6 +20,9 @@ public class SubmissionResponse {
     private String studentName;
     private String submissionData;
     private Float score;
+    private Float autoScore;
+    private String gradeSource;
+    private String assessmentData;
     private String feedback;
     private LocalDateTime submittedAt;
 }

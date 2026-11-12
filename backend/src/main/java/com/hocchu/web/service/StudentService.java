@@ -43,6 +43,7 @@ public class StudentService {
     private NotificationRepository notificationRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
+    @Autowired private HandwritingAssessment handwriting;
 
     public List<AlphabetLesson> getAlphabetLessons() {
         return alphabetLessonRepository.findAll();
@@ -187,7 +188,14 @@ public class StudentService {
             return new ApiResponse(false, "Dữ liệu bài nộp không hợp lệ hoặc quá lớn.");
         }
 
+        var existing=submissionRepository.findFirstByAssignmentIdAndStudentIdOrderByIdDesc(assignmentId,studentId);
+        if(existing.isPresent()) {
+            if(Objects.equals(existing.get().getSubmissionData(),request.getSubmissionData()))
+                return new ApiResponse(true,"Bài đã được tiếp nhận trước đó. Điểm và nhận xét của cô được giữ nguyên.");
+            return new ApiResponse(false,"Bài đã nộp, không thể thay đổi nội dung.");
+        }
         Float score = null;
+        String assessmentData=null;
         String feedback = "Đã nhận bài viết. Chờ giáo viên chấm và nhận xét.";
         if ("QUIZ".equalsIgnoreCase(assignment.getContentType())) {
             try {
@@ -196,23 +204,35 @@ public class StudentService {
                 return new ApiResponse(false, "Câu trả lời hoặc nội dung bài tập không hợp lệ.");
             }
             feedback = "Đã tự động chấm điểm trắc nghiệm: " + score + "/10";
+        } else if ("SENTENCE".equalsIgnoreCase(assignment.getContentType())) {
+            try {score=AssignmentRules.scoreSentences(assignment.getContentData(),request.getSubmissionData());}
+            catch(IllegalArgumentException e){return new ApiResponse(false,"Các thẻ từ của bài ghép câu chưa hợp lệ.");}
+            feedback="Đã tự động chấm bài ghép câu: "+score+"/10";
         } else if ("WRITING".equalsIgnoreCase(assignment.getContentType())) {
             if (!validWritingSubmission(assignment.getContentData(),request.getSubmissionData())) {
                 return new ApiResponse(false, "Bài viết phải có ảnh PNG hoặc JPEG hợp lệ.");
             }
+            try {
+                var images=request.getSubmissionData().startsWith("data:image/")
+                    ?objectMapper.createArrayNode().add(objectMapper.createObjectNode().put("letter",AssignmentRules.letters(assignment.getContentData()).get(0)).put("image",request.getSubmissionData()))
+                    :objectMapper.readTree(request.getSubmissionData());
+                var ratings=objectMapper.createArrayNode();float total=0;
+                for(var image:images) {
+                    String source=image.get("image").asText();byte[] bytes=Base64.getDecoder().decode(source.substring(source.indexOf(',')+1));
+                    var rating=handwriting.assess(image.get("letter").asText(),javax.imageio.ImageIO.read(new java.io.ByteArrayInputStream(bytes)));
+                    ratings.addObject().put("letter",image.get("letter").asText()).put("score",rating.score())
+                        .put("coverage",rating.coverage()).put("precision",rating.precision()).put("missingParts",rating.missingParts()).put("feedback",rating.feedback());total+=rating.score();
+                }
+                score=Math.round(total/images.size())/10f;assessmentData=ratings.toString();
+                feedback="Điểm bám mẫu tự động: "+score+"/10. Cô có thể xem lại và điều chỉnh; chưa đánh giá thứ tự nét.";
+            }catch(Exception e){throw new IllegalArgumentException("Chưa đánh giá được ảnh viết. Bé kiểm tra lại ảnh bài làm.");}
         } else {
             return new ApiResponse(false, "Loại bài tập chưa được hỗ trợ.");
         }
         final Float finalScore = score;
 
-        var existing=submissionRepository.findFirstByAssignmentIdAndStudentIdOrderByIdDesc(assignmentId,studentId);
-        if(existing.isPresent()) {
-            if(Objects.equals(existing.get().getSubmissionData(),request.getSubmissionData()))
-                return new ApiResponse(true,"Bài đã được tiếp nhận trước đó. Điểm và nhận xét của cô được giữ nguyên.");
-            return new ApiResponse(false,"Bài đã nộp, không thể thay đổi nội dung.");
-        }
         Submission submission=Submission.builder().assignment(assignment).student(student)
-            .submissionData(request.getSubmissionData()).score(score).feedback(feedback)
+            .submissionData(request.getSubmissionData()).score(score).autoScore(score).gradeSource("AUTO").assessmentData(assessmentData).feedback(feedback)
             .submittedAt(LocalDateTime.now(LearningTrackingService.SCHOOL_ZONE)).build();
 
         submissionRepository.save(submission);
@@ -224,7 +244,7 @@ public class StudentService {
                         .user(link.getParent())
                         .title("Bé " + student.getFullName() + " vừa nộp bài tập")
                         .content("Con vừa nộp bài tập '" + assignment.getTitle() + "' trong lớp '" + assignment.getClazz().getName() + "'. "
-                                + (finalScore == null ? "Chờ giáo viên chấm bài." : "Điểm trắc nghiệm: " + finalScore))
+                                + (finalScore == null ? "Chờ giáo viên chấm bài." : "Điểm bài: " + finalScore))
                         .type("ASSIGNMENT")
                         .isRead(false)
                         .build();

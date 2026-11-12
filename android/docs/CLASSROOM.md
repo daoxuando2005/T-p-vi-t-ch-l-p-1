@@ -33,12 +33,11 @@ Lỗi HTTP, JSON hỏng hoặc `success=false` không được biến thành th�
 - Huy hiệu đếm bài chưa nộp từ dữ liệu thật: từng mục theo lớp đang chọn, từng
   lớp và tổng trên tab Lớp học. Bài đã nộp không còn trong số đếm; mở xem bài
   chưa nộp không xóa huy hiệu. Tải lại khi quay lại app, không dùng thông báo đẩy.
-- Phân mục theo contentType, không đoán từ tên bài. Backend hiện giao WRITING
-  và QUIZ; mục Ghép câu hiển thị trống khi chưa có bài tương ứng. Dữ liệu loại
+- Phân mục theo contentType, không đoán từ tên bài: WRITING, QUIZ, SENTENCE. Dữ liệu loại
   khác vẫn phải hiện với thông báo chưa hỗ trợ, không giả nội dung/nút làm bài.
 - Hiển thị tiêu đề, mô tả, hạn nộp, trạng thái, điểm và nhận xét nếu có. Hạn nộp
   chỉ hiển thị; backend hiện cho phép nộp sau hạn theo nghiệp vụ có sẵn.
-- Không hiển thị “đã có điểm” khi `score=null`; bài viết đã gửi phải hiện chờ cô chấm.
+- Không hiển thị “đã có điểm” khi `score=null`; dữ liệu bài cũ có thể chưa được chấm.
   Bài đã nộp không tiếp tục mở như bài chưa làm trong giao diện hiện tại.
 
 ## Nội dung và chấm bài
@@ -55,9 +54,18 @@ Lỗi HTTP, JSON hỏng hoặc `success=false` không được biến thành th�
   Mỗi chữ được giao phải có nét trước khi bật nộp bài. Thay độ đậm, hoàn tác và
   xóa phải thao tác được ngay cạnh bảng; xóa cần xác nhận.
 - Xuất PNG thật từ nét người dùng, gửi mảng `[{"letter":"A","image":"data:image/png;base64,..."}]`.
-  Không giả ảnh, giả điểm hoặc dùng `targetScore` như kết quả tự chấm khi chưa có thuật toán.
-- Bài viết lưu với `score=null` và nhận xét chờ giáo viên. Website giáo viên dùng
-  API bài nộp và chấm điểm hiện có; app tải lại điểm/nhận xét từ backend.
+  Không gửi điểm client hoặc dùng `targetScore` như kết quả. “Kiểm tra nét” trên
+  app là xem trước; backend tính lại từ ảnh theo [HANDWRITING.md](HANDWRITING.md).
+- Bài viết mới có điểm bám mẫu tự động; app hiển thị nguồn điểm, độ phủ/vị trí
+  và nhận xét từng chữ. Cô được sửa điểm 0–10 và nhận xét; giữ `autoScore` ban đầu
+  khi chuyển `gradeSource` sang `TEACHER`. Không chấm lại dữ liệu cũ khi khởi động.
+- `SENTENCE`: `contentData` là `{"sentences":[{"prompt":"Ghép câu","words":["Bé","yêu","mẹ."]}]}`.
+  Nhận 1–20 câu, mỗi câu 2–12 thẻ từ/cụm từ; thứ tự trong đề là đáp án.
+  App đảo thẻ ổn định theo bài, giữ ID vị trí để dùng được từ trùng; cho bỏ thẻ
+  hoặc làm lại. Chỉ nộp khi mỗi câu dùng đủ mỗi ID đúng một lần.
+- Gửi `{"sentences":[[0,1,2]]}` trong chuỗi `submissionData`. Backend kiểm tra
+  hoán vị và so chuỗi từ theo thứ tự mẫu; đổi chỗ hai thẻ có cùng chữ vẫn đúng.
+  Điểm bằng tỉ lệ câu khớp mẫu × 10, không đánh giá mọi câu đúng ngữ pháp khác.
 - Tổng dữ liệu nộp tối đa 4.000.000 ký tự; cột `submission_data` cần LONGTEXT qua
   migration V10 để không cắt mất bộ ảnh. Nội dung hỏng/loại bài chưa hỗ trợ phải
   có thông báo, không mở bài trống rồi cho nộp.
@@ -66,6 +74,8 @@ Lỗi HTTP, JSON hỏng hoặc `success=false` không được biến thành th�
 - Khóa bài tập khi nhận bài nộp và dùng transaction READ_COMMITTED để hai yêu cầu
   đồng thời không tạo hai bài. Gửi lại cùng nội dung trả xác nhận cũ, giữ nguyên
   điểm/nhận xét và không gửi thêm thông báo. Bài đã nộp không được đổi nội dung.
+- Giáo viên sửa đề phải dùng cùng khóa bài tập. Khi đã có bài nộp, chỉ sửa tiêu
+  đề/hướng dẫn/hạn nộp; muốn thay câu hỏi/đáp án thì tạo bài khác để giữ kết quả.
 - “Xem bài đã nộp” mở dữ liệu server. Không suy diễn điểm còn null thành 0.
   Đáp án đúng chỉ hiển thị khi đã có điểm; dữ liệu lịch sử không đọc được phải
   có thông báo định dạng cũ. Chấm bài giới hạn 0–10, nhận xét tối đa 4000 ký tự.
@@ -76,7 +86,7 @@ Lỗi HTTP, JSON hỏng hoặc `success=false` không được biến thành th�
   phải bị hủy khi phiên/tài khoản đổi; không để kết quả cũ cập nhật giao diện tài khoản mới.
 - Preferences bản nháp là `<accountPreferences>.classroom`, khóa `assignment.<id>`.
   Dùng SHA-256 của loại/nội dung bài để không áp đáp án bản nháp cũ vào đề đã sửa.
-- Lưu lựa chọn, nét vẽ chuẩn hóa, độ đậm từng nét và chữ đang viết. Đọc/ghi dữ liệu,
+- Lưu lựa chọn, thứ tự ID thẻ từng câu, nét vẽ chuẩn hóa, độ đậm từng nét và chữ đang viết. Đọc/ghi dữ liệu,
   HTTP và xuất ảnh phải chạy ngoài main thread. Nét đang kéo chưa kết thúc không
   phải lượt vẽ đã lưu; báo lỗi nếu không ghi được vào máy.
 - Ghi nháp theo thứ tự. Trước khi gửi phải đợi lần ghi còn chờ; chỉ dọn bản nháp

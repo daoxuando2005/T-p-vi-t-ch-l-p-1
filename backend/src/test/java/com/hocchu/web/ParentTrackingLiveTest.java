@@ -152,12 +152,36 @@ class ParentTrackingLiveTest {
         var calls=new ArrayList<java.util.concurrent.CompletableFuture<HttpResponse<String>>>();
         for(int i=0;i<2;i++)calls.add(http.sendAsync(HttpRequest.newBuilder(URI.create(base+submit)).header("Content-Type","application/json").header("Authorization","Bearer "+child.token()).POST(HttpRequest.BodyPublishers.ofString(submitted.toString())).build(),HttpResponse.BodyHandlers.ofString()));
         for(var call:calls)assertEquals(200,call.get(20,java.util.concurrent.TimeUnit.SECONDS).statusCode());
-        var saved=ok("/api/student/assignments/"+writingId+"/submission","GET",child.token(),null);assertTrue(saved.path("score").isNull());assertEquals(data,saved.path("submissionData").asText());
+        var saved=ok("/api/student/assignments/"+writingId+"/submission","GET",child.token(),null);
+        assertTrue(saved.path("score").isNumber());assertEquals("AUTO",saved.path("gradeSource").asText());
+        double originalAuto=saved.path("autoScore").asDouble();assertEquals(originalAuto,saved.path("score").asDouble());
+        assertFalse(saved.path("assessmentData").asText().isBlank());assertEquals(data,saved.path("submissionData").asText());
         long submissionId=saved.path("id").asLong();
         try(var p=db.prepareStatement("SELECT COUNT(*) FROM submissions WHERE assignment_id=? AND student_id=?")){p.setLong(1,writingId);p.setLong(2,child.id());try(var r=p.executeQuery()){assertTrue(r.next());assertEquals(1,r.getInt(1));}}
         ok("/api/teacher/submissions/"+submissionId+"/grade","POST",teacher.token(),json.createObjectNode().put("score",8.5).put("feedback","Cô đã xem bài viết"));
         ok(submit,"POST",child.token(),submitted);
         var graded=ok("/api/parent/students/"+child.id()+"/submissions/"+submissionId,"GET",parent.token(),null);assertEquals(8.5,graded.path("score").asDouble());assertEquals("Cô đã xem bài viết",graded.path("feedback").asText());
+        assertEquals("TEACHER",graded.path("gradeSource").asText());assertEquals(originalAuto,graded.path("autoScore").asDouble());
+        assertEquals(saved.path("assessmentData"),graded.path("assessmentData"));
+        var sentence=json.createObjectNode().put("classId",classId).put("title","Ghép câu kiểm thử").put("description","")
+            .put("contentType","SENTENCE").put("contentData","{\"sentences\":[{\"words\":[\"Bé\",\"yêu\",\"mẹ.\"]},{\"words\":[\"Bé\",\"và\",\"bé\",\"học.\"]}]}");
+        long sentenceId=ok("/api/teacher/assignments","POST",teacher.token(),sentence).path("id").asLong();
+        String sentenceSubmit="/api/student/assignments/"+sentenceId+"/submit";
+        assertEquals(400,request(sentenceSubmit,"POST",child.token(),json.createObjectNode().put("submissionData","{\"sentences\":[[0,0,2],[0,1,2,3]]}")).statusCode());
+        ok(sentenceSubmit,"POST",child.token(),json.createObjectNode().put("submissionData","{\"sentences\":[[0,1,2],[1,0,2,3]]}"));
+        var sentenceReview=ok("/api/student/assignments/"+sentenceId+"/submission","GET",child.token(),null);
+        assertEquals(5,sentenceReview.path("score").asDouble());assertEquals("AUTO",sentenceReview.path("gradeSource").asText());
+        assertEquals(5,ok("/api/parent/students/"+child.id()+"/submissions/"+sentenceReview.path("id").asLong(),"GET",parent.token(),null).path("autoScore").asDouble());
+        // Metadata stays editable, while changing the answer key after submission is rejected.
+        sentence.put("description","Cô hướng dẫn thêm");ok("/api/teacher/assignments/"+sentenceId,"PUT",teacher.token(),sentence);
+        sentence.put("contentData","{\"sentences\":[{\"words\":[\"Bé\",\"đọc.\"]}]}");
+        assertEquals(400,request("/api/teacher/assignments/"+sentenceId,"PUT",teacher.token(),sentence).statusCode());
+        assertEquals(403,request("/api/teacher/assistant/status","GET",child.token(),null).statusCode());
+        assertEquals(403,request("/api/teacher/assistant/status","GET",parent.token(),null).statusCode());
+        var aiStatus=ok("/api/teacher/assistant/status","GET",teacher.token(),null);
+        assertTrue(aiStatus.has("configured"));
+        if(!aiStatus.path("configured").asBoolean())assertEquals(503,request("/api/teacher/assistant/draft","POST",teacher.token(),
+            json.createObjectNode().put("message","Soạn ba câu ngắn").put("type","SENTENCE").put("count",3)).statusCode());
         try(var p=db.prepareStatement("SELECT COUNT(*) FROM notifications WHERE user_id=?")){p.setLong(1,otherParent.id());try(var r=p.executeQuery()){assertTrue(r.next());assertEquals(0,r.getInt(1));}}
         assertEquals(400,request("/api/teacher/submissions/"+submissionId+"/grade","POST",teacher.token(),json.createObjectNode().put("score",12)).statusCode());
         ok("/api/parent/students/"+child.id()+"/link","DELETE",parent.token(),null);

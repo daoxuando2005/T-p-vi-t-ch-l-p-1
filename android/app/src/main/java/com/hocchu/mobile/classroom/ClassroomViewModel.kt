@@ -94,6 +94,12 @@ class ClassroomViewModel(app: Application, private val api: ClassroomApi) : Andr
         }
         updateDraft(state.draft.copy(drawings = state.draft.drawings + (letter to strokes)))
     }
+    fun sentence(question: Int, tiles: List<Int>) {
+        val questions=(state.selected?.content as? AssignmentContent.Sentence)?.questions?:return
+        if(question !in questions.indices||tiles.distinct().size!=tiles.size||tiles.any {it !in questions[question].words.indices})return
+        val answers=List(questions.size) {state.draft.sentences.getOrElse(it) {emptyList()}}.toMutableList()
+        answers[question]=tiles;updateDraft(state.draft.copy(sentences=answers))
+    }
     fun letter(index: Int) {
         val content = state.selected?.content as? AssignmentContent.Writing ?: return
         if(index in content.letters.indices) updateDraft(state.draft.copy(letterIndex = index))
@@ -123,12 +129,13 @@ class ClassroomViewModel(app: Application, private val api: ClassroomApi) : Andr
                 draftJob?.join()
                 withContext(Dispatchers.IO) { api.submit(user, assignment.id, submissionData(assignment, draft)) }
                 // Acknowledged by the server: never report a failed submission for a later refresh/storage error.
-                state = state.copy(submitting = false, selectedId = null,
+                state = state.copy(selectedId = null,
                     assignments = state.assignments.map { if(it.id == assignment.id) it.copy(submitted = true) else it },
                     notice = if(assignment.content is AssignmentContent.Writing) "Đã nộp bài viết. Cô sẽ xem và nhận xét nhé!" else "Đã nộp bài. Bé tải lại để xem kết quả nhé!")
                 try { withContext(Dispatchers.IO) { local.clear(assignment.id) } }
                 catch(e: CancellationException) { throw e }
                 catch (_: Exception) { /* Server acknowledgement remains authoritative. */ }
+                state = state.copy(submitting = false)
                 refresh()
             } catch(e: CancellationException) { throw e }
             catch(e: Exception) { state = state.copy(submitting = false); failed(e) }

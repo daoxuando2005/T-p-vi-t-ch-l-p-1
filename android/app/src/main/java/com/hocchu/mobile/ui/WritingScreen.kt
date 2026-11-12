@@ -33,6 +33,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.hocchu.mobile.data.AlphabetContent
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import androidx.compose.ui.platform.LocalContext
+import com.hocchu.mobile.assessment.TraceRating
 
 // Store normalized positions, so resizing does not stretch the logical writing space.
 internal data class InkStroke(val points: List<Offset>, val pen: Int)
@@ -53,11 +58,19 @@ fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit, g
     var confirmClear by remember { mutableStateOf(false) }
     var pendingLetter by rememberSaveable { mutableStateOf<Int?>(null) }
     var showReference by rememberSaveable { mutableStateOf(false) }
+    val resources=LocalContext.current.resources
+    val scope=rememberCoroutineScope()
+    var assessing by remember {mutableStateOf(false)}
+    var assessmentError by remember {mutableStateOf<String?>(null)}
+    var scoreData by rememberSaveable(index){mutableStateOf("")}
+    val rating=TraceRating.decode(scoreData)
     val lesson = AlphabetContent.lessons[index]
     val letter = lesson.letter.lowercase()
     val form = CopybookForms.forLetter(letter)
     Column(Modifier.fillMaxSize().padding(horizontal = 12.dp, vertical = 4.dp),
         verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        if(assessing){LinearProgressIndicator(Modifier.fillMaxWidth());Text("Đang chấm nét viết…",color=Muted,fontSize=12.sp)}
+        assessmentError?.let {Text(it,color=MaterialTheme.colorScheme.error)}
         if (guided == null) LetterPicker(index) { next ->
             if (next != index) {
                 if (strokes.isEmpty()) index = next else pendingLetter = next
@@ -97,15 +110,25 @@ fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit, g
             val tools: @Composable (Boolean) -> Unit = { sidePanel ->
                 WritingTools(
                     pen = pen,
-                    hasStrokes = strokes.isNotEmpty(),
+                    hasStrokes = strokes.isNotEmpty()&&!assessing,
                     sidePanel = sidePanel,
                     onPenChange = { pen = it },
                     onListen = { speak(lesson.sound) },
                     onUndo = { strokes = strokes.dropLast(1);revision++ },
                     onClear = { confirmClear = true },
                     onComplete = {
-                        if (!complete) { complete = true; onPraise()
-                            if(recordedRevision!=revision) {recordedRevision=revision;onPracticed(index)} }
+                        if (!complete&&!assessing) {
+                            val captured=index;val version=revision;val ink=strokes
+                            assessing=true;assessmentError=null
+                            scope.launch {
+                                try {val result=withContext(Dispatchers.Default){assessInk(resources,letter,ink)}
+                                    if(index==captured&&revision==version){scoreData=result.encode();complete=true;onPraise()
+                                        if(recordedRevision!=revision){recordedRevision=revision;onPracticed(index)}}
+                                }catch(e:CancellationException){throw e}
+                                catch(_:Exception){assessmentError="Chưa chấm được nét viết. Bé thử lại nhé."}
+                                finally{assessing=false}
+                            }
+                        }
                     }
                 )
             }
@@ -126,10 +149,11 @@ fun WritingScreen(initial: Int, speak: (String) -> Unit, onPraise: () -> Unit, g
     }
     if(confirmClear) AlertDialog(onDismissRequest = { confirmClear = false },
         title = { Text("Viết lại từ đầu nhé?") }, text = { Text("Các nét trên bảng sẽ được xóa.") },
-        confirmButton = { TextButton(onClick = { strokes = emptyList(); confirmClear = false }) { Text("Viết lại") } },
+        confirmButton = { TextButton(onClick = { strokes = emptyList();revision++;scoreData="";confirmClear = false }) { Text("Viết lại") } },
         dismissButton = { TextButton(onClick = { confirmClear = false }) { Text("Giữ bài viết") } })
     if (complete) WritingCompletion(
         letter = letter,
+        rating = rating,
         lastLetter = guided == null && index == AlphabetContent.lessons.lastIndex,
         continueLabel = guided?.let { if (it.completed == 0) "Viết lượt 2" else "Đố vui với từ" },
         repeatLabel = if (guided != null && guided.completed >= 1) "Luyện thêm một lượt" else "Viết lại",
@@ -184,6 +208,7 @@ private fun WritingReference(form: CopybookForm, onDismiss: () -> Unit) {
 @Composable
 private fun WritingCompletion(
     letter: String,
+    rating: TraceRating?,
     lastLetter: Boolean,
     onDismiss: () -> Unit,
     onRepeat: () -> Unit,
@@ -203,6 +228,12 @@ private fun WritingCompletion(
         ) {
             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) { Mascot() }
             Text("Bé đã rất chăm chỉ!", style = MaterialTheme.typography.headlineMedium, color = SuccessText)
+            rating?.let {
+                Text("Độ bám mẫu: ${it.score}/100",style=MaterialTheme.typography.titleLarge,color=SkyDark)
+                Text(it.feedback)
+                Text("Phủ đủ mẫu: ${it.coverage}/100 · Nét trong vùng mẫu: ${it.precision}/100",fontSize=12.sp,color=Muted)
+                Text("Đánh giá theo mẫu ô li, chưa chấm thứ tự nét.",fontSize=12.sp,color=Muted)
+            }
             Text(
                 if (lastLetter) "Bé đã luyện đến cuối bảng chữ cái. Cùng ôn lại nhé!"
                 else "Bé vừa luyện chữ $letter. Mỗi lần tập viết là một lần tiến bộ!"

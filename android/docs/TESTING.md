@@ -13,6 +13,7 @@ Không ghi kết quả thực hiện, số test đã đạt, ngày chạy hay th
 | Tiến độ/học liệu | `LessonProgressTest`; `LetterJourneyTest` khi sửa điều phối hoặc tương tác |
 | Khôi phục/media | `ProgressRestoreTest`, `MediaAddressTest`; kiểm tra dữ liệu sai, gộp không lùi và HTTP release |
 | Hình học mẫu chữ | `CopybookFormTest`; duyệt hình đủ 29 chữ và các chữ đại diện |
+| Chấm viết | `TraceScoringTest`, `HandwritingAssessmentTest`, `AssessmentGeometryTest`; mẫu trắng/tô kín/lệch/thiếu dấu và kết quả server |
 | Bảng viết/trạng thái/bố cục | `StudentExperienceTest` và kiểm tra thao tác viết theo thay đổi |
 | Xác thực/phiên/kết nối | `AuthModelsTest`, `AuthProtocolTest`, `LoginScreenTest` theo lớp bị ảnh hưởng |
 | Lớp học, bản nháp, nộp bài | `AssignmentGroupTest`, `ClassroomProtocolTest`, `ClassroomScreenTest`; chạy live có chủ đích bằng `ClassroomLiveBackendTest` |
@@ -40,6 +41,23 @@ cho đủ chữ được giao, ảnh hợp lệ, giữ điểm khi gửi lại, 
 media đúng thư mục. Luồng live phải kiểm tra nộp đồng thời không trùng, chấm/đọc
 bài qua hai vai trò, ngắt liên kết thu hồi quyền, tải học liệu/tiến độ và media công khai.
 Không tự khẳng định kiểm thử API thay thế kiểm thử chạm, âm thanh hay xoay máy.
+
+`AssessmentGeometryTest` so mẫu Android với fixture font Java đã đóng gói trong
+source set androidTest. Khi sửa hình học hoặc font, chủ động tạo lại từ backend:
+`mvn test -Dtest=CopybookFixtureExportTest -DexportCopybook=true`.
+Chỉ cập nhật fixture sau khi kiểm tra hình học thực, không hạ ngưỡng để che sai lệch.
+Fixture mẫu chữ là đầu vào kiểm thử; log và ảnh màn hình sinh ra vẫn không đưa vào Git.
+
+Kiểm tra riêng giao diện lớp học/hành trình/tập viết dùng `ComponentActivity`
+của `ui-test-manifest` trong cấu hình debug. Nội dung và tài khoản giả chỉ nằm
+ở androidTest, tránh khởi động khôi phục phiên thật khi kiểm tra một màn hình.
+Giữ `MainActivity` và phiên thật cho kiểm thử đăng nhập, vòng đời ứng dụng đầy đủ;
+không đưa test host hoặc đường bỏ qua xác thực vào bản release.
+
+`AssignmentRulesTest` kiểm tra hợp đồng ba loại bài và ID thẻ trùng; bài live
+phải xác nhận điểm AUTO, cô sửa điểm vẫn giữ autoScore, không sửa được đề đã
+có bài nộp, và API trợ lý chỉ dành cho giáo viên. `TeacherAssistantServiceTest`
+dùng HTTP server giả lập để kiểm tra giao thức/lỗi; không gọi AI thật khi chạy test.
 
 Chạy từ thư mục `android`, với JDK 21 đã được chọn:
 
@@ -100,6 +118,10 @@ có sẵn và chỉ dùng tài khoản mẫu phục vụ kiểm thử.
   kết thúc Y. Không nhảy bước hoặc đếm lại đáp án cũ.
 - Viết phải giữ công cụ và nét khi đổi bố cục, mở mẫu; kiểm tra hoàn tác, hủy/xác
   nhận xóa, đổi độ đậm, viết lại/tiếp tục và liên kết từ màn đọc.
+- So điểm các nét gần mẫu, sai vị trí, thiếu dấu, bảng trắng và tô kín; nguồn
+  điểm/ảnh bài nộp phải khớp backend và cô sửa điểm không mất đánh giá tự động.
+- Đọc chữ giữ nút nghe mẫu/TTS và liên kết sang tập viết; không có nút thu âm,
+  yêu cầu quyền micro hoặc kết quả nhận dạng giọng nói.
 - Release phải chặn HTTP, không hiện cài đặt kết nối debug và không dùng URL local
   mặc định. Không suy luận release an toàn chỉ từ kết quả chạy bản debug.
 

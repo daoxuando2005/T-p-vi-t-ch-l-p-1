@@ -87,7 +87,7 @@ public class TeacherService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp học"));
 
         if (!clazz.getTeacher().getId().equals(teacherId)) {
-            throw new RuntimeException("Bạn không phải giáo viên phụ trách lớp học này");
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không phải giáo viên phụ trách lớp học này");
         }
 
         return classMemberRepository.findByClazzId(classId).stream()
@@ -105,7 +105,7 @@ public class TeacherService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp học"));
 
         if (!clazz.getTeacher().getId().equals(teacherId)) {
-            throw new RuntimeException("Bạn không phải giáo viên phụ trách lớp học này");
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không phải giáo viên phụ trách lớp học này");
         }
 
         User student = userRepository.findByUsername(studentUsername)
@@ -146,7 +146,7 @@ public class TeacherService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp học"));
 
         if (!clazz.getTeacher().getId().equals(teacherId)) {
-            throw new RuntimeException("Bạn không phải giáo viên phụ trách lớp học này");
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không phải giáo viên phụ trách lớp học này");
         }
 
         ClassMember member = classMemberRepository.findByClazzIdAndStudentId(classId, studentId)
@@ -158,11 +158,14 @@ public class TeacherService {
 
     @Transactional
     public AssignmentResponse createAssignment(Long teacherId, AssignmentRequest request) {
+        if(request.getClassId()==null)throw new IllegalArgumentException("Chọn lớp nhận bài.");
+        request.setContentData(AssignmentRules.validate(request.getContentType(),request.getContentData()));
+        request.setContentType(request.getContentType().toUpperCase(java.util.Locale.ROOT));
         Clazz clazz = clazzRepository.findById(request.getClassId())
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp học"));
 
         if (!clazz.getTeacher().getId().equals(teacherId)) {
-            throw new RuntimeException("Bạn không phải giáo viên phụ trách lớp học này");
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không phải giáo viên phụ trách lớp học này");
         }
 
         Assignment asm = Assignment.builder()
@@ -222,7 +225,7 @@ public class TeacherService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp học"));
 
         if (!clazz.getTeacher().getId().equals(teacherId)) {
-            throw new RuntimeException("Bạn không phải giáo viên phụ trách lớp học này");
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không phải giáo viên phụ trách lớp học này");
         }
 
         return assignmentRepository.findByClazzId(classId).stream()
@@ -246,7 +249,7 @@ public class TeacherService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài tập"));
 
         if (!assignment.getClazz().getTeacher().getId().equals(teacherId)) {
-            throw new RuntimeException("Bạn không phải giáo viên phụ trách lớp học này");
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không phải giáo viên phụ trách lớp học này");
         }
 
         List<Submission> allSubs = submissionRepository.findByAssignmentId(assignmentId);
@@ -276,6 +279,7 @@ public class TeacherService {
                         .studentName(sub.getStudent().getFullName())
                         .submissionData(sub.getSubmissionData())
                         .score(sub.getScore())
+                        .autoScore(sub.getAutoScore()).gradeSource(sub.getGradeSource()).assessmentData(sub.getAssessmentData())
                         .feedback(sub.getFeedback())
                         .submittedAt(sub.getSubmittedAt())
                         .build())
@@ -284,15 +288,18 @@ public class TeacherService {
 
     @Transactional
     public ApiResponse gradeSubmission(Long teacherId, Long submissionId, GradeRequest request) {
+        if(request.getScore()==null||!Float.isFinite(request.getScore())||request.getScore()<0||request.getScore()>10)
+            throw new IllegalArgumentException("Điểm nằm trong khoảng 0–10.");
         Submission submission = submissionRepository.findById(submissionId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài nộp"));
 
         Clazz clazz = submission.getAssignment().getClazz();
         if (!clazz.getTeacher().getId().equals(teacherId)) {
-            throw new RuntimeException("Bạn không có quyền chấm điểm bài tập của lớp này");
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền chấm điểm bài tập của lớp này");
         }
 
         submission.setScore(request.getScore());
+        submission.setGradeSource("TEACHER");
         submission.setFeedback(request.getFeedback());
         submissionRepository.save(submission);
 
@@ -323,13 +330,24 @@ public class TeacherService {
         return new ApiResponse(true, "Chấm điểm thành công!");
     }
 
-    @Transactional
+    @Transactional(isolation = org.springframework.transaction.annotation.Isolation.READ_COMMITTED)
     public AssignmentResponse updateAssignment(Long teacherId, Long assignmentId, AssignmentRequest request) {
-        Assignment asm = assignmentRepository.findById(assignmentId)
+        // Serialize changes with submission receipt so the stored answer key stays stable.
+        Assignment asm = assignmentRepository.findForSubmissionById(assignmentId)
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài tập"));
 
         if (!asm.getClazz().getTeacher().getId().equals(teacherId)) {
-            throw new RuntimeException("Bạn không phải giáo viên phụ trách lớp học này");
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không phải giáo viên phụ trách lớp học này");
+        }
+
+        if(request.getContentData()!=null||request.getContentType()!=null) {
+            String type=request.getContentType()==null?asm.getContentType():request.getContentType().toUpperCase(java.util.Locale.ROOT);
+            String content=AssignmentRules.validate(type,request.getContentData()==null?asm.getContentData():request.getContentData());
+            if(!java.util.Objects.equals(type,asm.getContentType())||!AssignmentRules.sameContent(content,asm.getContentData())) {
+                if(!submissionRepository.findByAssignmentId(assignmentId).isEmpty())
+                    throw new IllegalArgumentException("Bài đã có học sinh nộp. Hãy tạo bài mới để giữ nguyên đề và kết quả cũ.");
+                asm.setContentType(type);asm.setContentData(content);
+            }
         }
 
         if (request.getTitle() != null && !request.getTitle().trim().isEmpty()) {
@@ -338,9 +356,7 @@ public class TeacherService {
         if (request.getDescription() != null) {
             asm.setDescription(request.getDescription());
         }
-        if (request.getDueDate() != null) {
-            asm.setDueDate(request.getDueDate());
-        }
+        asm.setDueDate(request.getDueDate());
 
         Assignment saved = assignmentRepository.save(asm);
 
@@ -363,7 +379,7 @@ public class TeacherService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy bài tập"));
 
         if (!asm.getClazz().getTeacher().getId().equals(teacherId)) {
-            throw new RuntimeException("Bạn không có quyền xóa bài tập của lớp này");
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền xóa bài tập của lớp này");
         }
 
         // Xóa tất cả bài nộp của bài tập này
@@ -427,7 +443,7 @@ public class TeacherService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp học"));
 
         if (!clazz.getTeacher().getId().equals(teacherId)) {
-            throw new RuntimeException("Bạn không có quyền chỉnh sửa lớp học này");
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền chỉnh sửa lớp học này");
         }
 
         clazz.setName(className);
@@ -450,7 +466,7 @@ public class TeacherService {
                 .orElseThrow(() -> new RuntimeException("Không tìm thấy lớp học"));
 
         if (!clazz.getTeacher().getId().equals(teacherId)) {
-            throw new RuntimeException("Bạn không có quyền xóa lớp học này");
+            throw new org.springframework.security.access.AccessDeniedException("Bạn không có quyền xóa lớp học này");
         }
 
         // Tận dụng ON DELETE CASCADE của cơ sở dữ liệu MySQL để tự động xóa sạch các bản ghi liên quan ở các bảng:

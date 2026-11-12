@@ -26,6 +26,11 @@ let socket;
 let nextId = 0;
 let roles = [];
 let requests = [];
+let teacherFixtures = false;
+let aiConfigured = false;
+let assignmentRows = [];
+let createdPayloads = [];
+let gradePayload = null;
 const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
 async function until(check) {
   const end = Date.now() + 15000;
@@ -41,7 +46,7 @@ function send(method, params = {}) {
 }
 async function evaluate(expression) {
   const result = await send('Runtime.evaluate', { expression, returnByValue: true, awaitPromise: true });
-  if (result.exceptionDetails) throw new Error(result.exceptionDetails.text);
+  if (result.exceptionDetails) throw new Error(result.exceptionDetails.exception?.description || result.exceptionDetails.text);
   return result.result?.value;
 }
 async function navigate(route) { await send('Page.navigate', { url: origin + route }); }
@@ -90,8 +95,21 @@ try {
       let body = '';
       if (url.pathname.startsWith('/api/')) {
         requests.push(url.pathname);
-        body = JSON.stringify(url.pathname === '/api/auth/signin' ? { ...account, accessToken: 'browser-test-token', tokenType: 'Bearer' }
-          : url.pathname === '/api/auth/me' ? account : url.pathname.endsWith('/stats') ? {} : []);
+        let result = url.pathname === '/api/auth/signin' ? { ...account, accessToken: 'browser-test-token', tokenType: 'Bearer' }
+          : url.pathname === '/api/auth/me' ? account : url.pathname.endsWith('/stats') ? {} : [];
+        if (teacherFixtures) {
+          if (url.pathname === '/api/teacher/class') result = [{ id: 77, name: 'Lớp Hoa Hướng Dương', inviteCode: 'FLOWER', studentCount: 12 }];
+          if (url.pathname === '/api/teacher/class/77/assignments') result = assignmentRows;
+          if (url.pathname === '/api/teacher/assistant/status') result = { configured: aiConfigured };
+          if (url.pathname === '/api/teacher/assistant/draft') result = { reply: 'Cô kiểm tra ba câu trước khi giao nhé.', draft: { title: 'Gia đình của bé', description: 'Ghép câu cùng bé', contentType: 'SENTENCE', contentData: JSON.stringify({ sentences: [ { words: ['Bé','yêu','mẹ.'] }, { words: ['Ba','đọc','sách.'] }, { words: ['Mẹ','và','bé.'] } ] }) } };
+          if (url.pathname === '/api/teacher/assignments' && request.method === 'POST') {
+            const payload = JSON.parse(request.postData); createdPayloads.push(payload);
+            result = { ...payload, id: 100 + createdPayloads.length }; assignmentRows = [...assignmentRows, result];
+          }
+          if (/\/assignments\/\d+\/submissions$/.test(url.pathname)) result = [{ id: 811, studentId: 922, studentName: 'Bé Mây', score: 7, autoScore: 7, gradeSource: 'AUTO', submissionData: '{"sentences":[[0,1,2],[0,1,2],[0,1,2]]}', feedback: 'Đã đối chiếu', submittedAt: '2026-01-10T09:00:00' }];
+          if (url.pathname === '/api/teacher/submissions/811/grade') { gradePayload = JSON.parse(request.postData); result = { success: true }; }
+        }
+        body = JSON.stringify(result);
       }
       await send('Fetch.fulfillRequest', { requestId, responseCode: request.method === 'OPTIONS' ? 204 : 200,
         responseHeaders: [{ name: 'Content-Type', value: url.pathname.startsWith('/api/') ? 'application/json' : 'text/css' },
@@ -128,10 +146,51 @@ try {
     for (const route of routes) { await navigate(route); await pathname(route); await until(() => evaluate('document.body.textContent.includes("Tài khoản kiểm thử")')); }
     await navigate(role === 'ROLE_ADMIN' ? '/teacher' : '/admin'); await pathname(home);
   }
+  teacherFixtures = true;
+  await reset(['ROLE_TEACHER', 'PERM_VIEW_ALPHABET', 'PERM_ASSIGN_HOMEWORK', 'PERM_MANAGE_CLASSES']);
+  await signIn(); await pathname('/teacher');
+  await navigate('/teacher/assignments'); await pathname('/teacher/assignments');
+  await until(() => evaluate('document.body.textContent.includes("Lớp Hoa Hướng Dương") && document.body.textContent.includes("chưa được quản trị viên kết nối")'));
+  const clickText = (selector, text) => evaluate(`(() => { const target=[...document.querySelectorAll(${JSON.stringify(selector)})].find(e=>e.textContent.trim()===${JSON.stringify(text)}); if(!target) throw new Error('Missing control: '+${JSON.stringify(text)}); target.click(); })()`);
+  const fill = (selector, value) => evaluate(`(() => {const input=document.querySelector(${JSON.stringify(selector)}); Object.getOwnPropertyDescriptor(input instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : input instanceof HTMLSelectElement ? HTMLSelectElement.prototype : HTMLInputElement.prototype,'value').set.call(input,${JSON.stringify(value)}); input.dispatchEvent(new Event(input instanceof HTMLSelectElement?'change':'input',{bubbles:true}));})()`);
+  await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+  await writeFile('node_modules/.tmp/teacher-desktop.png', Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
+  for (const [type, label] of [['WRITING','Tập viết chữ'], ['QUIZ','Đố vui ghép chữ'], ['SENTENCE','Ghép câu']]) {
+    await evaluate('document.querySelector("[data-testid=teacher-new-assignment]").click()');
+    await until(() => evaluate('!!document.querySelector("dialog[open] form")'));
+    await clickText('dialog .teacher-tabs button', label);
+    await fill('dialog input[maxlength="160"]', `Bài ${type}`);
+    if (type === 'SENTENCE') assert.equal(await evaluate('document.querySelectorAll("dialog .teacher-word-preview").length'), 3);
+    await evaluate('document.querySelector("dialog form").requestSubmit()');
+    await until(() => evaluate('!document.querySelector("dialog[open]")'));
+    assert.equal(createdPayloads.at(-1).contentType, type); assert.equal(createdPayloads.at(-1).classId, 77);
+  }
+  await clickText('.teacher-assignment-actions button', 'Xem & chấm bài');
+  await until(() => evaluate('!!document.querySelector("dialog input[type=number]")'));
+  await fill('dialog input[type=number]', '8.5');
+  await fill('dialog textarea', 'Cô đã xem, bé cố gắng nhé.');
+  await evaluate('document.querySelector("dialog form").requestSubmit()');
+  await until(() => Promise.resolve(gradePayload !== null)); assert.equal(gradePayload.score, 8.5);
+  await until(() => evaluate('!document.querySelector("dialog .teacher-dialog-head button")?.disabled'));
+  await evaluate('document.querySelector("dialog .teacher-dialog-head button").click()');
+  aiConfigured = true; await navigate('/teacher/assignments');
+  await until(() => evaluate('!!document.querySelector(".teacher-assistant form textarea")'));
+  await fill('.teacher-assistant select', 'SENTENCE'); await fill('.teacher-assistant textarea', 'Soạn ba câu về gia đình');
+  await evaluate('document.querySelector(".teacher-assistant form").requestSubmit()');
+  await until(() => evaluate('!!document.querySelector(".teacher-ai-draft")'));
+  assert.equal(createdPayloads.length, 3, 'Generating AI drafts must not publish');
+  await clickText('.teacher-ai-draft button', 'Xem và chỉnh bản nháp');
+  await until(() => evaluate('document.querySelector("dialog input[maxlength] ")?.value === "Gia đình của bé"'));
+  assert.equal(createdPayloads.length, 3, 'Reviewing AI drafts must not publish');
+  await clickText('dialog button', 'Để sau');
+  await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+  await evaluate('window.scrollTo(0,0)');
+  assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true, 'Teacher page must fit a phone');
+  await writeFile('node_modules/.tmp/teacher-mobile.png', Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
   await reset([]);
   for (const route of ['/student', '/student/practice', '/parent', '/parent/assignments']) { await navigate(route); await pathname('/login'); }
   assert.deepEqual(errors, [], 'Browser JavaScript/interception errors');
-  console.log('Browser checks passed: Android sign-in/restore blocked, teacher/admin routes preserved, retired URLs redirected.');
+  console.log('Browser checks passed: role routes, three assignment editors, grading, AI draft review, desktop and phone layout.');
 } finally {
   // Close the isolated browser's children before removing its temporary profile.
   if (socket?.readyState === WebSocket.OPEN) await send('Browser.close').catch(() => {});
