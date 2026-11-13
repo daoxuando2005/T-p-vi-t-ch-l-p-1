@@ -9,6 +9,10 @@ import kotlinx.coroutines.withContext
 
 class AuthRepository(private val api: AuthApi, private val storage: SessionStorage, private val allowHttp: Boolean) {
     private val writes = Mutex()
+    suspend fun register(server: String, input: RegistrationInput) {
+        val endpoint = normalizeServer(server, allowHttp)
+        withContext(Dispatchers.IO) { api.register(endpoint, input) }
+    }
     suspend fun restore(): AuthSession? {
         val cached = writes.withLock { withContext(Dispatchers.IO) { storage.load() } } ?: return null
         normalizeServer(cached.server, allowHttp)

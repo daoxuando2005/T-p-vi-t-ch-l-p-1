@@ -5,6 +5,16 @@ import org.junit.Assert.*
 import org.junit.Test
 
 class AuthModelsTest {
+    @Test fun registrationRejectsPrivilegeEscalationAndBcryptByteTruncation() {
+        val input = RegistrationInput(" Bé học ", " student ", " student@example.com ", " secret ", "STUDENT")
+        assertTrue(input.errors().isEmpty())
+        assertTrue(input.copy(role = "ADMIN").errors().containsKey("role"))
+        assertTrue(input.copy(role = "TEACHER").errors().containsKey("role"))
+        assertTrue(input.copy(password = "ế".repeat(25)).errors().containsKey("password"))
+        assertTrue(input.copy(username = "có dấu").errors().containsKey("username"))
+        assertTrue(input.copy(email = "missing-at").errors().containsKey("email"))
+        assertFalse(input.toString().contains("secret"))
+    }
     @Test fun endpointNormalizationPreservesBackendIdentity() {
         assertEquals("http://192.168.1.2:8080/", normalizeServer(" http://192.168.1.2:8080/api/ ", true))
         assertEquals("https://example.com/", normalizeServer("HTTPS://EXAMPLE.COM:443/api", false))

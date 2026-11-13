@@ -11,8 +11,8 @@ Thư mục [`android/`](android/) chứa ứng dụng học sinh và phụ huynh
 Android đăng nhập theo vai trò học sinh/phụ huynh, lưu phiên mã hóa và tách dữ liệu theo tài khoản. Học liệu, lớp học, bài cô giao dùng API thật. Tiến độ hành trình 29 chữ được khôi phục/gộp từ server; hoạt động có hàng đợi để gửi khi có kết nối. Phụ huynh xem theo ngày/tuần và mở bài đã nộp, điểm/nhận xét của cô. Bản nháp/nét tự luyện vẫn ở thiết bị. Học liệu do dự án biên soạn cần được duyệt sư phạm trước khi dùng chính thức. Xem [luồng phụ huynh](android/docs/PARENT.md), [lớp học Android](android/docs/CLASSROOM.md), [kết nối backend](android/docs/AUTHENTICATION.md) và [quy tắc phát triển](android/AGENTS.md).
 
 Website chỉ dành cho **giáo viên và admin**. Học sinh và phụ huynh dùng Android;
-các trang web tương ứng đã được bỏ. Biểu mẫu đăng ký/OTP chung trên web vẫn
-cho phép tạo tài khoản trước khi dùng app. Backend và dữ liệu dùng chung được giữ.
+các trang web tương ứng đã được bỏ. Đăng ký demo trên web và Android kích hoạt
+tài khoản mới ngay, không OTP; email chưa được xác minh. Backend và dữ liệu dùng chung được giữ.
 
 Admin dùng giao diện React chung phong cách với giáo viên: tổng quan, tài khoản
 và phân quyền, học liệu 29 chữ, tra cứu lớp/liên kết gia đình và trạng thái cấu hình.
@@ -25,7 +25,7 @@ Xem [hướng dẫn website và quản trị](frontend/README.md).
 
 *   **Backend:** Java 17, Spring Boot 3 (Web, Security, Data JPA, Validation)
 *   **Database:** MySQL (Flyway migration quản lý schema tự động)
-*   **Xác thực:** JWT (JSON Web Token) + Xác thực OTP
+*   **Xác thực:** JWT (JSON Web Token), đăng ký demo không OTP
 *   **Frontend:** React, JavaScript, Vite, Tailwind CSS, Axios, React Router; biểu đồ React/CSS kèm bảng số liệu
 *   **Build Tool:** Maven (Backend), npm (Frontend)
 
@@ -36,7 +36,7 @@ Xem [hướng dẫn website và quản trị](frontend/README.md).
 Migration khởi tạo có các tên tài khoản mẫu dưới đây. Sử dụng mật khẩu hiện có
 trong cơ sở dữ liệu; backend không đặt lại mật khẩu, bật lại tài khoản hoặc tự
 liên kết `parent1` với `student1` khi khởi động. Ưu tiên tài khoản do admin cấp;
-đăng ký/OTP native Android được hoãn trong giai đoạn này.
+Android hỗ trợ đăng ký trực tiếp học sinh/phụ huynh; giáo viên đăng ký trên web.
 
 | Vai trò | Tên đăng nhập | Email liên kết | Mô tả chức năng |
 | :--- | :--- | :--- | :--- |
@@ -117,12 +117,11 @@ và sao lưu cùng dữ liệu ứng dụng. Backend đọc thêm tài sản cũ
 
 ## 💡 Các tính năng nổi bật để kiểm thử
 
-### 1. Luồng đăng ký tài khoản mới & Xác thực OTP
+### 1. Luồng đăng ký tài khoản demo
 1.  Truy cập trang đăng ký ở Frontend, điền thông tin và chọn vai trò của bạn (Học sinh/Giáo viên/Phụ huynh).
-2.  Sau khi nhấn nút Đăng ký, hệ thống hiển thị trang nhập OTP.
-3.  Mở **Console Log** của terminal chạy **Backend Spring Boot** lên. Bạn sẽ thấy dòng log hiển thị mã OTP 6 chữ số:
-    `MÃ OTP KÍCH HOẠT TÀI KHOẢN CHO USER '...': XXXXXX`
-4.  Nhập mã OTP trên website để kích hoạt. Giáo viên đăng nhập website; học sinh/phụ huynh mở app Android để đăng nhập. Admin cũng có thể tạo các tài khoản này trong Quản lý người dùng.
+2.  Nhấn Đăng ký, tài khoản mới được kích hoạt ngay và có thể đăng nhập; không nhập OTP.
+3.  Android cũng có biểu mẫu đăng ký riêng cho học sinh/phụ huynh. Giáo viên đăng nhập website; học sinh/phụ huynh đăng nhập app. Admin chỉ do quản trị viên cấp.
+4.  Không tự bật lại tài khoản cũ bị khóa/chưa kích hoạt. Email ở chế độ demo chưa được xác minh; quên mật khẩu liên hệ admin.
 
 ### 2. Module Luyện viết chữ của Học sinh
 *   Học sinh mở app Android, vào mục **Tập viết**, chọn một chữ cái.

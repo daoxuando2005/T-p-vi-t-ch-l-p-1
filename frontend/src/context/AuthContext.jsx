@@ -69,21 +69,12 @@ export const AuthProvider = ({ children }) => {
     };
     const register = async (data) => {
         try {
-            const response = await api.post('/auth/signup', data);
+            const response = await api.post('/auth/signup', data, { timeout: 15000 });
+            if (response.data?.success !== true) throw new Error('Chưa tạo được tài khoản. Vui lòng thử lại.');
             return response.data;
         }
         catch (error) {
-            const message = error.response?.data?.message || 'Đăng ký không thành công';
-            throw new Error(message);
-        }
-    };
-    const verifyOtp = async (emailOrUsername, otpCode) => {
-        try {
-            const response = await api.post('/auth/verify-otp', { emailOrUsername, otpCode });
-            return response.data;
-        }
-        catch (error) {
-            const message = error.response?.data?.message || 'Kích hoạt OTP thất bại';
+            const message = error.response?.data?.message || 'Chưa tạo được tài khoản. Kiểm tra kết nối và thông tin đăng ký.';
             throw new Error(message);
         }
     };
@@ -100,7 +91,7 @@ export const AuthProvider = ({ children }) => {
         return user.roles.includes(checkRole);
     };
     const refreshUser = async () => { const reply = await api.get('/auth/me'); setUser(reply.data); };
-    return (<AuthContext.Provider value={{ user, token, loading, notice, login, register, verifyOtp, logout, hasRole, refreshUser }}>
+    return (<AuthContext.Provider value={{ user, token, loading, notice, login, register, logout, hasRole, refreshUser }}>
       {children}
     </AuthContext.Provider>);
 };

@@ -10,8 +10,8 @@ và các hàm/API dùng chung trong `.js`; build trực tiếp bằng Vite.
 
 Website không cung cấp trang học sinh/phụ huynh. Đăng nhập và khôi phục phiên
 chỉ nhận vai trò giáo viên hoặc admin; tài khoản khác nhận thông báo quyền truy
-cập, không hiển thị lời nhắc chuyển sang Android. Biểu mẫu đăng ký/OTP chung vẫn tạo được tài
-khoản học sinh/phụ huynh vì app chưa có chức năng đăng ký.
+cập, không hiển thị lời nhắc chuyển sang Android. Biểu mẫu đăng ký chung tạo được tài
+khoản giáo viên/học sinh/phụ huynh. Android cũng đăng ký được học sinh/phụ huynh.
 
 ## Chạy và kiểm tra
 
@@ -41,7 +41,8 @@ npm test
 `/login` dùng cùng thương hiệu, font và màu với giáo viên; hỗ trợ trình quản lý
 mật khẩu, dán mật khẩu, nút hiện/ẩn và trợ giúp đăng nhập. Không yêu cầu người
 dùng chọn vai trò. Backend xác định vai trò; học sinh/phụ huynh không vào web.
-Đăng ký/OTP tại `/register` giữ nghiệp vụ hiện có, không tự bỏ xác thực email.
+Đăng ký demo tại `/register` kích hoạt tài khoản mới ngay, không OTP; email chưa
+được xác minh. Không cấp ADMIN công khai, không bật lại tài khoản bị khóa.
 
 Admin có năm mục:
 
@@ -138,16 +139,22 @@ bản nháp đang chỉnh. Không nhập thông tin riêng của trẻ vào lờ
 Đặt trong `backend/.env.local` riêng trên máy chủ rồi khởi động lại backend:
 
 ```dotenv
-AI_BASE_URL=https://api.openai.com/v1
-AI_API_KEY=<khóa của máy chủ>
-AI_MODEL=<tên model hỗ trợ Chat Completions và JSON mode>
+AI_PROVIDER=gemini
+AI_BASE_URL=https://generativelanguage.googleapis.com/v1beta
+GEMINI_API_KEY=<khóa riêng của máy chủ>
+AI_MODEL=gemini-3.5-flash-lite
 ```
 
 Không thêm khóa vào frontend, biến `VITE_*`, Git hoặc chat. Không cần cấu hình
 khóa ở giai đoạn chuẩn bị: giao diện báo chưa kết nối và giữ đầy đủ soạn thủ công.
-Adapter gọi `/chat/completions`, nhận JSON và kiểm tra lại hợp đồng ba loại bài;
+Adapter Gemini gọi `/models/{model}:generateContent`, gửi khóa bằng header
+`x-goog-api-key`, yêu cầu structured JSON với schema riêng cho từng loại bài và kiểm tra lại hợp đồng;
 không dùng nội dung AI sai định dạng hoặc liên kết media do AI tự tạo.
-Tham khảo [API Chat Completions chính thức](https://developers.openai.com/api/reference/resources/chat/subresources/completions/methods/create).
+Model được cấu hình riêng, cần còn được hỗ trợ và có hạn mức trong dự án Google.
+Tham khảo [đầu ra có cấu trúc Gemini](https://ai.google.dev/gemini-api/docs/generate-content/structured-output)
+và [tạo khóa Google AI Studio](https://aistudio.google.com/apikey).
+Adapter tương thích cũ vẫn có thể dùng qua `AI_PROVIDER=openai-compatible`,
+`AI_BASE_URL`, `AI_API_KEY`, `AI_MODEL` phù hợp; bỏ `GEMINI_API_KEY` khi đổi nhà cung cấp.
 
 Cô chọn loại/số câu, trao đổi để chỉnh yêu cầu, bấm Xem và chỉnh bản nháp để
 kiểm tra trong biểu mẫu, chọn lớp rồi mới bấm Giao bài. Không tự giao từ chatbot.

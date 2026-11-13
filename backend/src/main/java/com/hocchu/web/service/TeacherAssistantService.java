@@ -2,6 +2,7 @@ package com.hocchu.web.service;
 
 import com.fasterxml.jackson.databind.*;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import java.net.*;
 import java.nio.charset.StandardCharsets;
@@ -11,7 +12,7 @@ import java.util.concurrent.*;
 /** Draft generation over ordinary HTTP. Never sends rosters or publishes assignments. */
 @Service
 public class TeacherAssistantService {
-    private final String base,key,model;
+    private final String base,key,model,provider;
     private final ObjectMapper json=new ObjectMapper();
     private final Set<Long> busy=ConcurrentHashMap.newKeySet();
     private final Map<Long,ArrayDeque<Long>> calls=new ConcurrentHashMap<>();
@@ -22,16 +23,21 @@ public class TeacherAssistantService {
     public static class Failure extends RuntimeException {
         public final int status;public Failure(int status,String message){super(message);this.status=status;}
     }
-    public TeacherAssistantService(@Value("${app.ai.base-url:https://api.openai.com/v1}") String base,
-        @Value("${app.ai.api-key:}") String key,@Value("${app.ai.model:}") String model) {
-        this.base=base.replaceAll("/+$","");this.key=key;this.model=model;
+    @Autowired
+    public TeacherAssistantService(@Value("${app.ai.base-url}") String base,
+        @Value("${app.ai.api-key:}") String key,@Value("${app.ai.model:}") String model,
+        @Value("${app.ai.provider:gemini}") String provider) {
+        this.base=base.replaceAll("/+$","");this.key=key.trim();this.model=model.trim();this.provider=provider.trim();
+    }
+    public TeacherAssistantService(String base,String key,String model) {
+        this(base,key,model,"openai-compatible");
     }
     public Map<String,Object> status() {
-        return Map.of("configured",configured(),"message",configured()?"Trợ lý soạn bài sẵn sàng.":"Chưa cấu hình dịch vụ AI trên máy chủ. Cô vẫn có thể soạn bài thủ công hoặc dùng kho mẫu.");
+        return Map.of("configured",configured(),"provider",provider,"message",configured()?"Đã có cấu hình AI. Gửi yêu cầu để kiểm tra kết nối và soạn bản nháp.":"Chưa cấu hình dịch vụ AI trên máy chủ. Cô vẫn có thể soạn bài thủ công hoặc dùng kho mẫu.");
     }
-    private boolean configured(){return !key.isBlank()&&!model.isBlank();}
+    private boolean configured(){return Set.of("gemini","openai-compatible").contains(provider)&&!key.isBlank()&&!model.isBlank();}
     public Reply generate(Long teacherId,Request request) {
-        if(!configured())throw new Failure(503,"Chưa cấu hình AI_API_KEY và AI_MODEL trên máy chủ.");
+        if(!configured())throw new Failure(503,"Chưa cấu hình nhà cung cấp, khóa và model AI trên máy chủ.");
         validate(request);
         if(!busy.add(teacherId))throw new Failure(429,"Trợ lý đang soạn bài trước. Cô đợi một chút nhé.");
         try {
@@ -44,10 +50,13 @@ public class TeacherAssistantService {
             if(request.currentDraft()!=null)messages.addObject().put("role","user").put("content","Bản nháp hiện tại để sửa theo yêu cầu mới: "+json.writeValueAsString(request.currentDraft()));
             if(request.history()!=null)for(var item:request.history())messages.addObject().put("role",item.role()).put("content",item.content());
             messages.addObject().put("role","user").put("content","Loại bài: "+request.type()+". Số chữ/câu: "+request.count()+". Yêu cầu: "+request.message());
-            String raw=exchange(body.toString());
-            var envelope=json.readTree(raw);var choice=envelope.path("choices").path(0);
-            if(!choice.path("finish_reason").asText().equals("stop"))throw new Failure(502,"AI chưa trả đủ nội dung. Cô thử yêu cầu ít câu hơn.");
-            var response=json.readTree(choice.path("message").path("content").asText());
+            JsonNode response;
+            if(provider.equals("gemini")) response=new GeminiDraftClient(base,key,model).generate(messages,request.type(),request.count());
+            else {
+                var envelope=json.readTree(exchange(body.toString()));var choice=envelope.path("choices").path(0);
+                if(!choice.path("finish_reason").asText().equals("stop"))throw new Failure(502,"AI chưa trả đủ nội dung. Cô thử yêu cầu ít câu hơn.");
+                response=json.readTree(choice.path("message").path("content").asText());
+            }
             String title=response.path("draft").path("title").asText(),description=response.path("draft").path("description").asText();
             String type=response.path("draft").path("contentType").asText(),reply=response.path("reply").asText();
             if(!type.equals(request.type())||title.isBlank()||title.length()>160||description.length()>2000||reply.isBlank()||reply.length()>2000)

@@ -50,6 +50,28 @@ class AuthViewModel(app: Application) : AndroidViewModel(app) {
             catch (_: Exception) { state = AuthState.Login(AuthFailure.Server().publicMessage) }
         }
     }
+    fun openRegistration() {
+        if(state !is AuthState.Login || (state as? AuthState.Login)?.submitting == true) return
+        state = AuthState.Register()
+    }
+    fun closeRegistration() {
+        if((state as? AuthState.Register)?.submitting == true) return
+        state = AuthState.Login()
+    }
+    fun register(input: RegistrationInput) {
+        val current = state as? AuthState.Register ?: return
+        if(current.submitting || input.errors().isNotEmpty()) return
+        request?.cancel()
+        request = viewModelScope.launch {
+            state = AuthState.Register(submitting = true)
+            try {
+                repository.register(server, input)
+                state = AuthState.Login(successMessage = "Tài khoản đã sẵn sàng. Bạn đăng nhập để bắt đầu nhé!", initialUsername = input.username.trim())
+            } catch(e: CancellationException) { throw e }
+            catch(e: AuthFailure) { state = AuthState.Register(e.publicMessage) }
+            catch(_: Exception) { state = AuthState.Register(AuthFailure.Server().publicMessage) }
+        }
+    }
     private fun signedIn(session: AuthSession) {
         expiry?.cancel()
         server = session.server

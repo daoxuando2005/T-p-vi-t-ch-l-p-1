@@ -65,7 +65,7 @@ public class SecurityConfig {
                 response.setStatus(401)))
             .authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(jakarta.servlet.DispatcherType.ERROR).permitAll()
-                .requestMatchers("/api/auth/signin", "/api/auth/signup", "/api/auth/verify-otp").permitAll()
+                .requestMatchers("/api/auth/signin", "/api/auth/signup").permitAll()
                 .requestMatchers("/api/public/**").permitAll()
                 .anyRequest().authenticated()
             );

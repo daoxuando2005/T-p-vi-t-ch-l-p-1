@@ -29,7 +29,7 @@ thực hiện ở đây; chỉ cập nhật khi quy tắc hoặc chức năng t�
 - Ghép câu: chọn/bỏ thẻ từ, nghe câu mẫu, kiểm tra thứ tự.
 - Điện thoại dùng thanh điều hướng dưới; từ 840dp dùng navigation rail. Nội dung đọc chữ và tập viết chuyển sang hai cột khi đủ rộng.
 
-**Đăng nhập, học liệu, lớp học, bài cô giao và báo cáo phụ huynh dùng backend.** Học liệu tải về có cache; `AlphabetContent.kt` và `LetterCurriculum.kt` là nội dung dự phòng do dự án biên soạn. Hành trình khôi phục từ server theo tài khoản; bản nháp/nét tự luyện vẫn ở thiết bị. Ảnh và file âm thanh được hỗ trợ, có TTS dự phòng. Chấm viết đo độ bám mẫu HP001, chưa đánh giá thứ tự nét; bài lớp học được backend chấm lại và cô có thể điều chỉnh. Đọc chữ chỉ nghe mẫu và tự đọc theo, không thu âm. Đăng ký/OTP trên Android được để sau, dùng tài khoản có sẵn hoặc admin cấp. Dữ liệu xem trước cũ được giữ riêng.
+**Đăng nhập, học liệu, lớp học, bài cô giao và báo cáo phụ huynh dùng backend.** Học liệu tải về có cache; `AlphabetContent.kt` và `LetterCurriculum.kt` là nội dung dự phòng do dự án biên soạn. Hành trình khôi phục từ server theo tài khoản; bản nháp/nét tự luyện vẫn ở thiết bị. Ảnh và file âm thanh được hỗ trợ, có TTS dự phòng. Chấm viết đo độ bám mẫu HP001, chưa đánh giá thứ tự nét; bài lớp học được backend chấm lại và cô có thể điều chỉnh. Đọc chữ chỉ nghe mẫu và tự đọc theo, không thu âm. Android đăng ký trực tiếp học sinh/phụ huynh; tài khoản demo mới được kích hoạt ngay, không OTP. Đăng ký xong vẫn đăng nhập và xác minh phiên qua backend. Dữ liệu xem trước cũ được giữ riêng.
 
 ## Mở bằng Android Studio
 

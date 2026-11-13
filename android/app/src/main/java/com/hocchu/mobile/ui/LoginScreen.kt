@@ -43,14 +43,17 @@ fun AuthGate(model: AuthViewModel) {
         study.connect(session?.takeUnless {isParent}) {model.logout(AuthFailure.Expired().publicMessage)}
     }
     AuthContent(if(activities.finishing) AuthState.Loading("Đang lưu hoạt động của con…") else model.state,
-        model.server, model::signIn, model::restore, {activities.finishSession {model.logout()}}, model::changeServer, classroom,parent,activities,study)
+        model.server, model::signIn, model::restore, {activities.finishSession {model.logout()}}, model::changeServer, classroom,parent,activities,study,
+        model::openRegistration, model::closeRegistration, model::register)
 }
 
 @Composable
 internal fun AuthContent(state: AuthState, server: String, signIn: (String, String) -> Unit,
                          retry: () -> Unit, logout: () -> Unit, changeServer: (String) -> Unit,
                          classroom: ClassroomViewModel? = null, parent: ParentViewModel? = null,
-                         activities: StudentActivityModel? = null,study:StudyContentModel?=null) {
+                         activities: StudentActivityModel? = null,study:StudyContentModel?=null,
+                         openRegistration: () -> Unit = {}, closeRegistration: () -> Unit = {},
+                         register: (RegistrationInput) -> Unit = {}) {
     var settings by remember { mutableStateOf(false) }
     when(state) {
         is AuthState.SignedIn -> {
@@ -64,8 +67,9 @@ internal fun AuthContent(state: AuthState, server: String, signIn: (String, Stri
             }
         }
         is AuthState.Login -> key(server) {
-            LoginScreen(state, signIn, onSettings = if(BuildConfig.DEBUG) ({ settings = true }) else null)
+            LoginScreen(state, signIn, onSettings = if(BuildConfig.DEBUG) ({ settings = true }) else null, onRegister = openRegistration)
         }
+        is AuthState.Register -> key(server) { RegisterScreen(state, register, closeRegistration) }
         is AuthState.Loading -> AuthPage {
             Mascot(Modifier.size(88.dp))
             CircularProgressIndicator()
@@ -85,7 +89,7 @@ internal fun AuthContent(state: AuthState, server: String, signIn: (String, Stri
 }
 
 @Composable
-private fun AuthPage(content: @Composable ColumnScope.() -> Unit) {
+internal fun AuthPage(content: @Composable ColumnScope.() -> Unit) {
     Box(Modifier.fillMaxSize().background(Background).safeDrawingPadding().imePadding(), contentAlignment = Alignment.Center) {
         Column(Modifier.widthIn(max = 480.dp).fillMaxWidth().verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp), horizontalAlignment = Alignment.CenterHorizontally,
@@ -94,8 +98,9 @@ private fun AuthPage(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-fun LoginScreen(state: AuthState.Login, onSignIn: (String, String) -> Unit, onSettings: (() -> Unit)? = null) {
-    var username by rememberSaveable { mutableStateOf("") }
+fun LoginScreen(state: AuthState.Login, onSignIn: (String, String) -> Unit, onSettings: (() -> Unit)? = null,
+                onRegister: (() -> Unit)? = null) {
+    var username by rememberSaveable(state.initialUsername) { mutableStateOf(state.initialUsername) }
     // Password and JWT never enter rememberSaveable, savedState or preference fields.
     var password by remember { mutableStateOf("") }
     var visible by remember { mutableStateOf(false) }
@@ -111,6 +116,8 @@ fun LoginScreen(state: AuthState.Login, onSignIn: (String, String) -> Unit, onSe
         Paper {
             Text("Đăng nhập", style = MaterialTheme.typography.headlineMedium)
             Text("Dùng tài khoản học sinh hoặc phụ huynh", color = Muted)
+            if(state.successMessage != null) Text(state.successMessage, color = SkyDark,
+                modifier = Modifier.testTag("registration-success"))
             OutlinedTextField(username, onValueChange = { username = it },
                 label = { Text("Tên đăng nhập hoặc email") }, singleLine = true,
                 modifier = Modifier.fillMaxWidth().testTag("login-username"), enabled = !state.submitting,
@@ -137,6 +144,8 @@ fun LoginScreen(state: AuthState.Login, onSignIn: (String, String) -> Unit, onSe
             }
             PlayButton("Đăng nhập", icon = Icons.AutoMirrored.Rounded.Login, enabled = !state.submitting,
                 modifier = Modifier.testTag("login-submit"), onClick = { submit() })
+            if(onRegister != null) TextButton(onClick = onRegister, enabled = !state.submitting,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 48.dp).testTag("open-registration")) { Text("Chưa có tài khoản? Đăng ký") }
         }
         if(onSettings != null) TextButton(onClick = onSettings, enabled = !state.submitting) { Text("Cài đặt kết nối") }
     }

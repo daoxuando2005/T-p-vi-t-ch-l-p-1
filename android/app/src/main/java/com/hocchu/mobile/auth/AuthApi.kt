@@ -52,6 +52,22 @@ class UrlAuthTransport(private val maxResponseBytes: Int = 65536) : AuthTranspor
 }
 
 class AuthApi(private val transport: AuthTransport = UrlAuthTransport()) {
+    fun register(server: String, input: RegistrationInput) {
+        if(input.errors().isNotEmpty()) throw AuthFailure.Registration()
+        val payload = JSONObject().put("fullName", input.fullName.trim()).put("username", input.username.trim())
+            .put("email", input.email.trim()).put("password", input.password).put("role", input.role)
+        val reply = transport.request(server + "api/auth/signup", "POST", null, payload.toString())
+        when {
+            reply.status == 409 -> throw AuthFailure.Registration(conflict = true)
+            reply.status == 400 -> {
+                // Only map known public conflicts; never display an arbitrary server body.
+                val message = runCatching { json(reply.body).optString("message") }.getOrDefault("")
+                throw AuthFailure.Registration(conflict = message in setOf("Tên đăng nhập đã tồn tại!", "Email đã được sử dụng!"))
+            }
+            reply.status !in 200..299 -> throw AuthFailure.Server()
+        }
+        if(json(reply.body).optBoolean("success", false) != true) throw AuthFailure.Registration()
+    }
     fun signIn(server: String, username: String, password: String): AuthSession {
         val payload = JSONObject().put("usernameOrEmail", username.trim()).put("password", password)
         val reply = transport.request(server + "api/auth/signin", "POST", null, payload.toString())

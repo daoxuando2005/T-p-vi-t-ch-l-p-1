@@ -41,4 +41,4 @@
   .admin-user-table td:last-child button { width:100%; justify-content:center; }
   .admin-person>div { min-width:0; overflow-wrap:anywhere; }
 }
-.auth-input input { font-size:16px!important; }
+.auth-input input { font-size:16px!important; }.auth-register-frame .auth-form-side { padding-top:36px; padding-bottom:36px; }.register-field-error { display:block; color:#ac2924; margin-top:7px; font-size:13px; }.auth-register-frame .auth-error a { text-decoration:underline; }.auth-register-frame select { margin-top:8px; width:100%; min-height:48px; }.auth-register-frame input { min-height:48px; }

@@ -19,7 +19,8 @@ buộc dưới đây khi thay đổi chức năng liên quan. Không ghi kết q
 - Tiến độ hành trình được khôi phục và gộp với server khi mở phiên học sinh,
   không hạ chặng đã đạt. Bản nháp bài tập và nét tự luyện vẫn lưu trên thiết bị.
   Hoạt động thực có outbox để phụ huynh theo dõi khi kết nối trở lại.
-- Đăng ký/OTP trên Android được hoãn; dùng tài khoản đã có hoặc admin tạo.
+- Android cho đăng ký demo học sinh/phụ huynh, kích hoạt tài khoản mới ngay,
+  không OTP; vẫn đăng nhập và xác minh phiên qua backend trước khi dùng.
   Có chấm độ bám mẫu chữ theo [HANDWRITING.md](HANDWRITING.md); lượt luyện không
   phải điểm năng lực. Đọc chữ dùng nghe mẫu và tự đọc theo, không thu micro
   hoặc nhận dạng giọng nói.
@@ -51,6 +52,7 @@ Các đường dẫn sau nằm trong `app/src/main/java/com/hocchu/mobile/`.
 | `auth/AuthModels.kt`, `AuthApi.kt` | Mô hình phiên, chuẩn hóa URL, hợp đồng HTTP |
 | `auth/AuthRepository.kt`, `SessionVault.kt`, `AuthViewModel.kt` | Xác minh, lưu phiên mã hóa và điều phối trạng thái xác thực |
 | `ui/LoginScreen.kt` | Cổng đăng nhập, biểu mẫu, trạng thái chờ/lỗi và đổi kết nối debug |
+| `ui/RegisterScreen.kt` | Đăng ký demo cho học sinh/phụ huynh, kiểm tra đầu vào và quay về đăng nhập |
 | `classroom/ClassroomModels.kt`, `ClassroomApi.kt` | Mô hình lớp/bài tập và hợp đồng API dùng Bearer token |
 | `classroom/ClassroomViewModel.kt`, `AssignmentDraftStore.kt`, `SubmissionImages.kt` | Trạng thái theo tài khoản, bản nháp và ảnh bài viết |
 | `ui/ClassroomScreen.kt` | Tham gia/chọn lớp, làm bài, nộp bài và xem điểm/nhận xét |

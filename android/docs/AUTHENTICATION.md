@@ -20,7 +20,7 @@ Không dùng việc giải mã JWT ở client như bằng chứng token hợp l�
 ## Trạng thái và lỗi
 
 - `AuthViewModel` giữ yêu cầu qua xoay màn hình. Dùng các trạng thái `Login`,
-  `Loading`, `SignedIn`, `Retry`; không hiện nội dung tài khoản trước khi xác minh.
+  `Register`, `Loading`, `SignedIn`, `Retry`; không hiện nội dung tài khoản trước khi xác minh.
 - Chặn gửi đăng nhập lặp khi yêu cầu đang chạy. Biểu mẫu phải có nhãn, kiểm tra
   trường bắt buộc, nút ẩn/hiện mật khẩu và thông báo lỗi đọc được.
 - Khởi động lại phải đọc phiên mã hóa và gọi `/me`. Lỗi mạng giữ phiên để thử lại;
@@ -60,8 +60,16 @@ Không dùng việc giải mã JWT ở client như bằng chứng token hợp l�
   tiến độ, học liệu cache hay bản nháp của tài khoản khác.
 - `UserAccount` dùng chung cho hai vai trò. `AuthGate` kết nối model đúng vai trò;
   đăng xuất/đổi vai trò phải hủy yêu cầu cũ và bỏ báo cáo phụ huynh trong bộ nhớ.
-- Android chưa có đăng ký/quên mật khẩu/OTP; không tự bỏ xác thực server để
-  tạo tài khoản. Giai đoạn này dùng tài khoản có sẵn hoặc admin cấp.
+- Android cho đăng ký học sinh/phụ huynh bằng `POST /api/auth/signup` gồm
+  `fullName`, `username`, `email`, `password`, `role`. Demo kích hoạt tài khoản mới
+  ngay, không gửi OTP và không coi email là đã xác minh. Backend từ chối đăng ký ADMIN.
+- Đăng ký xong trở về đăng nhập với tên tài khoản, không lưu mật khẩu hay tạo phiên
+  giả. Vẫn phải hoàn tất `signin` và `/me` trước khi mở dữ liệu học sinh/phụ huynh.
+- Chặn gửi lặp và báo trùng tên/email, lỗi mạng, dữ liệu không hợp lệ. Mật khẩu
+  ít nhất 6 ký tự, tối đa 72 byte UTF-8; không cắt hoặc tự bỏ khoảng trắng.
+  Mật khẩu/nhập lại mật khẩu không vào SavedState, preference hoặc log.
+- Không tự bật lại tài khoản bị khóa/chờ kích hoạt cũ. Quên mật khẩu do admin
+  hỗ trợ; không còn endpoint kích hoạt OTP công khai để vượt qua khóa tài khoản.
 
 ## Cấu hình debug và release
 

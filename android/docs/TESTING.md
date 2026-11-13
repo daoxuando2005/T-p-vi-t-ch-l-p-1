@@ -15,7 +15,7 @@ Không ghi kết quả thực hiện, số test đã đạt, ngày chạy hay th
 | Hình học mẫu chữ | `CopybookFormTest`; duyệt hình đủ 29 chữ và các chữ đại diện |
 | Chấm viết | `TraceScoringTest`, `HandwritingAssessmentTest`, `AssessmentGeometryTest`; mẫu trắng/tô kín/lệch/thiếu dấu và kết quả server |
 | Bảng viết/trạng thái/bố cục | `StudentExperienceTest` và kiểm tra thao tác viết theo thay đổi |
-| Xác thực/phiên/kết nối | `AuthModelsTest`, `AuthProtocolTest`, `LoginScreenTest` theo lớp bị ảnh hưởng |
+| Xác thực/phiên/kết nối | `AuthModelsTest`, `AuthProtocolTest`, `LoginScreenTest`, `RegistrationScreenTest` theo lớp bị ảnh hưởng |
 | Lớp học, bản nháp, nộp bài | `AssignmentGroupTest`, `ClassroomProtocolTest`, `ClassroomScreenTest`; chạy live có chủ đích bằng `ClassroomLiveBackendTest` |
 | Luồng đăng nhập thật | Kiểm thử live có chủ đích, chỉ bật khi backend và tài khoản mẫu sẵn sàng |
 | Mạng/cấu hình release | Build và Lint release, kiểm tra HTTPS và tài nguyên mạng trong APK release |
@@ -58,6 +58,14 @@ không đưa test host hoặc đường bỏ qua xác thực vào bản release.
 phải xác nhận điểm AUTO, cô sửa điểm vẫn giữ autoScore, không sửa được đề đã
 có bài nộp, và API trợ lý chỉ dành cho giáo viên. `TeacherAssistantServiceTest`
 dùng HTTP server giả lập để kiểm tra giao thức/lỗi; không gọi AI thật khi chạy test.
+
+Đăng ký cần kiểm tra kích hoạt ngay, không OTP, không cấp ADMIN, không tự mở khóa
+tài khoản cũ, mật khẩu đúng byte UTF-8 và đủ quyền mặc định giáo viên/phụ huynh.
+`RegistrationLiveTest` dùng `-DliveBackend=true`, tạo/xóa đúng tài khoản tạm.
+`GeminiAssistantTest` dùng máy chủ HTTP giả lập để kiểm tra header, schema ba loại
+bài, phản hồi bị chặn/cắt ngắn, lỗi hạn mức và chuyển hướng không làm lộ khóa.
+Chỉ chạy `GeminiLiveTest` với `-DliveGemini=true` khi đã có khóa riêng và chủ động
+muốn gọi dịch vụ thật; yêu cầu mẫu không chứa dữ liệu học sinh và không giao bài.
 
 Chạy từ thư mục `android`, với JDK 21 đã được chọn:
 

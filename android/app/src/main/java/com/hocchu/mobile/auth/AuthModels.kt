@@ -35,10 +35,26 @@ sealed class AuthFailure(val publicMessage: String) : Exception(publicMessage) {
     class Server : AuthFailure("Máy chủ chưa xử lý được yêu cầu. Vui lòng thử lại sau.")
     class InvalidResponse : AuthFailure("Dữ liệu đăng nhập từ máy chủ chưa hợp lệ.")
     class Storage : AuthFailure("Chưa lưu được phiên đăng nhập trên máy. Vui lòng thử lại.")
+    class Registration(val conflict: Boolean = false) : AuthFailure(if(conflict)
+        "Tên đăng nhập hoặc email đã được sử dụng. Hãy chọn thông tin khác."
+        else "Chưa tạo được tài khoản. Kiểm tra thông tin hoặc thử lại sau.")
+}
+
+data class RegistrationInput(val fullName: String, val username: String, val email: String, val password: String, val role: String) {
+    override fun toString() = "RegistrationInput(role=$role, credentials=[redacted])"
+    fun errors(): Map<String,String> = buildMap {
+        if(fullName.trim().isEmpty() || fullName.trim().length > 100) put("fullName", "Nhập họ tên, tối đa 100 ký tự")
+        if(!username.trim().matches(Regex("[A-Za-z0-9_.-]{3,50}"))) put("username", "Dùng 3–50 chữ không dấu, số hoặc dấu . _ -")
+        if(email.trim().length > 100 || !email.trim().matches(Regex("[^\\s@]+@[^\\s@]+\\.[^\\s@]+"))) put("email", "Nhập địa chỉ email hợp lệ, tối đa 100 ký tự")
+        if(password.length < 6 || password.toByteArray(Charsets.UTF_8).size > 72) put("password", "Mật khẩu từ 6 ký tự, tối đa 72 byte")
+        if(role !in setOf("STUDENT", "PARENT")) put("role", "Chọn học sinh hoặc phụ huynh")
+    }
 }
 
 sealed interface AuthState {
-    data class Login(val message: String? = null, val submitting: Boolean = false) : AuthState
+    data class Login(val message: String? = null, val submitting: Boolean = false,
+                     val successMessage: String? = null, val initialUsername: String = "") : AuthState
+    data class Register(val message: String? = null, val submitting: Boolean = false) : AuthState
     data class Loading(val label: String) : AuthState
     data class SignedIn(val session: AuthSession) : AuthState
     data class Retry(val message: String) : AuthState

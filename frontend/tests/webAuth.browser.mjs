@@ -98,6 +98,7 @@ try {
       if (url.pathname.startsWith('/api/')) {
         requests.push(url.pathname);
         let result = url.pathname === '/api/auth/signin' ? { ...account, accessToken: 'browser-test-token', tokenType: 'Bearer' }
+          : url.pathname === '/api/auth/signup' ? { success: true, message: 'Đăng ký thành công' }
           : url.pathname === '/api/auth/me' ? account : url.pathname.endsWith('/stats') ? {} : [];
         if (teacherFixtures) {
           if (url.pathname === '/api/teacher/class') result = [{ id: 77, name: 'Lớp Hoa Hướng Dương', inviteCode: 'FLOWER', studentCount: 12 }];
@@ -138,6 +139,32 @@ try {
   await navigate('/register'); await pathname('/register');
   await until(() => evaluate('!!document.querySelector("form input[type=password]")'));
   assert.equal(await evaluate('document.body.textContent.includes("Android")'), false);
+  await evaluate('document.querySelector("form").requestSubmit()');
+  await until(() => evaluate('!!document.querySelector("[role=alert]")'));
+  assert.equal(await evaluate('document.activeElement.getAttribute("role")'), 'alert');
+  for (const role of ['TEACHER', 'STUDENT', 'PARENT']) {
+    await navigate('/register'); await until(() => evaluate('!!document.querySelector("#register-username")'));
+    if (role === 'TEACHER') {
+      await evaluate('document.fonts.ready');
+      await writeFile('node_modules/.tmp/register-desktop.png', Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
+      await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
+      assert.equal(await evaluate('document.documentElement.scrollWidth <= innerWidth'), true);
+      await writeFile('node_modules/.tmp/register-mobile.png', Buffer.from((await send('Page.captureScreenshot', { format: 'png' })).data, 'base64'));
+      await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+    }
+    await evaluate(`(() => {
+      const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      for (const [name, value] of Object.entries({fullName:'Bé kiểm thử',username:'signup-test',email:'signup@example.invalid',password:' test-password ',confirmation:' test-password '})) {
+        const input=document.querySelector('#register-'+name);set.call(input,value);input.dispatchEvent(new Event('input',{bubbles:true}));
+      }
+      const select=document.querySelector('#register-role');Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype,'value').set.call(select,${JSON.stringify(role)});select.dispatchEvent(new Event('change',{bubbles:true}));
+    })()`);
+    await evaluate('document.querySelector("form").requestSubmit()');
+    await until(() => evaluate('document.body.textContent.includes("Tài khoản đã sẵn sàng!")'));
+    assert.equal(await evaluate('!!document.querySelector("input[type=password]")'), false);
+    assert.equal(requests.includes('/api/auth/verify-otp'), false);
+    assert.equal(await evaluate('localStorage.getItem("token")'), null);
+  }
   await navigate('/login'); await pathname('/login');
   for (const role of ['ROLE_STUDENT', 'ROLE_PARENT']) {
     await reset([role]); await signIn();
@@ -261,7 +288,7 @@ try {
   await reset([]);
   for (const route of ['/student', '/student/practice', '/parent', '/parent/assignments']) { await navigate(route); await pathname('/login'); }
   assert.deepEqual(errors, [], 'Browser JavaScript/interception errors');
-  console.log('Browser checks passed: login, teacher flows, admin accounts/permissions, classes/family support, learning content, settings and responsive layouts.');
+  console.log('Browser checks passed: login, direct registration for all public roles, teacher flows, admin accounts/permissions, classes/family support, learning content, settings and responsive layouts.');
 } finally {
   // Close the isolated browser's children before removing its temporary profile.
   if (socket?.readyState === WebSocket.OPEN) await send('Browser.close').catch(() => {});

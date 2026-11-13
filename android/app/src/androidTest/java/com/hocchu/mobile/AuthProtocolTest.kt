@@ -14,6 +14,30 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 class AuthProtocolTest {
+    @Test fun registrationUsesPublicEndpointAndNeverCreatesAnUnverifiedLocalSession() = runBlocking {
+        val input = RegistrationInput(" Bé học ", " student ", " student@example.com ", " secret ", "PARENT")
+        val storage = MemoryStorage()
+        val api = AuthApi(AuthTransport { url, method, token, body ->
+            assertEquals("https://school.example/api/auth/signup", url); assertEquals("POST", method); assertNull(token)
+            val payload = JSONObject(body!!)
+            assertEquals("student", payload.getString("username")); assertEquals("student@example.com", payload.getString("email"))
+            assertEquals(" secret ", payload.getString("password")); assertEquals("PARENT", payload.getString("role"))
+            HttpReply(200, "{\"success\":true}")
+        })
+        AuthRepository(api, storage, false).register(server, input)
+        assertNull(storage.value)
+    }
+    @Test fun registrationConflictsAndFalseSuccessAreNotAcceptedOrLeaked() {
+        val input = RegistrationInput("Bé học", "student", "student@example.com", "secret", "STUDENT")
+        for(reply in listOf(HttpReply(409,"private-db-error"), HttpReply(200,"{\"success\":false}"))) {
+            try { AuthApi(AuthTransport { _,_,_,_ -> reply }).register(server, input); fail() }
+            catch(e: AuthFailure.Registration) { assertFalse(e.publicMessage.contains("private-db")) }
+        }
+        var called = false
+        try { AuthApi(AuthTransport { _,_,_,_ -> called = true; HttpReply(200, "{}") }).register(server, input.copy(role = "ADMIN")); fail() }
+        catch(_: AuthFailure.Registration) { }
+        assertFalse(called)
+    }
     private val server = "https://school.example/"
     private fun response(id: Long = 7, role: String = "ROLE_STUDENT", expires: Long = System.currentTimeMillis() / 1000 + 3600): String {
         fun b64(value: String) = Base64.encodeToString(value.toByteArray(), Base64.URL_SAFE or Base64.NO_WRAP or Base64.NO_PADDING)
