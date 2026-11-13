@@ -14,7 +14,7 @@ không dùng OTP; địa chỉ email chưa được xác minh.
 | --- | --- | --- |
 | Học sinh | Android | Hành trình 29 chữ; nghe mẫu; luyện viết; tham gia lớp; làm và nộp bài; xem điểm, nhận xét |
 | Phụ huynh | Android | Liên kết con bằng mã; xem hoạt động theo ngày, tiến độ, bài nộp và nhận xét của cô |
-| Giáo viên | Web | Quản lý lớp/học sinh; giao ba loại bài; xem bài làm, chấm điểm; chỉnh học liệu theo quyền; dùng trợ lý soạn bài |
+| Giáo viên | Web | Quản lý lớp/học sinh; giao ba loại bài; xem bài làm, chấm điểm; xem học liệu theo; dùng trợ lý soạn bài |
 | Quản trị viên | Web | Tổng quan hệ thống; quản lý tài khoản/quyền; quản lý học liệu; tra cứu lớp và liên kết gia đình; xem trạng thái cấu hình |
 
 ### Học sinh và phụ huynh
