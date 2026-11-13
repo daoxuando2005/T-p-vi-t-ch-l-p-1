@@ -30,7 +30,7 @@ class AuthServiceTest {
         when(passwordEncoder.encode(" secret ")).thenReturn("encoded");
         assertTrue(authService.registerUser(request("STUDENT")).getSuccess());
         var saved=ArgumentCaptor.forClass(User.class);verify(userRepository).save(saved.capture());var user=saved.getValue();
-        assertTrue(user.getEnabled());assertNull(user.getOtpCode());assertNull(user.getOtpExpiry());assertEquals("encoded",user.getPassword());
+        assertTrue(user.getEnabled());assertEquals("encoded",user.getPassword());
         assertEquals("testuser",user.getUsername());assertEquals("test@example.com",user.getEmail());assertEquals("Học sinh",user.getFullName());
         assertEquals(Set.of("ROLE_STUDENT"),user.getRoles().stream().map(Role::getName).collect(java.util.stream.Collectors.toSet()));
     }

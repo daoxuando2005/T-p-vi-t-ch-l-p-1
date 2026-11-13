@@ -4,18 +4,15 @@ import com.hocchu.web.dto.*;
 import com.hocchu.web.entity.*;
 import com.hocchu.web.repository.*;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@Slf4j
 public class StudentService {
 
     @Autowired
@@ -35,12 +32,6 @@ public class StudentService {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private ParentStudentLinkRepository parentStudentLinkRepository;
-
-    @Autowired
-    private NotificationRepository notificationRepository;
 
     private final ObjectMapper objectMapper = new ObjectMapper();
     @Autowired private HandwritingAssessment handwriting;
@@ -75,26 +66,6 @@ public class StudentService {
                 .build();
 
         classMemberRepository.save(member);
-
-        // Tạo thông báo hệ thống
-        Notification notif = Notification.builder()
-                .user(student)
-                .title("Đã tham gia lớp học")
-                .content("Bé đã tham gia lớp '" + clazz.getName() + "' thành công!")
-                .type("SYSTEM")
-                .isRead(false)
-                .build();
-        notificationRepository.save(notif);
-
-        // Gửi thông báo cho Giáo viên
-        Notification teacherNotif = Notification.builder()
-                .user(clazz.getTeacher())
-                .title("Học sinh mới tham gia lớp")
-                .content("Học sinh " + student.getFullName() + " đã tham gia lớp '" + clazz.getName() + "' của bạn.")
-                .type("SYSTEM")
-                .isRead(false)
-                .build();
-        notificationRepository.save(teacherNotif);
 
         return new ApiResponse(true, "Tham gia lớp học '" + clazz.getName() + "' thành công!");
     }
@@ -229,38 +200,12 @@ public class StudentService {
         } else {
             return new ApiResponse(false, "Loại bài tập chưa được hỗ trợ.");
         }
-        final Float finalScore = score;
 
         Submission submission=Submission.builder().assignment(assignment).student(student)
             .submissionData(request.getSubmissionData()).score(score).autoScore(score).gradeSource("AUTO").assessmentData(assessmentData).feedback(feedback)
             .submittedAt(LocalDateTime.now(LearningTrackingService.SCHOOL_ZONE)).build();
 
         submissionRepository.save(submission);
-
-        // Thông báo phụ huynh
-        parentStudentLinkRepository.findAllByStudentId(studentId).forEach(link -> {
-            if ("APPROVED".equals(link.getStatus())) {
-                Notification parentNotif = Notification.builder()
-                        .user(link.getParent())
-                        .title("Bé " + student.getFullName() + " vừa nộp bài tập")
-                        .content("Con vừa nộp bài tập '" + assignment.getTitle() + "' trong lớp '" + assignment.getClazz().getName() + "'. "
-                                + (finalScore == null ? "Chờ giáo viên chấm bài." : "Điểm bài: " + finalScore))
-                        .type("ASSIGNMENT")
-                        .isRead(false)
-                        .build();
-                notificationRepository.save(parentNotif);
-            }
-        });
-
-        // Thông báo Giáo viên
-        Notification teacherNotif = Notification.builder()
-                .user(assignment.getClazz().getTeacher())
-                .title("Bài nộp mới trong lớp " + assignment.getClazz().getName())
-                .content("Học sinh " + student.getFullName() + " vừa nộp bài '" + assignment.getTitle() + "'.")
-                .type("ASSIGNMENT")
-                .isRead(false)
-                .build();
-        notificationRepository.save(teacherNotif);
 
         return new ApiResponse(true, score == null ? "Đã nộp bài viết. Chờ giáo viên chấm bài." : "Nộp bài tập thành công! Điểm số: " + score);
     }

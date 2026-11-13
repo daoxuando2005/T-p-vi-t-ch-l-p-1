@@ -32,12 +32,6 @@ public class StudentServiceTest {
     @Mock
     private ClassMemberRepository classMemberRepository;
 
-    @Mock
-    private ParentStudentLinkRepository parentStudentLinkRepository;
-
-    @Mock
-    private NotificationRepository notificationRepository;
-
     @org.mockito.Spy private com.hocchu.web.service.HandwritingAssessment handwriting = new com.hocchu.web.service.HandwritingAssessment();
     @InjectMocks
     private StudentService studentService;
@@ -75,7 +69,6 @@ public class StudentServiceTest {
         assertTrue(response.getSuccess());
         assertTrue(response.getMessage().contains("Điểm số: 5.0"));
         verify(submissionRepository, times(1)).save(any(Submission.class));
-        verify(notificationRepository, atLeastOnce()).save(any(Notification.class));
     }
 
     @Test
@@ -87,7 +80,7 @@ public class StudentServiceTest {
         request.setSubmissionData("anything");
         assertThrows(org.springframework.security.access.AccessDeniedException.class,
                 () -> studentService.submitAssignment(1L, 2L, request));
-        verify(submissionRepository,never()).save(any());verifyNoInteractions(notificationRepository);
+        verify(submissionRepository,never()).save(any());
     }
 
     @Test
@@ -112,7 +105,7 @@ public class StudentServiceTest {
         SubmissionRequest request = new SubmissionRequest();
         request.setSubmissionData("{\"answers\":[]}");
         assertFalse(studentService.submitAssignment(1L, 2L, request).getSuccess());
-        verify(submissionRepository,never()).save(any());verifyNoInteractions(notificationRepository);
+        verify(submissionRepository,never()).save(any());
     }
 
     @Test
@@ -121,7 +114,7 @@ public class StudentServiceTest {
         SubmissionRequest request = new SubmissionRequest();
         request.setSubmissionData("[{\"letter\":\"A\",\"image\":\"not-an-image\"}]");
         assertFalse(studentService.submitAssignment(1L, 2L, request).getSuccess());
-        verify(submissionRepository,never()).save(any());verifyNoInteractions(notificationRepository);
+        verify(submissionRepository,never()).save(any());
     }
 
     private Assignment assignment(String type, String data) {
@@ -136,14 +129,14 @@ public class StudentServiceTest {
     @Test void submittedWritingMustCoverExactlyTheAssignedLetters() {
         prepare(assignment("WRITING","{\"letters\":[\"A\",\"Ă\"]}"));var request=new SubmissionRequest();
         request.setSubmissionData("[{\"letter\":\"A\",\"image\":\""+png()+"\"}]");
-        assertFalse(studentService.submitAssignment(1L,2L,request).getSuccess());verify(submissionRepository,never()).save(any());verifyNoInteractions(notificationRepository);
+        assertFalse(studentService.submitAssignment(1L,2L,request).getSuccess());verify(submissionRepository,never()).save(any());
     }
     @Test void retryDoesNotOverwriteTeachersGradeOrDeleteHistory() {
         prepare(assignment("WRITING","A"));var request=new SubmissionRequest();request.setSubmissionData("[{\"letter\":\"A\",\"image\":\""+png()+"\"}]");
         var graded=Submission.builder().submissionData(request.getSubmissionData()).score(8.5f).feedback("Cô đã chấm").build();
         when(submissionRepository.findFirstByAssignmentIdAndStudentIdOrderByIdDesc(2L,1L)).thenReturn(Optional.of(graded));
         assertTrue(studentService.submitAssignment(1L,2L,request).getSuccess());assertEquals(8.5f,graded.getScore());
-        verify(submissionRepository,never()).save(any());verify(submissionRepository,never()).delete(any());verifyNoInteractions(notificationRepository);
+        verify(submissionRepository,never()).save(any());verify(submissionRepository,never()).delete(any());
     }
 
     @Test

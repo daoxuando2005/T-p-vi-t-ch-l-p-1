@@ -3,7 +3,6 @@ package com.hocchu.web.service;
 import com.hocchu.web.dto.*;
 import com.hocchu.web.entity.*;
 import com.hocchu.web.repository.*;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -13,7 +12,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
-@Slf4j
 public class TeacherService {
 
     @Autowired
@@ -30,12 +28,6 @@ public class TeacherService {
 
     @Autowired
     private UserRepository userRepository;
-
-    @Autowired
-    private ParentStudentLinkRepository parentStudentLinkRepository;
-
-    @Autowired
-    private NotificationRepository notificationRepository;
 
     @Transactional
     public ClassResponse createClass(Long teacherId, String className, String description) {
@@ -127,16 +119,6 @@ public class TeacherService {
                 .build();
         classMemberRepository.save(member);
 
-        // Thông báo cho học sinh
-        Notification notif = Notification.builder()
-                .user(student)
-                .title("Bạn được thêm vào lớp học mới")
-                .content("Giáo viên đã thêm bạn vào lớp '" + clazz.getName() + "'!")
-                .type("SYSTEM")
-                .isRead(false)
-                .build();
-        notificationRepository.save(notif);
-
         return new ApiResponse(true, "Thêm học sinh thành công!");
     }
 
@@ -178,33 +160,6 @@ public class TeacherService {
                 .build();
 
         Assignment saved = assignmentRepository.save(asm);
-
-        // Gửi thông báo cho toàn bộ học sinh trong lớp
-        List<ClassMember> members = classMemberRepository.findByClazzId(clazz.getId());
-        for (ClassMember cm : members) {
-            Notification notif = Notification.builder()
-                    .user(cm.getStudent())
-                    .title("Bài tập mới: " + saved.getTitle())
-                    .content("Lớp '" + clazz.getName() + "' vừa có bài tập mới '" + saved.getTitle() + "' cần hoàn thành!")
-                    .type("ASSIGNMENT")
-                    .isRead(false)
-                    .build();
-            notificationRepository.save(notif);
-
-            // Thông báo cho phụ huynh của học sinh nếu có
-            parentStudentLinkRepository.findAllByStudentId(cm.getStudent().getId()).forEach(link -> {
-                if ("APPROVED".equals(link.getStatus())) {
-                    Notification parentNotif = Notification.builder()
-                            .user(link.getParent())
-                            .title("Bé có bài tập mới")
-                            .content("Bé " + cm.getStudent().getFullName() + " có bài tập mới: '" + saved.getTitle() + "' trong lớp '" + clazz.getName() + "'.")
-                            .type("ASSIGNMENT")
-                            .isRead(false)
-                            .build();
-                    notificationRepository.save(parentNotif);
-                }
-            });
-        }
 
         return AssignmentResponse.builder()
                 .id(saved.getId())
@@ -302,30 +257,6 @@ public class TeacherService {
         submission.setGradeSource("TEACHER");
         submission.setFeedback(request.getFeedback());
         submissionRepository.save(submission);
-
-        // Tạo thông báo cho học sinh
-        Notification notif = Notification.builder()
-                .user(submission.getStudent())
-                .title("Bài tập đã được chấm điểm")
-                .content("Bài '" + submission.getAssignment().getTitle() + "' đã được giáo viên chấm: " + request.getScore() + " điểm. Nhận xét: " + request.getFeedback())
-                .type("ASSIGNMENT")
-                .isRead(false)
-                .build();
-        notificationRepository.save(notif);
-
-        // Thông báo phụ huynh
-        parentStudentLinkRepository.findAllByStudentId(submission.getStudent().getId()).forEach(link -> {
-            if ("APPROVED".equals(link.getStatus())) {
-                Notification parentNotif = Notification.builder()
-                        .user(link.getParent())
-                        .title("Điểm bài tập của bé")
-                        .content("Bài tập '" + submission.getAssignment().getTitle() + "' của bé " + submission.getStudent().getFullName() + " đã có điểm: " + request.getScore() + " điểm. Nhận xét: " + request.getFeedback())
-                        .type("ASSIGNMENT")
-                        .isRead(false)
-                        .build();
-                notificationRepository.save(parentNotif);
-            }
-        });
 
         return new ApiResponse(true, "Chấm điểm thành công!");
     }

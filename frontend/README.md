@@ -3,6 +3,7 @@
 Website viết bằng **React + JavaScript/JSX**, dùng Vite để phát triển/build.
 Giao diện dùng chung phong cách xanh dương, xanh lá, cam và font Nunito Sans với
 app Android. Giáo viên và admin có khu vực riêng theo quyền của tài khoản.
+Style dùng CSS trong `teacher.css`, `admin.css` và bộ reset trình duyệt ở `index.css`.
 
 Học sinh/phụ huynh học và theo dõi trên [Android](../android/README.md).
 Website vẫn có biểu mẫu đăng ký chung; đăng nhập web chỉ nhận giáo viên/admin.

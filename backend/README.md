@@ -77,6 +77,9 @@ cổng 8080. Thay đổi `.env.local` cần khởi động lại backend.
 Flyway tự áp dụng migration trong [db/migration](src/main/resources/db/migration).
 Hibernate dùng `ddl-auto=validate`; không dùng nó để tự tái tạo schema. Với DB
 đã có, sao lưu trước khi nâng cấp và không sửa/xóa migration đã áp dụng.
+Các bảng lịch sử của chức năng đã bỏ vẫn được giữ trong database; việc dọn mã
+không xóa dữ liệu cũ. Huy hiệu bài tập lấy từ bài chưa nộp, báo cáo phụ huynh
+lấy từ hoạt động/bài nộp, không dùng luồng ghi thông báo cũ.
 
 ## Tài khoản và quản trị ban đầu
 

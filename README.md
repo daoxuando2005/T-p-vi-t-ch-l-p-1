@@ -59,7 +59,7 @@ flowchart LR
 | --- | --- | --- |
 | Android | Kotlin, Jetpack Compose, Material 3; Android 8.0/API 26 trở lên | [android/README.md](android/README.md) |
 | Backend | Java 17, Spring Boot 3.3.2, Spring Security/JWT, JPA, Flyway, MySQL | [backend/README.md](backend/README.md) |
-| Website | React 19, JavaScript/JSX, Vite 8, Axios, CSS/Tailwind, Lucide | [frontend/README.md](frontend/README.md) |
+| Website | React 19, JavaScript/JSX, Vite 8, Axios, CSS, Lucide | [frontend/README.md](frontend/README.md) |
 
 ```text
 .

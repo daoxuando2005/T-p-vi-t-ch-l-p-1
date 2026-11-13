@@ -77,7 +77,7 @@ class ParentTrackingLiveTest extends LocalBackendFixture {
         var restored=ok("/api/student/learning/progress","GET",child.token(),null);assertEquals(29,restored.size());assertEquals(3,restored.get(2).path("sentences").asInt());
         assertFalse(ok("/api/student/learning/progress","GET",otherChild.token(),null).get(0).path("read").asBoolean());
         String code=ok("/api/student/link-code","GET",child.token(),null).path("linkCode").asText();ok("/api/parent/link?linkCode="+code,"POST",parent.token(),null);
-        // Old pending placeholders must neither break submissions nor receive notifications.
+        // Old pending placeholders must not break submissions or grant access.
         try(var p=db.prepareStatement("INSERT INTO parent_student_links(parent_id,student_id,link_code,status) VALUES(?,?,?,'PENDING')")) {
             p.setLong(1,otherParent.id());p.setLong(2,child.id());p.setString(3,"test"+UUID.randomUUID().toString().substring(0,12));p.executeUpdate();
         }
@@ -131,7 +131,6 @@ class ParentTrackingLiveTest extends LocalBackendFixture {
         assertTrue(aiStatus.has("configured"));
         if(!aiStatus.path("configured").asBoolean())assertEquals(503,request("/api/teacher/assistant/draft","POST",teacher.token(),
             json.createObjectNode().put("message","Soạn ba câu ngắn").put("type","SENTENCE").put("count",3)).statusCode());
-        try(var p=db.prepareStatement("SELECT COUNT(*) FROM notifications WHERE user_id=?")){p.setLong(1,otherParent.id());try(var r=p.executeQuery()){assertTrue(r.next());assertEquals(0,r.getInt(1));}}
         assertEquals(400,request("/api/teacher/submissions/"+submissionId+"/grade","POST",teacher.token(),json.createObjectNode().put("score",12)).statusCode());
         ok("/api/parent/students/"+child.id()+"/link","DELETE",parent.token(),null);
         assertEquals(403,request(parentPath,"GET",parent.token(),null).statusCode());
