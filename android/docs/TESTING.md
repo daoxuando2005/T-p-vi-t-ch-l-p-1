@@ -91,10 +91,16 @@ adb -s <serial> shell am instrument -w -r -e disableAnalytics true `
 ```
 
 Thay tên lớp theo mục tiêu. `AuthLiveBackendTest` và `AuthLiveLoginTest` cần thêm
-`-e liveBackend true`; `ClassroomLiveBackendTest` cũng yêu cầu cờ này. Có thể truyền
-`-e backendUrl http://10.0.2.2:8080/` cho bài kiểm tra lớp học trên máy ảo.
-Không bật mặc định. Kiểm tra live không được ghi đè phiên
-có sẵn và chỉ dùng tài khoản mẫu phục vụ kiểm thử.
+`-e liveBackend true`. Không bật mặc định và không ghi đè phiên có sẵn.
+Luồng lớp học live phải dùng tài khoản tạm, không dùng `student1`/`teacher1`
+để tạo lớp hoặc nộp bài. Host `AndroidJourneyLiveTest` cấp ba tài khoản riêng,
+gọi `ClassroomLiveBackendTest` trên đúng serial rồi dọn dữ liệu theo ID đã tạo.
+Từ backend chạy `mvn test -Dtest=AndroidJourneyLiveTest -DliveAndroid=true
+-DandroidSerial=<serial>` sau khi cài APK app/androidTest và đặt
+`adb -s <serial> reverse tcp:8080 tcp:8080`. Có thể đổi `deviceBackendUrl`
+hoặc `adbPath`; không ghi thông tin đăng nhập/token vào log hoặc Git.
+Luồng này kiểm tra HTTP, ảnh viết, điểm và phụ huynh; không thay thế kiểm thử
+chạm, nghe âm thanh, xoay màn hình và nhập liệu bằng bàn phím thật.
 
 ## Bảo vệ dữ liệu
 

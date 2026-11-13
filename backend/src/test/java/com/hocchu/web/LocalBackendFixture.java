@@ -22,7 +22,9 @@ abstract class LocalBackendFixture {
     final List<Long> createdClasses=new ArrayList<>();
     final List<Path> createdMedia=new ArrayList<>();
     Connection db;
-    record Account(long id,String token) {}
+    record Account(long id,String token,String username,String password) {
+        @Override public String toString(){return "Account(id="+id+", credentials=[redacted])";}
+    }
     HttpResponse<String> request(String path,String method,String token,JsonNode body) throws Exception {
         var b=HttpRequest.newBuilder(URI.create(base+path)).timeout(Duration.ofSeconds(15));
         if(token!=null) b.header("Authorization","Bearer "+token);
@@ -43,7 +45,7 @@ abstract class LocalBackendFixture {
         try(var p=db.prepareStatement("INSERT INTO user_roles(user_id,role_id) SELECT ?,id FROM roles WHERE name=?")) {p.setLong(1,id);p.setString(2,role);assertEquals(1,p.executeUpdate());}
         if(role.equals("ROLE_TEACHER"))try(var p=db.prepareStatement("INSERT INTO user_roles(user_id,role_id) SELECT ?,id FROM roles WHERE name IN ('PERM_ASSIGN_HOMEWORK','PERM_MANAGE_CLASSES','PERM_VIEW_ALPHABET','PERM_EDIT_ALPHABET')")){p.setLong(1,id);p.executeUpdate();}
         String token=ok("/api/auth/signin","POST",null,json.createObjectNode().put("usernameOrEmail",name).put("password",password)).path("accessToken").asText();
-        assertFalse(token.isBlank());return new Account(id,token);
+        assertFalse(token.isBlank());return new Account(id,token,name,password);
     }
     @BeforeEach void connect() throws Exception {
         Properties env=new Properties();try(var in=Files.newInputStream(Path.of(".env.local"))) {env.load(in);}
